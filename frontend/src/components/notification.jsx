@@ -1,5 +1,5 @@
 import  { useState } from 'react';
-import { ArrowLeft, MapPin, Clock, Wrench, ChevronRight, CheckCircle, XCircle, MessageCircle, Share2 } from 'lucide-react';
+import { ArrowLeft, Wrench, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 const Notifications = ({ onBack }) => {
   const [commands] = useState([
     { id: 1, desc: "Panne de moteur", loc: "Banikani", date: "07:50 20/04/2026", dist: "3 km", new: true },
@@ -18,7 +18,7 @@ const Notifications = ({ onBack }) => {
           <ArrowLeft size={24} /> Retour
         </button>
         <h2 className="text-white text-xl font-bold uppercase tracking-widest flex items-center gap-3">
-          <Wrench className="text-[#608C27]" /> Listes des commandes
+          <Wrench className="text-[#608C27]" /> Notifications
         </h2>
         <div className="w-10"></div>
       </div>
@@ -70,12 +70,7 @@ const Notifications = ({ onBack }) => {
                 <button className="bg-[#00D084] text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#00b372] transition">
                   <CheckCircle size={18} /> Disponible
                 </button>
-                <button className="bg-[#FF8A8A] text-[#0D2B0D] px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition">
-                  <Share2 size={18} /> Envoi plus proche
-                </button>
-                <button className="bg-[#A08CFF] text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition">
-                  <MessageCircle size={18} /> Discuter
-                </button>
+                
               </div>
             )}
           </div>

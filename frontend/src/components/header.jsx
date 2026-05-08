@@ -6,6 +6,7 @@ import { Search, Menu, X } from 'lucide-react'
 const Header = ({onSignUpClick, onNavClick}) => {
   // État pour savoir si le menu mobile est ouvert ou fermé
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <header className="bg-white py-1 px-4 md:px-8 flex justify-between items-center shadow-sm relative z-50">
@@ -29,9 +30,30 @@ const Header = ({onSignUpClick, onNavClick}) => {
           className="absolute right-3 text-[#0D2B0D] hidden md:block" 
         />
         {/* Icône recherche mobile */}
-        <div className="md:hidden p-2 text-[#0D2B0D]">
-          <Search size={24} />
-        </div>
+        <div className="md:hidden flex items-center">
+        {isSearchOpen ? (
+          // Barre de recherche mobile ouverte
+          <div className="absolute right-0 top-[-8px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[200px]">
+            <input 
+              autoFocus
+              type="text" 
+              placeholder='Rechercher...'
+              className='text-[#0D2B0D] w-full bg-transparent outline-none p-1 text-sm'
+            />
+            <button onClick={() => setIsSearchOpen(false)}>
+              <X size={20} className="text-[#0D2B0D]" />
+            </button>
+          </div>
+        ) : (
+          // Icône seule (état fermé)
+          <button 
+            onClick={() => setIsSearchOpen(true)}
+            className="p-2 text-[#0D2B0D] hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <Search size={24} />
+          </button>
+        )}
+      </div>
       </div>
 
       {/* Navigation Desktop */}
@@ -69,7 +91,6 @@ const Header = ({onSignUpClick, onNavClick}) => {
         </button>
       </nav>
 
-      {/* Bouton Hamburger */}
       <div className="lg:hidden flex items-center">
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 focus:outline-none">
           {isMenuOpen ? <X size={30} /> : <Menu size={30} />}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { MapPin, Clock, Wrench, CheckCircle, XCircle } from 'lucide-react'; // Icônes pro
+import { MapPin, Clock, Wrench} from 'lucide-react'; 
 
 const ListesCommandes = () => {
   // Données de test (à remplacer par des données API plus tard)
@@ -83,11 +83,7 @@ const ListesCommandes = () => {
                   <DetailItem title="Localisation" value={command.details.localization} icon={<MapPin size={20}/>}/>
                   <DetailItem title="Distance estimée" value={command.details.distance} icon={<MapPin size={20}/>}/>
                   
-                  {/* --- BOUTONS D'ACTION (Accepter / Refuser) --- */}
-                  <div className="pt-8 border-t border-[#608C27] flex flex-col sm:flex-row items-center justify-center gap-6">
-                    <ActionButton text="Refuser la demande" icon={<XCircle size={22}/>} color="bg-black hover:bg-slate-800" />
-                    <ActionButton text="Accepter & Démarrer" icon={<CheckCircle size={22}/>} color="bg-[#608C27] hover:bg-white hover:text-[#0D2B0D]" />
-                  </div>
+                 
                   
                 </div>
               </div>
@@ -111,13 +107,4 @@ const DetailItem = ({ title, value, icon }) => (
     </div>
   </div>
 );
-
-// Sous-composant pour les boutons d'action
-const ActionButton = ({ text, icon, color }) => (
-  <button className={`${color} text-white px-8 py-3 rounded-full font-bold flex items-center gap-3 transition-all shadow-md active:scale-95 text-lg w-full sm:w-auto justify-center`}>
-    {icon}
-    {text}
-  </button>
-);
-
 export default ListesCommandes;
