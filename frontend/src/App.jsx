@@ -14,6 +14,9 @@ import Remerciement from './components/remerciement';
 import Paiement from './components/paiement';
 import ConfirmerPaiement from './components/confirmer_paiement';
 import Intervention from './components/intervention';
+import Nofinish from './components/nofinish';
+import DiscussionCond from './components/discussion';
+import DiscussionMeca from './components/discussion_meca';
 import './index.css';
 
 function App() {
@@ -29,6 +32,9 @@ function App() {
   const [isPaiement, setIsPaiement] = useState(false);
   const [isConfirmerPaiement, setIsConfirmerPaiement] = useState(false);
   const [isIntervention, setIsIntervention] = useState(false);
+  const [isNofinish, setIsNofinish] = useState(false);
+  const [isDiscussioncond, setIsDiscussioncond] = useState(false);
+  const [isDiscussionmeca, setIsDiscussionmeca] = useState(false);
   const ouvrirInscription = () => {
     setIsConnexion(false);
     setIsInscription(true);
@@ -52,6 +58,9 @@ function App() {
     setIsIntervention(false);
     setIsRemerciement(false); 
     setIsDashboardMeca(false); 
+    setIsDiscussioncond(false); 
+    setIsDiscussionmeca(false); 
+    setIsNofinish(false);
   };
 
   // Fonction pour passer du Suivi à la Facturation
@@ -83,8 +92,17 @@ function App() {
       <main className="flex-grow">
         {
         
-        isDashboardMeca ?(
-          <DashboardMecanicien/>
+          isDiscussioncond ? (
+          <DiscussionCond
+            onBackClick={() => 
+              setIsDiscussioncond(false)}
+          />
+        
+        ):isDiscussionmeca ?(
+          <DiscussionMeca
+            onBackClick={() => 
+              setIsDiscussionmeca(false)}
+          />
         ):isInfo ? (
           <Info
             onInfo={retournerAccueil}
@@ -93,10 +111,13 @@ function App() {
           /* Si l'utilisateur a cliqué sur Connexion/Inscription */
           <Connexion 
             onInscriptionClick={ouvrirInscription}
-            onLoginClick={() => setIsDashboardMeca(true)} 
+            onLoginClick={() => {
+              setIsConnexion(false);
+              setIsDashboardMeca(true);
+            }} 
+            
           />
          ):isInscription ? (
-          /* Si l'utilisateur a cliqué sur Connexion/Inscription */
           <Inscription 
             onSignUpClick={ouvrirConnexion} 
             onInfo={() => setIsInfo(true)}
@@ -110,9 +131,18 @@ function App() {
           <Remerciement 
             onRemerc={retournerAccueil}
           />
+        ):isNofinish ?(
+          <Nofinish 
+            onFinish={retournerAccueil}
+          />
         ):isIntervention ?(
           <Intervention 
-            onNo={retournerAccueil}
+            onNo={
+             () => {
+              setIsNofinish(true);
+              setIsRemerciement(false);
+            }
+            }
             onTerminer={
               () => {
                 setIsIntervention(false);
@@ -142,7 +172,10 @@ function App() {
         setIsPaiement(true);
         setIsRemerciement(false);
       }} 
-      onDisctuter={() => console.log("Discussion...")} 
+      onDisctuter={() => {
+        setIsDiscussioncond(true);
+        setIsFacturation(false);
+      } } 
     />
   ) :!showForm ? (
           <Hero onStartClick={() => setShowForm(true)} />
@@ -157,12 +190,7 @@ function App() {
           />
         ) : (
           <div className="relative">
-            <button 
-              onClick={() => setShowForm(false)} 
-              className="absolute top-4 left-4 bg-white p-2 rounded-full shadow z-10"
-            >
-              ← Retour
-            </button>
+            
             <Demande onConfirm={() => setIsConfirmed(true)} />
           </div>
         )}

@@ -59,7 +59,6 @@ const Remerciement = ({ onRemerc }) => {
                     </div>
                 </div>
 
-                {/* AJOUT DE w-full ICI POUR PERMETTRE L'ALIGNEMENT À DROITE */}
                 <div className="w-full flex justify-end mt-8">
                         <button 
                             onClick={onRemerc}

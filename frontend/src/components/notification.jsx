@@ -12,7 +12,6 @@ const Notifications = ({ onBack }) => {
   return (
     <div className="bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
       
-      {/* HEADER DE LA SECTION (Style Image 2) */}
       <div className="bg-[#0D2B0D] p-6 flex items-center justify-between">
         <button onClick={onBack} className="text-white hover:text-[#608C27] flex items-center gap-2 font-bold">
           <ArrowLeft size={24} /> Retour
@@ -27,7 +26,6 @@ const Notifications = ({ onBack }) => {
         {commands.map((cmd) => (
           <div key={cmd.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             
-            {/* LIGNE PRINCIPALE (Style Notification) */}
             <div 
               onClick={() => setActiveId(activeId === cmd.id ? null : cmd.id)}
               className={`p-5 flex items-center gap-4 cursor-pointer transition-all border-l-8 ${cmd.new ? 'border-[#608C27]' : 'border-gray-300'}`}
@@ -61,7 +59,6 @@ const Notifications = ({ onBack }) => {
               <ChevronRight className={`text-gray-300 transition-transform ${activeId === cmd.id ? 'rotate-90' : ''}`} />
             </div>
 
-            {/* ZONE ACTIONS (S'affiche au clic) */}
             {activeId === cmd.id && (
               <div className="bg-gray-50 p-6 border-t border-gray-200 flex flex-wrap justify-center gap-4">
                 <button className="bg-black text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-gray-800 transition">

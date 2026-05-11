@@ -1,6 +1,9 @@
 import { useState } from 'react'; 
 import ListesCommandes from './listes_demandes';
 import Notifications from './notification';
+import DiscussionMeca from './discussion_meca'; 
+import StatutMissions from './statut';
+import MonCompte from './compteMeca';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle } from 'lucide-react';
 
 const DashboardMecanicien = () => {
@@ -26,8 +29,12 @@ const DashboardMecanicien = () => {
       case 'notif':
         return <Notifications onBack={() => setView('menu')} />;
       case 'compte':
+                return <MonCompte onBack={() => setView('menu')} />;
       case 'statut':
+                return <StatutMissions onBack={()=> setView('menu')}/>;
       case 'discuter':
+                return <DiscussionMeca onBack={() => setView('menu')} />;
+      default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
             <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
@@ -36,8 +43,7 @@ const DashboardMecanicien = () => {
             </button>
           </div>
         );
-      default:
-        return null;
+      
     }
   };
 
@@ -75,7 +81,9 @@ const DashboardMecanicien = () => {
 
           {/* Mon Compte (Centre) - On le place au milieu dans la grille */}
           <div className="lg:row-span-2 flex items-center">
-             <MenuCard item={menuItems[2]} isLarge={true} />
+             <MenuCard item={menuItems[2]} isLarge={true} 
+                  onClick={() => setView('compte')}
+             />
           </div>
 
           {/* Notification (Droite Haut) */}
@@ -85,10 +93,14 @@ const DashboardMecanicien = () => {
           />
 
           {/* Statut des missions (Gauche Bas) */}
-          <MenuCard item={menuItems[3]} />
+          <MenuCard item={menuItems[3]} 
+            onClick={() => setView('statut')}
+          />
 
           {/* Discuter (Droite Bas) */}
-          <MenuCard item={menuItems[4]} />
+          <MenuCard item={menuItems[4]} 
+            onClick={() => setView('discuter')}
+          />
 
         </div>
       </div>
