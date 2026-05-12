@@ -47,10 +47,10 @@ class MechanicProfile(TimestampedModel):
     works_weekends = models.BooleanField(default=True)
 
     # Documents
-    id_card_front = models.ImageField(upload_to='mechanics/id_cards/', null=True, blank=True)
-    id_card_back = models.ImageField(upload_to='mechanics/id_cards/', null=True, blank=True)
+    id_card_front = models.FileField(upload_to='mechanics/id_cards/', null=True, blank=True)
+    id_card_back = models.FileField(upload_to='mechanics/id_cards/', null=True, blank=True)
     certification_doc = models.FileField(upload_to='mechanics/certifications/', null=True, blank=True)
-    profile_photo = models.ImageField(upload_to='mechanics/photos/', null=True, blank=True)
+    profile_photo = models.FileField(upload_to='mechanics/photos/', null=True, blank=True)
 
     # Validation admin
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

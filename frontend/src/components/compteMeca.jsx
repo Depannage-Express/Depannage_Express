@@ -1,17 +1,29 @@
-import  { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, History, ArrowDownCircle,ArrowLeft, CheckCircle } from 'lucide-react';
+import { fetchCurrentUser, fetchMechanicProfile } from '../lib/api';
 
 const MonCompte = ({onBack}) => {
   const [notifSucces, setNotifSucces] = useState(false);
+  const [profil, setProfil] = useState(null);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [error, setError] = useState('');
 
-  // Simulation des données
-  const profil = {
-    nom: "Junior MAKE",
-    id: "45125426645",
-    tel: "+2290158565221",
-    email: "jujnior@gmail.com",
-    specialite: "auto-mecanique"
-  };
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const [user, mechanicProfile] = await Promise.all([
+          fetchCurrentUser(),
+          fetchMechanicProfile().catch(() => null),
+        ]);
+        setProfil(user);
+        setProfileDetails(mechanicProfile);
+      } catch (requestError) {
+        setError(requestError.message);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const compte = {
     id: "2568752686",
@@ -56,11 +68,14 @@ const MonCompte = ({onBack}) => {
           </div>
 
           <div className="bg-[#D9D9D9] p-6 rounded-3xl shadow-md space-y-3">
-            <p className="text-black font-bold">Nom: <span className="font-medium">{profil.nom}</span></p>
-            <p className="text-black font-bold">Id: <span className="font-medium">{profil.id}</span></p>
-            <p className="text-black font-bold">Tel: <span className="font-medium">{profil.tel}</span></p>
-            <p className="text-black font-bold">Email: <span className="font-medium">{profil.email}</span></p>
-            <p className="text-black font-bold">Spécialité: <span className="font-medium">{profil.specialite}</span></p>
+            {error ? <p className="text-red-700 font-medium">{error}</p> : null}
+            <p className="text-black font-bold">Nom: <span className="font-medium">{profil?.full_name || '-'}</span></p>
+            <p className="text-black font-bold">Id: <span className="font-medium">{profil?.id || '-'}</span></p>
+            <p className="text-black font-bold">Tel: <span className="font-medium">{profil?.phone || '-'}</span></p>
+            <p className="text-black font-bold">Email: <span className="font-medium">{profil?.email || '-'}</span></p>
+            <p className="text-black font-bold">Spécialité: <span className="font-medium">{profileDetails?.specialties?.map((item) => item.name).join(', ') || 'Profil mecanicien non complete'}</span></p>
+            <p className="text-black font-bold">Ville: <span className="font-medium">{profileDetails?.city || '-'}</span></p>
+            <p className="text-black font-bold">Statut: <span className="font-medium">{profileDetails?.status || 'A creer'}</span></p>
           </div>
         </div>
 

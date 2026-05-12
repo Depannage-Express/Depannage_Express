@@ -1,4 +1,4 @@
-import { useState } from 'react'; 
+import { useEffect, useState } from 'react'; 
 import Header from './components/header';
 import Hero from './components/hero';
 import Demande from './components/demande_depannage'; 
@@ -17,9 +17,40 @@ import Intervention from './components/intervention';
 import Nofinish from './components/nofinish';
 import DiscussionCond from './components/discussion';
 import DiscussionMeca from './components/discussion_meca';
+import { clearAuthTokens, fetchCurrentUser, getAccessToken } from './lib/api';
 import './index.css';
 
+const BREAKDOWN_PRICING = {
+  demarrage: 10000,
+  batterie: 12000,
+  moteur: 18000,
+  pneu: 8000,
+  general: 15000,
+};
+
+function getBreakdownAmount(breakdown) {
+  const breakdownType = (breakdown?.breakdown_type || '').toLowerCase();
+
+  if (breakdownType.includes('demarrage')) {
+    return BREAKDOWN_PRICING.demarrage;
+  }
+  if (breakdownType.includes('batterie')) {
+    return BREAKDOWN_PRICING.batterie;
+  }
+  if (breakdownType.includes('moteur')) {
+    return BREAKDOWN_PRICING.moteur;
+  }
+  if (breakdownType.includes('pneu')) {
+    return BREAKDOWN_PRICING.pneu;
+  }
+
+  return BREAKDOWN_PRICING.general;
+}
+
 function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isBootstrappingUser, setIsBootstrappingUser] = useState(true);
+  const [currentBreakdown, setCurrentBreakdown] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -35,6 +66,41 @@ function App() {
   const [isNofinish, setIsNofinish] = useState(false);
   const [isDiscussioncond, setIsDiscussioncond] = useState(false);
   const [isDiscussionmeca, setIsDiscussionmeca] = useState(false);
+
+  useEffect(() => {
+    const hydrateUser = async () => {
+      if (!getAccessToken()) {
+        setIsBootstrappingUser(false);
+        return;
+      }
+
+      try {
+        const user = await fetchCurrentUser();
+        setCurrentUser(user);
+        setIsDashboardMeca(true);
+      } catch {
+        clearAuthTokens();
+      } finally {
+        setIsBootstrappingUser(false);
+      }
+    };
+
+    hydrateUser();
+  }, []);
+
+  useEffect(() => {
+    if (!isFollowing || !currentBreakdown || currentBreakdown.status !== 'assigned') {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsFollowing(false);
+      setIsFacturation(true);
+    }, 4000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isFollowing, currentBreakdown]);
+
   const ouvrirInscription = () => {
     setIsConnexion(false);
     setIsInscription(true);
@@ -63,13 +129,25 @@ function App() {
     setIsNofinish(false);
   };
 
-  // Fonction pour passer du Suivi à la Facturation
-  const allerAFacturation = () => {
-    setIsFollowing(false); 
-    setIsConfirmed(false);
-    setShowForm(false);
-    setIsFacturation(true);    
+  const handleMechanicAuth = (authPayload) => {
+    setCurrentUser(authPayload?.user || null);
+    setIsConnexion(false);
+    setIsInscription(false);
+    setIsDashboardMeca(true);
   };
+
+  const handleBreakdownCreated = (breakdown) => {
+    setCurrentBreakdown(breakdown);
+    setIsConfirmed(true);
+  };
+
+  const confirmerDemandeConducteur = () => {
+    setIsConfirmed(false);
+    setIsFollowing(true);
+  };
+
+  const currentAmount = getBreakdownAmount(currentBreakdown);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#608C27]">
       <Header 
@@ -90,7 +168,11 @@ function App() {
         }} />
       
       <main className="flex-grow">
-        {
+        {isBootstrappingUser ? (
+          <div className="min-h-[50vh] flex items-center justify-center text-white font-bold">
+            Connexion au serveur...
+          </div>
+        ) : (
         
           isDiscussioncond ? (
           <DiscussionCond
@@ -111,20 +193,18 @@ function App() {
           /* Si l'utilisateur a cliqué sur Connexion/Inscription */
           <Connexion 
             onInscriptionClick={ouvrirInscription}
-            onLoginClick={() => {
-              setIsConnexion(false);
-              setIsDashboardMeca(true);
-            }} 
+            onLoginClick={handleMechanicAuth} 
             
           />
          ):isInscription ? (
           <Inscription 
             onSignUpClick={ouvrirConnexion} 
+            onRegisterSuccess={handleMechanicAuth}
             onInfo={() => setIsInfo(true)}
           />
         ) 
         :isDashboardMeca ?(
-          <DashboardMecanicien/>
+          <DashboardMecanicien currentUser={currentUser} />
         )
         
         :isRemerciement ?(
@@ -168,11 +248,12 @@ function App() {
           />
         ):isFacturation ? (
     <Facturation 
+      amount={currentAmount}
       onPayer={() => {
         setIsPaiement(true);
         setIsRemerciement(false);
       }} 
-      onDisctuter={() => {
+      onDiscuter={() => {
         setIsDiscussioncond(true);
         setIsFacturation(false);
       } } 
@@ -181,19 +262,20 @@ function App() {
           <Hero onStartClick={() => setShowForm(true)} />
         ) : isFollowing ? (
           <Suivre 
-            onbout={allerAFacturation}
+            requestId={currentBreakdown?.id}
           />
         ) : isConfirmed ? (
           <Confirmation 
-            onValidation={() => setIsFollowing(true)}
+            onValidation={confirmerDemandeConducteur}
+            requestId={currentBreakdown?.id}
             
           />
         ) : (
           <div className="relative">
             
-            <Demande onConfirm={() => setIsConfirmed(true)} />
+            <Demande onConfirm={handleBreakdownCreated} />
           </div>
-        )}
+        ))}
       </main>
 
       {/* CHANGEMENT ICI : La balise est auto-fermante /> */}

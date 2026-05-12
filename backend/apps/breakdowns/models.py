@@ -15,8 +15,8 @@ class BreakdownRequest(TimestampedModel):
     # Driver info (no account needed)
     driver_name = models.CharField(max_length=150)
     driver_phone = models.CharField(max_length=20)
-    driver_id_card = models.ImageField(upload_to='breakdowns/id_cards/')
-    driver_selfie = models.ImageField(upload_to='breakdowns/selfies/')
+    driver_id_card = models.FileField(upload_to='breakdowns/id_cards/')
+    driver_selfie = models.FileField(upload_to='breakdowns/selfies/')
 
     # Linked account (optional)
     driver_account = models.ForeignKey(
@@ -26,12 +26,9 @@ class BreakdownRequest(TimestampedModel):
 
     # Vehicle & breakdown
     vehicle_description = models.CharField(max_length=200)
-    vehicle_photo = models.ImageField(upload_to='breakdowns/vehicles/')
+    vehicle_photo = models.FileField(upload_to='breakdowns/vehicles/')
     breakdown_description = models.TextField()
-    breakdown_type = models.ForeignKey(
-        'accounts.User', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+',
-    )
+    breakdown_type = models.CharField(max_length=100, blank=True)
     specialty_requested = models.ForeignKey(
         'mechanics.Specialty', on_delete=models.SET_NULL,
         null=True, blank=True

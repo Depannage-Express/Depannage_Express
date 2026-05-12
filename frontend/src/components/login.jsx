@@ -1,7 +1,27 @@
 import { useState } from 'react';
+import { loginMechanic, setAuthTokens } from '../lib/api';
 
 const Connexion = ({ onInscriptionClick, onLoginClick }) => {
-  const [error, setError] = useState(""); // Pour gérer le message d'erreur
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const authPayload = await loginMechanic({ email, password });
+      setAuthTokens(authPayload);
+      onLoginClick(authPayload);
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center py-12 px-4">
@@ -10,16 +30,18 @@ const Connexion = ({ onInscriptionClick, onLoginClick }) => {
         {/* Titre Connexion */}
         <div className="flex justify-center mb-10">
           <h2 className="bg-[#608C27] text-white text-2xl font-bold px-12 py-2 rounded-full shadow-md">
-            Connexion
+             Connexion
           </h2>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Champ ID */}
           <div>
             <input 
               type="text" 
-              placeholder="id:" 
+              placeholder="Email" 
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
             />
           </div>
@@ -29,6 +51,8 @@ const Connexion = ({ onInscriptionClick, onLoginClick }) => {
             <input 
               type="password" 
               placeholder="Mot de passe:" 
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
             />
           </div>
@@ -42,10 +66,10 @@ const Connexion = ({ onInscriptionClick, onLoginClick }) => {
           <div className="flex justify-end mt-6">
             <button 
               type="submit" 
-              onClick={onLoginClick}
+              disabled={isSubmitting}
               className="bg-[#608C27] text-white font-bold py-3 px-8 rounded-2xl hover:bg-black transition-all shadow-lg"
             >
-              Connexion
+              {isSubmitting ? 'Connexion...' : 'Connexion'}
             </button>
           </div>
         </form>

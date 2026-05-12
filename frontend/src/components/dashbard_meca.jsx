@@ -6,7 +6,7 @@ import StatutMissions from './statut';
 import MonCompte from './compteMeca';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle } from 'lucide-react';
 
-const DashboardMecanicien = () => {
+const DashboardMecanicien = ({ currentUser }) => {
 
   // 1. Créer l'état pour savoir quelle "sous-page" afficher
   const [view, setView] = useState('menu');
@@ -68,6 +68,11 @@ const DashboardMecanicien = () => {
           <h2 className="text-white text-2xl font-bold uppercase tracking-widest">
             Votre menu principal
           </h2>
+          {currentUser ? (
+            <p className="text-sm text-white/80 mt-2">
+              Connecte en tant que {currentUser.full_name}
+            </p>
+          ) : null}
         </div>
 
         {/* Grille des fonctionnalités */}

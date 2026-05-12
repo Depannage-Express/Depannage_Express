@@ -41,7 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_blocked = models.BooleanField(default=False)
     block_reason = models.TextField(blank=True)
 
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    avatar = models.FileField(upload_to='avatars/', null=True, blank=True)
 
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     failed_login_attempts = models.PositiveSmallIntegerField(default=0)

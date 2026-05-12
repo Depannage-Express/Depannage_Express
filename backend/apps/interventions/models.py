@@ -42,8 +42,8 @@ class Intervention(TimestampedModel):
     final_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # Proof
-    before_photo = models.ImageField(upload_to='interventions/photos/', null=True, blank=True)
-    after_photo = models.ImageField(upload_to='interventions/photos/', null=True, blank=True)
+    before_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
+    after_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
 
     class Meta:
         db_table = 'interventions_intervention'

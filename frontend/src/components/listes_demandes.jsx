@@ -1,36 +1,27 @@
-import { useState } from 'react';
-
+import { useEffect, useState } from 'react';
 import { MapPin, Clock, Wrench} from 'lucide-react'; 
+import { fetchMechanicRequests } from '../lib/api';
 
 const ListesCommandes = () => {
-  // Données de test (à remplacer par des données API plus tard)
-  const allCommands = [
-    {
-      id: 1,
-      shortDescription: "Panne de moteur (Bruit suspect)",
-      date: "15:50 20/04/2026",
-      details: {
-        description: "Bruit de claquement fort dans le moteur après 3000 tr/min. Le voyant moteur est allumé.",
-        localization: "Cotonou, Zone du Port, Rue 200",
-        distance: "3.5 km",
-        originalStatut: "En attente d'approbation"
-      }
-    },
-    {
-      id: 2,
-      shortDescription: "Problème de démarrage (Batterie ?)",
-      date: "16:00 04/02/2016",
-      details: {
-        description: "Le moteur ne tourne pas du tout. Les phares sont très faibles. Probable problème de batterie ou alternateur.",
-        localization: "Godomey, Route Nationale 1, face Pharmacie",
-        distance: "7.2 km",
-        originalStatut: "En attente d'approbation"
-      }
-    }
-  ];
-
-  // État pour savoir quelle commande est ouverte (-1 = aucune)
+  const [allCommands, setAllCommands] = useState([]);
   const [openCommandId, setOpenCommandId] = useState(-1);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadRequests = async () => {
+      try {
+        const data = await fetchMechanicRequests();
+        setAllCommands(data.results || []);
+      } catch (requestError) {
+        setError(requestError.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRequests();
+  }, []);
 
   // Fonction pour gérer l'accordéon
   const toggleCommand = (id) => {
@@ -48,6 +39,20 @@ const ListesCommandes = () => {
           Listes des Demandes de Service
         </h1>
 
+        {isLoading ? (
+          <div className="text-center text-slate-600 font-semibold">Chargement des demandes...</div>
+        ) : null}
+
+        {error ? (
+          <div className="mb-6 rounded-2xl bg-red-50 p-4 text-center text-red-700">{error}</div>
+        ) : null}
+
+        {!isLoading && !error && allCommands.length === 0 ? (
+          <div className="text-center text-slate-600 font-semibold">
+            Aucune demande assignee pour le moment.
+          </div>
+        ) : null}
+
         <div className="space-y-6">
           {allCommands.map((command) => (
             <div key={command.id} className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
@@ -63,10 +68,10 @@ const ListesCommandes = () => {
                   </div>
                   <div>
                     <p className="font-bold text-lg text-slate-900 leading-tight">
-                      {command.shortDescription}
+                      {command.breakdown_type || 'Demande de depannage'}
                     </p>
                     <p className="text-sm text-slate-600 flex items-center gap-1">
-                      <Clock size={14} /> {command.date}
+                      <Clock size={14} /> {new Date(command.created_at).toLocaleString('fr-FR')}
                     </p>
                   </div>
                 </div>
@@ -79,9 +84,10 @@ const ListesCommandes = () => {
               <div className={`transition-all duration-300 ease-in-out ${openCommandId === command.id ? 'max-h-[800px] border-t border-[#608C27]' : 'max-h-0'}`}>
                 <div className="bg-[#0D2B0D] p-8 space-y-6 text-white rounded-b-2xl">
                   
-                  <DetailItem title="Description détaillée" value={command.details.description} icon={<Wrench size={20}/>} />
-                  <DetailItem title="Localisation" value={command.details.localization} icon={<MapPin size={20}/>}/>
-                  <DetailItem title="Distance estimée" value={command.details.distance} icon={<MapPin size={20}/>}/>
+                  <DetailItem title="Client" value={command.driver_name} icon={<Wrench size={20}/>} />
+                  <DetailItem title="Description detaillee" value={command.breakdown_description} icon={<Wrench size={20}/>} />
+                  <DetailItem title="Localisation" value={command.address_description || 'Position GPS recue'} icon={<MapPin size={20}/>}/>
+                  <DetailItem title="Distance estimee" value={command.assignment_distance_km ? `${command.assignment_distance_km} km` : 'Non calculee'} icon={<MapPin size={20}/>}/>
                   
                  
                   

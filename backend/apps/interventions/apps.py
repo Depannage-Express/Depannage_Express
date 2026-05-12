@@ -2,4 +2,7 @@ from django.apps import AppConfig
 
 
 class InterventionsConfig(AppConfig):
-    name = 'interventions'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.interventions'
+    label = 'interventions'
+    verbose_name = 'Interventions'

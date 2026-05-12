@@ -2,4 +2,7 @@ from django.apps import AppConfig
 
 
 class MechanicsConfig(AppConfig):
-    name = 'mechanics'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.mechanics'
+    label = 'mechanics'
+    verbose_name = 'Mecaniciens'

@@ -1,6 +1,48 @@
+import { useState } from 'react';
 import { Upload } from 'lucide-react';
+import { registerMechanic, setAuthTokens } from '../lib/api';
 
-const Inscription = ({ onInfo, onSignUpClick}) => {
+const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    email: '',
+    password: '',
+    password_confirm: '',
+    role: 'mechanic_standard',
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
+
+    try {
+      const authPayload = await registerMechanic(form);
+      setAuthTokens(authPayload);
+      setSuccess('Compte cree. Completer ensuite le profil mecanicien et les justificatifs.');
+      if (onRegisterSuccess) {
+        onRegisterSuccess(authPayload);
+      } else if (onInfo) {
+        onInfo();
+      }
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#608C27]">
       
@@ -14,12 +56,15 @@ const Inscription = ({ onInfo, onSignUpClick}) => {
             </h2>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleSubmit}>
             {/* Champs de saisie */}
             <div>
               <input 
                 type="text" 
                 placeholder="Nom:" 
+                name="last_name"
+                value={form.last_name}
+                onChange={handleChange}
                 className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
               />
             </div>
@@ -28,6 +73,9 @@ const Inscription = ({ onInfo, onSignUpClick}) => {
               <input 
                 type="text" 
                 placeholder="Prénom:" 
+                name="first_name"
+                value={form.first_name}
+                onChange={handleChange}
                 className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
               />
             </div>
@@ -36,8 +84,56 @@ const Inscription = ({ onInfo, onSignUpClick}) => {
               <input 
                 type="tel" 
                 placeholder="Numéro:" 
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
                 className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
               />
+            </div>
+
+            <div>
+              <input
+                type="email"
+                placeholder="Email:"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+              />
+            </div>
+
+            <div>
+              <input
+                type="password"
+                placeholder="Mot de passe:"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+              />
+            </div>
+
+            <div>
+              <input
+                type="password"
+                placeholder="Confirmer le mot de passe:"
+                name="password_confirm"
+                value={form.password_confirm}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+              />
+            </div>
+
+            <div>
+              <select
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl bg-gray-200 text-black focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+              >
+                <option value="mechanic_standard">Mecanicien standard</option>
+                <option value="mechanic_premium">Mecanicien premium</option>
+              </select>
             </div>
 
             {/* Section Preuve de compétence */}
@@ -56,14 +152,18 @@ const Inscription = ({ onInfo, onSignUpClick}) => {
               </label>
             </div>
 
+            <div className="w-full min-h-12 rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic p-3">
+              {error || success || "Le dossier de verification sera complete dans le profil mecanicien."}
+            </div>
+
             {/* Bouton Soumettre */}
             <div className="flex justify-end mt-6">
               <button 
                 type="submit" 
-                onClick={onInfo}
+                disabled={isSubmitting}
                 className="bg-[#608C27] text-white font-bold py-3 px-8 rounded-2xl hover:bg-black transition-all shadow-lg transform hover:scale-105"
               >
-                Soumettrre
+                {isSubmitting ? 'Envoi...' : 'Soumettre'}
               </button>
             </div>
           </form>
