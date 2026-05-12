@@ -23,7 +23,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
         <input 
           type="text" 
           placeholder='Recherchez un Mécanicien'
-          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg w-64'
+          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg w-60'
         />
         <Search 
           size={18} 
@@ -58,7 +58,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
 
       {/* Navigation Desktop */}
       <nav className="hidden lg:flex items-center gap-10">
-        <ul className="flex gap-8 font-semibold text-slate-700">
+        <ul className="flex gap-8 font-semibold text-slate-700 -mr-2">
           <li className="font-bold text-lg cursor-pointer hover:text-[#608C27] transition">
             <button 
               onClick={() => onNavClick('accueil')} 
@@ -69,7 +69,9 @@ const Header = ({onSignUpClick, onNavClick}) => {
           </li>
           <li className="font-bold text-lg cursor-pointer hover:text-[#608C27] transition">
             <button 
-              onClick={() => onNavClick('a-propos')} 
+              onClick={() => onNavClick('a-propos')
+                
+              } 
               className="hover:text-[#608C27] font-bold"
             >
             A Propos
@@ -81,6 +83,14 @@ const Header = ({onSignUpClick, onNavClick}) => {
               className="hover:text-[#608C27] font-bold"
             >
             Nos Techniciens
+            </button>
+          </li>
+          <li className="font-bold text-lg cursor-pointer hover:text-[#608C27] transition">
+            <button 
+              onClick={() => onNavClick('administrateur')} 
+              className="hover:text-[#608C27] font-bold"
+            >
+            Administrateur
             </button>
           </li>
         </ul>
@@ -121,6 +131,14 @@ const Header = ({onSignUpClick, onNavClick}) => {
                 onClick={() => { onNavClick('nos-techniciens'); setIsMenuOpen(false); }}
               >
                 Nos Techniciens
+              </li>
+              
+              <li 
+              
+                className="text-xl py-2 border-b w-4/5 text-center cursor-pointer" 
+                onClick={() => { onNavClick('administrateur'); setIsMenuOpen(false); }}
+              >
+                Administrateur
               </li>
             </ul>
     

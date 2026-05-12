@@ -2,7 +2,7 @@ import '../index.css'
 import logo from '../assets/arriere.jpeg';
 
 // On garde StatsAndTechs ici, mais on ne l'exporte pas par défaut
-const StatsAndTechs = () => {
+const StatsAndTechs = ({onContact,onVoir}) => {
   const technicians = [
     { name: "Nom & Prénom", rating: "4.8", exp: "5 ans", specialty: "Mécanicien auto", img: "/Male construction worker.jpeg" },
     { name: "Nom & Prénom", rating: "4.8", exp: "5 ans", specialty: "Mécanicien auto", img: "/Mécanicien automobile.jpeg" },
@@ -58,10 +58,14 @@ const StatsAndTechs = () => {
             </div>
 
             <div className="flex justify-between items-center gap-2">
-              <button className="bg-[#608C27] text-white text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:bg-black transition-colors">
+              <button 
+                onClick={onVoir}
+                className="bg-[#608C27] text-white text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:bg-black transition-colors">
                 Voir plus
               </button>
-              <button className={`${index === 1 ? 'bg-white text-[#0D2B0D]' : 'bg-black text-white'} text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:opacity-80 transition-colors`}>
+              <button 
+                onClick={onContact}
+                className={`${index === 1 ? 'bg-white text-[#0D2B0D]' : 'bg-black text-white'} text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:opacity-80 transition-colors`}>
                 Contacter
               </button>
             </div>
@@ -72,7 +76,7 @@ const StatsAndTechs = () => {
   );
 };
 
-const Hero = ({ onStartClick }) => {
+const Hero = ({ onStartClick ,onVoir}) => {
   return (
     <>
       {/* Responsive: px-4 sur mobile, md:px-16 sur desktop. flex-col vs flex-row */}
@@ -108,7 +112,10 @@ const Hero = ({ onStartClick }) => {
       </section>
 
       {/* ON APPELLE LE COMPOSANT ICI POUR QU'IL S'AFFICHE */}
-      <StatsAndTechs />
+      <StatsAndTechs 
+      onContact={onStartClick} 
+      onVoir={onVoir}
+      />
     </>
   );
 };

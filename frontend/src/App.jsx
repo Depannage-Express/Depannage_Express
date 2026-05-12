@@ -7,6 +7,7 @@ import Suivre from './components/suivre_demande';
 import Footer from './components/footer';
 import Inscription from './components/inscription';
 import Connexion from './components/login';
+import InfoMecanicien from './components/vois_plus'; 
 import Info from './components/info';
 import DashboardMecanicien from './components/dashbard_meca';
 import Facturation from './components/facturation';
@@ -17,7 +18,13 @@ import Intervention from './components/intervention';
 import Nofinish from './components/nofinish';
 import DiscussionCond from './components/discussion';
 import DiscussionMeca from './components/discussion_meca';
+
 import { clearAuthTokens, fetchCurrentUser, getAccessToken } from './lib/api';
+
+import ConnexionAdmin from './components/login_admin';
+import DashboardAdmin from './components/dashboard_admin';
+import APropos from './components/a_propos';
+ff18644 (Nouveau)
 import './index.css';
 
 const BREAKDOWN_PRICING = {
@@ -56,6 +63,7 @@ function App() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isInscription, setIsInscription] = useState(false);
   const [isConnexion, setIsConnexion] = useState(false);
+  const [isVoir, setIsVoir] = useState(false);
   const [isInfo, setIsInfo] = useState(false);
   const [isDashboardMeca, setIsDashboardMeca] = useState(false);
   const [isFacturation, setIsFacturation] = useState(false);
@@ -66,6 +74,7 @@ function App() {
   const [isNofinish, setIsNofinish] = useState(false);
   const [isDiscussioncond, setIsDiscussioncond] = useState(false);
   const [isDiscussionmeca, setIsDiscussionmeca] = useState(false);
+
 
   useEffect(() => {
     const hydrateUser = async () => {
@@ -101,6 +110,11 @@ function App() {
     return () => window.clearTimeout(timeoutId);
   }, [isFollowing, currentBreakdown]);
 
+  const [isConnexionAd, setIsConnexionAd] = useState(false);
+  const [isDashboardAd, setIsDashboardAd] = useState(false);
+  const [isapropos, setIsApropos] = useState(false);  
+ff18644 (Nouveau)
+
   const ouvrirInscription = () => {
     setIsConnexion(false);
     setIsInscription(true);
@@ -110,11 +124,12 @@ function App() {
     setIsInscription(false);
     setIsConnexion(true);
   };
-  // 3. Crée la fonction de retour à l'accueil
+  
   const retournerAccueil = () => {
     setIsInfo(false);
     setIsConnexion(false);
     setIsInscription(false);
+    setIsApropos(false);
     setShowForm(false); 
     setIsConfirmed(false);
     setIsFollowing(false);
@@ -124,10 +139,14 @@ function App() {
     setIsIntervention(false);
     setIsRemerciement(false); 
     setIsDashboardMeca(false); 
+    setIsDashboardAd(false);
     setIsDiscussioncond(false); 
     setIsDiscussionmeca(false); 
+    setIsConnexionAd(false);
     setIsNofinish(false);
+    setIsVoir(false); 
   };
+
 
   const handleMechanicAuth = (authPayload) => {
     setCurrentUser(authPayload?.user || null);
@@ -148,26 +167,34 @@ function App() {
 
   const currentAmount = getBreakdownAmount(currentBreakdown);
 
+
+ // Fonction pour passer du Suivi à la Facturation
+  const allerAFacturation = () => {
+    setIsFollowing(false); 
+    setIsConfirmed(false);
+    setShowForm(false);
+    setIsFacturation(true);    
+  };
+
+ ff18644 (Nouveau)
   return (
     <div className="min-h-screen flex flex-col bg-[#608C27]">
       <Header 
-        
-        onSignUpClick={() => setIsConnexion(true)} 
+        onSignUpClick={() => 
+          setIsConnexion(true)} 
         onNavClick={(page) => {
           switch(page) {
-            case 'accueil':
-              retournerAccueil();
-              break;
-            case 'a-propos':
-              setIsInfo(true);
-              break;
-            case 'nos-techniciens':
-              retournerAccueil();
-              break;
+            case 'accueil': retournerAccueil(); break;
+            case 'a-propos': setIsApropos(true); break;
+            case 'nos-techniciens': retournerAccueil(); break;
+            case 'administrateur': setIsConnexionAd(true); break;
+            default: break;
           }
-        }} />
+        }} 
+      />
       
       <main className="flex-grow">
+
         {isBootstrappingUser ? (
           <div className="min-h-[50vh] flex items-center justify-center text-white font-bold">
             Connexion au serveur...
@@ -276,9 +303,77 @@ function App() {
             <Demande onConfirm={handleBreakdownCreated} />
           </div>
         ))}
+        
+        {isVoir ? (
+            <InfoMecanicien onBack={() => 
+              setIsVoir(false)} />
+        ) : isapropos ? (
+            <APropos/>
+        ) : isDashboardAd ? (
+            <DashboardAdmin/>
+        ) : isConnexionAd ? (
+            <ConnexionAdmin onLoginClickAd={() => 
+              setIsDashboardAd(true)} />
+        ) : isDiscussioncond ? (
+            <DiscussionCond onBackClick={() => 
+              setIsDiscussioncond(false)} />
+        ) : isDiscussionmeca ? (
+            <DiscussionMeca onBackClick={() => 
+              setIsDiscussionmeca(false)} />
+        ) : isInfo ? (
+            <Info onInfo={retournerAccueil} />
+        ) : isConnexion ? (
+            <Connexion onInscriptionClick={ouvrirInscription} 
+              onLoginClick={() => { 
+                setIsConnexion(false); 
+                setIsDashboardMeca(true); }} />
+        ) : isInscription ? (
+            <Inscription onSignUpClick={ouvrirConnexion} onInfo={() => setIsInfo(true)} />
+        ) : isDashboardMeca ? (
+            <DashboardMecanicien/>
+        ) : isRemerciement ? (
+            <Remerciement onRemerc={retournerAccueil} />
+        ) : isNofinish ? (
+            <Nofinish onFinish={retournerAccueil} />
+        ) : isIntervention ? (
+            <Intervention onNo={() => { 
+              setIsNofinish(true); 
+              setIsRemerciement(false); }} 
+            onTerminer={() => { 
+              setIsIntervention(false); 
+              setIsRemerciement(true); }} />
+        ) : isConfirmerPaiement ? (
+            <ConfirmerPaiement onabout={() => { 
+              setIsConfirmerPaiement(false); 
+              setIsIntervention(true); }} />
+        ) : isPaiement ? (
+            <Paiement onPayerClick={() => { 
+              setIsPaiement(false); 
+              setIsConfirmerPaiement(true); }} />
+        ) : isFacturation ? (
+            <Facturation onPayer={() => { 
+              setIsPaiement(true); 
+              setIsRemerciement(false); }} 
+            onDisctuter={() => { 
+              setIsDiscussioncond(true); 
+              setIsFacturation(false); } } />
+        ) : !showForm ? (
+            <Hero 
+              onStartClick={() => setShowForm(true)} 
+              onVoir={() => setIsVoir(true)} 
+            />
+        ) : isFollowing ? (
+            <Suivre onbout={allerAFacturation} />
+        ) : isConfirmed ? (
+            <Confirmation onValidation={() => 
+              setIsFollowing(true)} />
+        ) : (
+            <Demande onConfirm={() => 
+              setIsConfirmed(true)} />
+        )}
+ff18644 (Nouveau)
       </main>
-
-      {/* CHANGEMENT ICI : La balise est auto-fermante /> */}
+ {/* CHANGEMENT ICI : La balise est auto-fermante /> */}
       <Footer /> 
     </div>
   );
