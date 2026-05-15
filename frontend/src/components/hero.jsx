@@ -15,8 +15,7 @@ const StatsAndTechs = ({onContact,onVoir}) => {
       
       {/* PARTIE GAUCHE : STATISTIQUES */}
       {/* Responsive: w-full sur mobile, md:w-1/3 sur desktop */}
-      <div className="w-full md:w-1/3 bg-white flex flex-col justify-center items-center py-8 gap-4">
-        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 h-[70px] text-center flex flex-col justify-center">
+        <div className="w-full md:w-1/3 bg-white flex flex-col items-center py-4 md:py-6 gap-4">        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 h-[70px] text-center flex flex-col justify-center">
           <h3 className="text-2xl font-bold text-[#0D2B0D]">250+</h3>
           <p className="font-semibold text-[#0D2B0D] text-sm">de service rendus</p>
         </div>
@@ -32,7 +31,7 @@ const StatsAndTechs = ({onContact,onVoir}) => {
 
       {/* PARTIE DROITE : TECHNICIENS */}
       {/* Responsive: w-full, flex-wrap pour que les cartes reviennent à la ligne */}
-<div className="w-full md:w-2/3 bg-[#608C27] flex flex-col md:flex-row items-center justify-center gap-4 py-8 px-4">        {technicians.map((tech, index) => (
+<div className="w-full md:w-2/3 bg-[#608C27] flex flex-col md:flex-row items-center justify-center gap-4 py-6 md:py-8 px-4">        {technicians.map((tech, index) => (
           <div 
             key={index} 
             // Ta logique de couleur sur la 2ème carte (index === 1) est conservée

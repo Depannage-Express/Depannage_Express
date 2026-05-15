@@ -24,7 +24,6 @@ import { clearAuthTokens, fetchCurrentUser, getAccessToken } from './lib/api';
 import ConnexionAdmin from './components/login_admin';
 import DashboardAdmin from './components/dashboard_admin';
 import APropos from './components/a_propos';
-ff18644 (Nouveau)
 import './index.css';
 
 const BREAKDOWN_PRICING = {
@@ -113,7 +112,6 @@ function App() {
   const [isConnexionAd, setIsConnexionAd] = useState(false);
   const [isDashboardAd, setIsDashboardAd] = useState(false);
   const [isapropos, setIsApropos] = useState(false);  
-ff18644 (Nouveau)
 
   const ouvrirInscription = () => {
     setIsConnexion(false);
@@ -176,12 +174,10 @@ ff18644 (Nouveau)
     setIsFacturation(true);    
   };
 
- ff18644 (Nouveau)
   return (
     <div className="min-h-screen flex flex-col bg-[#608C27]">
       <Header 
-        onSignUpClick={() => 
-          setIsConnexion(true)} 
+        onSignUpClick={() => setIsConnexion(true)} 
         onNavClick={(page) => {
           switch(page) {
             case 'accueil': retournerAccueil(); break;
@@ -194,186 +190,60 @@ ff18644 (Nouveau)
       />
       
       <main className="flex-grow">
-
         {isBootstrappingUser ? (
           <div className="min-h-[50vh] flex items-center justify-center text-white font-bold">
             Connexion au serveur...
           </div>
         ) : (
-        
+          /* UN SEUL BLOC CONDITIONNEL ICI */
           isDiscussioncond ? (
-          <DiscussionCond
-            onBackClick={() => 
-              setIsDiscussioncond(false)}
-          />
-        
-        ):isDiscussionmeca ?(
-          <DiscussionMeca
-            onBackClick={() => 
-              setIsDiscussionmeca(false)}
-          />
-        ):isInfo ? (
-          <Info
-            onInfo={retournerAccueil}
-          />
-        ):isConnexion ? (
-          /* Si l'utilisateur a cliqué sur Connexion/Inscription */
-          <Connexion 
-            onInscriptionClick={ouvrirInscription}
-            onLoginClick={handleMechanicAuth} 
-            
-          />
-         ):isInscription ? (
-          <Inscription 
-            onSignUpClick={ouvrirConnexion} 
-            onRegisterSuccess={handleMechanicAuth}
-            onInfo={() => setIsInfo(true)}
-          />
-        ) 
-        :isDashboardMeca ?(
-          <DashboardMecanicien currentUser={currentUser} />
-        )
-        
-        :isRemerciement ?(
-          <Remerciement 
-            onRemerc={retournerAccueil}
-          />
-        ):isNofinish ?(
-          <Nofinish 
-            onFinish={retournerAccueil}
-          />
-        ):isIntervention ?(
-          <Intervention 
-            onNo={
-             () => {
-              setIsNofinish(true);
-              setIsRemerciement(false);
-            }
-            }
-            onTerminer={
-              () => {
-                setIsIntervention(false);
-                setIsRemerciement(true);
-              }
-            }
-          />
-        ):isConfirmerPaiement ?(
-          <ConfirmerPaiement 
-            onabout={
-              () => {
-                setIsConfirmerPaiement(false);
-                setIsIntervention(true);
-              }
-            }
-          />
-        ):isPaiement ? (
-          <Paiement 
-            onPayerClick={() => {
-              setIsPaiement(false);
-              setIsConfirmerPaiement(true);
-            }}
-          />
-        ):isFacturation ? (
-    <Facturation 
-      amount={currentAmount}
-      onPayer={() => {
-        setIsPaiement(true);
-        setIsRemerciement(false);
-      }} 
-      onDiscuter={() => {
-        setIsDiscussioncond(true);
-        setIsFacturation(false);
-      } } 
-    />
-  ) :!showForm ? (
-          <Hero onStartClick={() => setShowForm(true)} />
-        ) : isFollowing ? (
-          <Suivre 
-            requestId={currentBreakdown?.id}
-          />
-        ) : isConfirmed ? (
-          <Confirmation 
-            onValidation={confirmerDemandeConducteur}
-            requestId={currentBreakdown?.id}
-            
-          />
-        ) : (
-          <div className="relative">
-            
-            <Demande onConfirm={handleBreakdownCreated} />
-          </div>
-        ))}
-        
-        {isVoir ? (
-            <InfoMecanicien onBack={() => 
-              setIsVoir(false)} />
-        ) : isapropos ? (
-            <APropos/>
-        ) : isDashboardAd ? (
-            <DashboardAdmin/>
-        ) : isConnexionAd ? (
-            <ConnexionAdmin onLoginClickAd={() => 
-              setIsDashboardAd(true)} />
-        ) : isDiscussioncond ? (
-            <DiscussionCond onBackClick={() => 
-              setIsDiscussioncond(false)} />
-        ) : isDiscussionmeca ? (
-            <DiscussionMeca onBackClick={() => 
-              setIsDiscussionmeca(false)} />
-        ) : isInfo ? (
-            <Info onInfo={retournerAccueil} />
-        ) : isConnexion ? (
-            <Connexion onInscriptionClick={ouvrirInscription} 
-              onLoginClick={() => { 
-                setIsConnexion(false); 
-                setIsDashboardMeca(true); }} />
-        ) : isInscription ? (
-            <Inscription onSignUpClick={ouvrirConnexion} onInfo={() => setIsInfo(true)} />
-        ) : isDashboardMeca ? (
-            <DashboardMecanicien/>
-        ) : isRemerciement ? (
+            <DiscussionCond onBackClick={() => setIsDiscussioncond(false)} />
+          ) : isVoir ? (
+            <InfoMecanicien onBack={() => setIsVoir(false)} />
+          ) : isapropos ? (
+            <APropos />
+          ) 
+          : isDashboardAd ? (
+            <DashboardAdmin />
+          ): isConnexionAd ? (
+            <ConnexionAdmin onLoginClickAd={() => setIsDashboardAd(true)} />
+          )  : isConnexion ? (
+            <Connexion onInscriptionClick={ouvrirInscription} onLoginClick={handleMechanicAuth} />
+          ) : isInscription ? (
+            <Inscription onSignUpClick={ouvrirConnexion} onRegisterSuccess={handleMechanicAuth} onInfo={() => setIsInfo(true)} />
+          ) : isDashboardMeca ? (
+            <DashboardMecanicien currentUser={currentUser} />
+          ) : isRemerciement ? (
             <Remerciement onRemerc={retournerAccueil} />
-        ) : isNofinish ? (
+          ) : isNofinish ? (
             <Nofinish onFinish={retournerAccueil} />
-        ) : isIntervention ? (
-            <Intervention onNo={() => { 
-              setIsNofinish(true); 
-              setIsRemerciement(false); }} 
-            onTerminer={() => { 
-              setIsIntervention(false); 
-              setIsRemerciement(true); }} />
-        ) : isConfirmerPaiement ? (
-            <ConfirmerPaiement onabout={() => { 
-              setIsConfirmerPaiement(false); 
-              setIsIntervention(true); }} />
-        ) : isPaiement ? (
-            <Paiement onPayerClick={() => { 
-              setIsPaiement(false); 
-              setIsConfirmerPaiement(true); }} />
-        ) : isFacturation ? (
-            <Facturation onPayer={() => { 
-              setIsPaiement(true); 
-              setIsRemerciement(false); }} 
-            onDisctuter={() => { 
-              setIsDiscussioncond(true); 
-              setIsFacturation(false); } } />
-        ) : !showForm ? (
-            <Hero 
-              onStartClick={() => setShowForm(true)} 
-              onVoir={() => setIsVoir(true)} 
+          ) : isIntervention ? (
+            <Intervention 
+              onNo={() => { setIsNofinish(true); setIsRemerciement(false); }}
+              onTerminer={() => { setIsIntervention(false); setIsRemerciement(true); }}
             />
-        ) : isFollowing ? (
-            <Suivre onbout={allerAFacturation} />
-        ) : isConfirmed ? (
-            <Confirmation onValidation={() => 
-              setIsFollowing(true)} />
-        ) : (
-            <Demande onConfirm={() => 
-              setIsConfirmed(true)} />
+          ) : isConfirmerPaiement ? (
+            <ConfirmerPaiement onabout={() => { setIsConfirmerPaiement(false); setIsIntervention(true); }} />
+          ) : isPaiement ? (
+            <Paiement onPayerClick={() => { setIsPaiement(false); setIsConfirmerPaiement(true); }} />
+          ) : isFacturation ? (
+            <Facturation 
+              amount={currentAmount}
+              onPayer={() => { setIsPaiement(true); setIsRemerciement(false); }} 
+              onDiscuter={() => { setIsDiscussioncond(true); setIsFacturation(false); }} 
+            />
+          ) : !showForm ? (
+            <Hero onStartClick={() => setShowForm(true)} onVoir={() => setIsVoir(true)} />
+          ) : isFollowing ? (
+            <Suivre requestId={currentBreakdown?.id} onbout={allerAFacturation} />
+          ) : isConfirmed ? (
+            <Confirmation onValidation={confirmerDemandeConducteur} requestId={currentBreakdown?.id} />
+          ) : (
+            <Demande onConfirm={handleBreakdownCreated} />
+          )
         )}
-ff18644 (Nouveau)
       </main>
- {/* CHANGEMENT ICI : La balise est auto-fermante /> */}
+
       <Footer /> 
     </div>
   );

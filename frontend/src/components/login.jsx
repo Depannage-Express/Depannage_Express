@@ -24,9 +24,7 @@ const Connexion = ({ onInscriptionClick, onLoginClick }) => {
     }
   };
 
-  const [error, setError] = useState(""); 
-ff18644 (Nouveau)
-
+ 
   return (
     <div className="flex items-center justify-center py-12 px-4">
       <div className="bg-[#0D2B0D] w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/10">
