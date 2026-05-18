@@ -88,7 +88,14 @@ const Header = ({onSignUpClick, onNavClick}) => {
 
       {/* Menu Mobile Dropdown */}
       {isMenuOpen && (
-        <div className="absolute top-full left-0 w-full bg-white border-t shadow-lg py-6 flex flex-col items-center gap-6 lg:hidden">
+        <>
+         {/* Overlay */}
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        ></div>
+
+        <div className="absolute top-full left-0 w-full bg-white border-t shadow-lg py-6 flex flex-col items-center gap-6 lg:hidden z-50">
           <ul className="flex flex-col items-center gap-6 font-semibold text-slate-700 w-full">
             <li className="text-lg py-2 border-b w-4/5 text-center cursor-pointer" onClick={() => { onNavClick('accueil'); setIsMenuOpen(false); }}>Accueil</li>
             <li className="text-lg py-2 border-b w-4/5 text-center cursor-pointer" onClick={() => { onNavClick('a-propos'); setIsMenuOpen(false); }}>A Propos</li>
@@ -97,6 +104,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
           </ul>
           <button onClick={() => { onSignUpClick(); setIsMenuOpen(false); }} className="bg-[#608C27] text-white w-4/5 py-3 rounded-lg font-bold">Connexion</button>
         </div>
+        </>
       )}
     </header>
   );
