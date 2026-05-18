@@ -98,8 +98,7 @@ const Utilisateurs = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#608C27] p-4 md:p-8 rounded-2xl">
-      <div className="max-w-7xl mx-auto bg-gray-100 rounded-[3rem] p-6 md:p-10 shadow-2xl">
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] w-full py-12 px-4">      <div className="max-w-7xl mx-auto bg-gray-100 rounded-[3rem] p-6 md:p-10 shadow-2xl">
         
         {/* Header Utilisateurs*/}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 border-b-2 border-gray-300 pb-6 gap-4">

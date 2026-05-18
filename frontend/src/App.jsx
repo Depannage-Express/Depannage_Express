@@ -175,7 +175,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#608C27]">
+    <div className=" flex flex-col min-h-screen  bg-[#608C27]">
       <Header 
         onSignUpClick={() => setIsConnexion(true)} 
         onNavClick={(page) => {
@@ -189,9 +189,9 @@ function App() {
         }} 
       />
       
-      <main className="flex-grow">
+      <main className="flex-1">
         {isBootstrappingUser ? (
-          <div className="min-h-[50vh] flex items-center justify-center text-white font-bold">
+          <div className=" flex items-center justify-center text-white font-bold">
             Connexion au serveur...
           </div>
         ) : (

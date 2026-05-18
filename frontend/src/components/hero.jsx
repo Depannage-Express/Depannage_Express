@@ -79,7 +79,7 @@ const Hero = ({ onStartClick ,onVoir}) => {
   return (
     <>
       {/* Responsive: px-4 sur mobile, md:px-16 sur desktop. flex-col vs flex-row */}
-      <section className="bg-[#0D2B0D] min-h-[500px] flex flex-col md:flex-row items-center px-4 md:px-16 py-12 gap-10 mt-5">
+      <section className="bg-[#0D2B0D] flex flex-col md:flex-row items-center px-4 md:px-16 py-12 gap-10 mt-5">
         
         {/* Responsive: texte centré sur mobile, aligné à gauche sur desktop */}
         <div className="w-full md:w-1/2 space-y-6 text-center md:text-left flex flex-col items-center md:items-start">

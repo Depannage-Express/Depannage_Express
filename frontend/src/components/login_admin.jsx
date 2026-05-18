@@ -2,8 +2,7 @@ import { useState } from 'react';
 const ConnexionAdmin = ({ onInscriptionClickAd, onLoginClickAd}) => {
   const [error, setError] = useState("");
   return (
-    <div className="flex items-center justify-center py-12 px-4">
-      <div className="bg-[#0D2B0D] w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/10">
+<div className="flex items-center justify-center min-h-[calc(100vh-80px)] w-full py-12 px-4">      <div className="bg-[#0D2B0D] w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/10">
         
         {/* Titre Connexion */}
         <div className="flex justify-center mb-10">

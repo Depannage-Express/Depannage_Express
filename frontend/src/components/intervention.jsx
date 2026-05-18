@@ -2,8 +2,7 @@
 
 const Intervention = ({ onNo, onTerminer }) => {
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-200 p-4">
-            <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center">
+            <div className="flex items-center justify-center min-h-[calc(100vh-80px)] w-full py-12 px-4">            <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center">
                 <p className="text-center mt-4 font-medium">Veuillez confirmer l’intervention du mécanicien</p>
 
                 <div className="flex gap-10">

@@ -59,7 +59,7 @@ const DashboardMecanicien = ({ currentUser }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-200 flex flex-col items-center py-10 px-4">
+    <div className=" bg-gray-200 flex flex-col items-center py-10 px-4">
       {/* Conteneur Principal (Similaire à ton schéma) */}
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
         

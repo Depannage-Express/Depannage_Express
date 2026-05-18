@@ -2,7 +2,8 @@ import { Star, Truck, Settings, Clock, ChevronDown, ChevronUp } from 'lucide-rea
 
 const APropos = () => {
   return (
-<div className="bg-white p-8 lg:p-12 pb-10 flex-1">        {/* ENTETE (Style image_e10af5.png) */}
+      <div className="bg-white p-8 lg:p-12 pb-10 flex-1">        
+        {/* ENTETE (Style image_e10af5.png) */}
         <div className="flex justify-center items-center bg-[#0D2B0D] p-8 border-b border-gray-200">
           <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">À PROPOS DE DEPANNAGE EXPRESS</h2>
         </div>
@@ -31,7 +32,7 @@ const APropos = () => {
                 <div className="space-y-2">
                   <h4 className="font-black text-sm uppercase">NOTRE VISION</h4>
                   <p className="text-[13px] leading-relaxed text-gray-700 font-medium">
-Devenir la plateforme de référence pour la mobilité urbaine, capable d'éliminer le stress des pannes imprévues en optimisant la rapidité d'intervention et en instaurant un environnement de confiance entre professionnels et usagers.                  </p>
+                    Devenir la plateforme de référence pour la mobilité urbaine, capable d'éliminer le stress des pannes imprévues en optimisant la rapidité d'intervention et en instaurant un environnement de confiance entre professionnels et usagers.                  </p>
                 </div>
 
                 {/* Icônes de Valeurs (Bas de carte) */}
