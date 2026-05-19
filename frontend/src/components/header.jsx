@@ -16,17 +16,17 @@ const Header = ({onSignUpClick, onNavClick}) => {
       </div>
 
       {/* 2. Barre de recherche  */}
-      <div className="relative flex items-center justify-center">        {/* Input  */}
+<div className="relative flex items-center justify-center w-full">         
+  {/* Input  */}
         <input 
           type="text" 
           placeholder='Rechercher...'
-          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg w-32 lg:w-60 focus:w-44 lg:focus:w-64 transition-all duration-300'
+          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg w-33 lg:w-60 focus:w-44 lg:focus:w-64 transition-all duration-300'
         />
         {/* Loupe interne  */}
         <Search 
           size={18} 
-          className="absolute right-3 text-[#0D2B0D] hidden md:block" 
-        />
+          className="absolute right-[40px] lg:right-12 text-[#0D2B0D] hidden md:block"        />
         
         {/* Recherche Mobile */}
         <div className="md:hidden flex items-center">
