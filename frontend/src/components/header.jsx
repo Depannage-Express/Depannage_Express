@@ -8,18 +8,15 @@ const Header = ({onSignUpClick, onNavClick}) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
-    <header className="w-full bg-white py-1 px-4 md:px-8 flex items-center shadow-sm relative z-50">
-      {/* 1. Logo et Nom */}
-      <div className="flex items-center gap-2 md:gap-3 my-2 md:my-3 shrink-0">
-        <img src={logo} alt="Logo" className="w-10 h-10 md:w-16 md:h-16 object-contain" />
+    <header className="w-full bg-white py-1 px-4 md:px-8 grid grid-cols-3 items-center shadow-sm relative z-50">      {/* 1. Logo et Nom */}
+      <div className="flex items-center gap-2 md:gap-3 my-2 md:my-3 justify-self-start">        <img src={logo} alt="Logo" className="w-10 h-10 md:w-16 md:h-16 object-contain" />
         <p className="font-bold text-xs md:text-lg leading-tight text-slate-800">
           Dépannage <br /> Express
         </p>
       </div>
 
       {/* 2. Barre de recherche  */}
-      <div className="relative flex items-center ml-4 md:ml-12 shrink-0">
-        {/* Input  */}
+      <div className="relative flex items-center justify-center">        {/* Input  */}
         <input 
           type="text" 
           placeholder='Rechercher...'
@@ -48,7 +45,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
           ) : (
             <button 
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 text-[#0D2B0D]"
+              className="p-2  text-[#0D2B0D]"
             >
               <Search size={22} />
             </button>
@@ -80,8 +77,8 @@ const Header = ({onSignUpClick, onNavClick}) => {
       </nav>
 
       {/* 4. Menu Burger (Visible sur mobile et tablette sous 1024px) */}
-      <div className="lg:hidden flex items-center ml-auto">
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 focus:outline-none">
+        <div className="lg:hidden flex items-center justify-self-end">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 focus:outline-none">
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
