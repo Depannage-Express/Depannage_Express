@@ -21,7 +21,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
         <input 
           type="text" 
           placeholder='Rechercher...'
-          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg w-33 lg:w-60 focus:w-44 lg:focus:w-64 transition-all duration-300'
+          className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-2 rounded-lg md:rounded-lg w-33 lg:w-60 focus:w-44 lg:focus:w-64 transition-all duration-300'
         />
         {/* Loupe interne  */}
         <Search 
@@ -31,7 +31,7 @@ const Header = ({onSignUpClick, onNavClick}) => {
         {/* Recherche Mobile */}
         <div className="md:hidden flex items-center">
           {isSearchOpen ? (
-            <div className="absolute left-0 top-[-8px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[180px]">
+            <div className="absolute left-0 top-[-8px] flex items-center bg-white border border-[#0D2B0D] rounded-lg  px-2 py-1 shadow-lg z-50 w-[180px]">
               <input 
                 autoFocus
                 type="text" 
