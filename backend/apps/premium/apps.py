@@ -1,8 +1,0 @@
-from django.apps import AppConfig
-
-
-class PremiumConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.premium'
-    label = 'premium'
-    verbose_name = 'Premium'
