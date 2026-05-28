@@ -9,3 +9,5 @@ backend/staticfiles/
 
 node_modules/
 dist/
+backend/
+Document/
