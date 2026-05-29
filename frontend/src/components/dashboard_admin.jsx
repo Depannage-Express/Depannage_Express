@@ -1,16 +1,47 @@
-import { useState } from 'react'; 
+import { useEffect, useMemo, useState } from 'react'; 
 import Utilisateurs from './utilisateurs';
 import Signalements from './signal';
 import GestionPaiements from './paiement_ad';
 import Abonnements from './aboonnements';
 import SupervisionInterventions from './supervisions_interv';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle } from 'lucide-react';
+import { fetchAdminBreakdowns, fetchAdminMechanics, fetchAdminUsers } from '../lib/api';
 
 const DashboardAdmin = () => {
-
-  // 1. Créer l'état pour savoir quelle "sous-page" afficher
   const [view, setView] = useState('menu');
-  // Données pour les cartes du menu
+  const [users, setUsers] = useState([]);
+  const [breakdowns, setBreakdowns] = useState([]);
+  const [mechanics, setMechanics] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [usersData, breakdownsData, mechanicsData] = await Promise.all([
+          fetchAdminUsers(),
+          fetchAdminBreakdowns(),
+          fetchAdminMechanics(),
+        ]);
+        setUsers(Array.isArray(usersData) ? usersData : []);
+        setBreakdowns(Array.isArray(breakdownsData) ? breakdownsData : []);
+        setMechanics(Array.isArray(mechanicsData) ? mechanicsData : []);
+      } catch (requestError) {
+        setError(requestError.message);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const stats = useMemo(() => ({
+    totalUsers: users.length,
+    totalMechanics: users.filter((user) => user.role === 'mechanic_standard' || user.role === 'mechanic_premium').length,
+    totalAdmins: users.filter((user) => user.role === 'admin').length,
+    pendingMechanics: mechanics.filter((mechanic) => mechanic.status === 'pending').length,
+    assignedBreakdowns: breakdowns.filter((breakdown) => breakdown.status === 'assigned').length,
+    openBreakdowns: breakdowns.length,
+  }), [users, breakdowns, mechanics]);
+
   const menuItems = [
     { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={40} />, color: "bg-[#608C27]" },
     { id: 'interve', title: "Interventions", icon: <Bell size={40} />, color: "bg-[#608C27]" },
@@ -67,6 +98,16 @@ const DashboardAdmin = () => {
           <h2 className="text-white text-2xl font-bold uppercase tracking-widest">
             Votre menu principal
           </h2>
+          {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border-b border-slate-200 bg-slate-50 p-6">
+          <StatCard label="Utilisateurs" value={stats.totalUsers} />
+          <StatCard label="Mecaniciens" value={stats.totalMechanics} />
+          <StatCard label="Admins" value={stats.totalAdmins} />
+          <StatCard label="Demandes" value={stats.openBreakdowns} />
+          <StatCard label="Demandes assignees" value={stats.assignedBreakdowns} />
+          <StatCard label="Profils en attente" value={stats.pendingMechanics} />
         </div>
 
         {/* Grille des fonctionnalités */}
@@ -106,6 +147,13 @@ const DashboardAdmin = () => {
     </div>
   );
 };
+
+const StatCard = ({ label, value }) => (
+  <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
+    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="mt-2 text-2xl font-black text-[#0D2B0D]">{value}</p>
+  </div>
+);
 
 // Sous-composant pour les cartes du menu pour éviter la répétition
 const MenuCard = ({ item, isLarge = false , onClick}) => {

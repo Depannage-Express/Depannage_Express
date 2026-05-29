@@ -141,3 +141,32 @@ export function logoutMechanic() {
     body: JSON.stringify({ refresh }),
   });
 }
+
+export function fetchAdminUsers(role) {
+  const query = role ? `?role=${encodeURIComponent(role)}` : '';
+  return apiRequest(`/auth/users/${query}`);
+}
+
+export function blockAdminUser(userId, reason = '') {
+  return apiRequest(`/auth/users/${userId}/block/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function unblockAdminUser(userId) {
+  return apiRequest(`/auth/users/${userId}/unblock/`, {
+    method: 'POST',
+  });
+}
+
+export function fetchAdminBreakdowns(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return apiRequest(`/breakdowns/admin/${query}`);
+}
+
+export function fetchAdminMechanics(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return apiRequest(`/mechanics/admin/list/${query}`);
+}
