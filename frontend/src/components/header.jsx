@@ -3,20 +3,22 @@ import '../index.css'
 import logo from '../assets/logo.png';
 import { Search, Menu, X } from 'lucide-react' 
 
+/* 1. On s'assure que le Header reçoit bien la prop currentView */
 const Header = ({ onSignUpClick, onNavClick, currentView = 'accueil' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  /* 2. La fonction magique qui change la couleur selon la page active */
   const getLinkClass = (pageName) => {
     return currentView === pageName 
       ? 'text-[#608C27] font-extrabold border-b-2 border-[#608C27] pb-1' 
-      : 'hover:text-[#608C27] transition-colors';
+      : 'text-slate-700 hover:text-[#608C27] transition-colors';
   };
 
   return (
     <header className="w-full bg-white py-2 px-4 md:px-8 flex items-center justify-between shadow-sm relative z-50">
       
-      {/* 1. Logo et Nom */}
+      {/* Logo */}
       <div className="flex items-center gap-2 md:gap-3 my-1 justify-start shrink-0">
         <img src={logo} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
         <p className="font-bold text-xs md:text-sm lg:text-base leading-tight text-slate-800">
@@ -24,47 +26,18 @@ const Header = ({ onSignUpClick, onNavClick, currentView = 'accueil' }) => {
         </p>
       </div>
 
-      {/* 2. Barre de recherche centrale */}
+      {/* Barre de recherche */}
       <div className="relative flex items-center justify-center max-w-xs w-full mx-4">         
-        {/* Input */}
         <input 
           type="text" 
           placeholder='Rechercher...'
           className='hidden md:block text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-1.5 rounded-lg w-full transition-all duration-300 text-sm'
         />
-        {/* Loupe interne */}
-        <Search 
-          size={16} 
-          className="absolute right-3 text-[#0D2B0D] hidden md:block"
-        />
-        
-        {/* Recherche Mobile */}
-        <div className="md:hidden flex items-center">
-          {isSearchOpen ? (
-            <div className="absolute left-0 top-[-8px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[180px]">
-              <input 
-                autoFocus
-                type="text" 
-                placeholder='Rechercher...'
-                className='text-[#0D2B0D] w-full bg-transparent outline-none p-1 text-xs'
-              />
-              <button onClick={() => setIsSearchOpen(false)}>
-                <X size={18} className="text-[#0D2B0D]" />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={() => setIsSearchOpen(true)}
-              className="p-2 text-[#0D2B0D]"
-            >
-              <Search size={22} />
-            </button>
-          )}
-        </div>
+        <Search size={16} className="absolute right-3 text-[#0D2B0D] hidden md:block" />
       </div>
 
-      {/* 3. Navigation Desktop (Visible seulement à partir de xl pour éviter les chevauchements sur tablette) */}
-      <nav className="hidden xl:flex items-center gap-6 font-semibold text-slate-700">
+      {/* Navigation Desktop : Remplacement des classes fixes par la fonction getLinkClass */}
+      <nav className="hidden xl:flex items-center gap-6 font-semibold">
         <ul className="flex gap-6 items-center text-sm lg:text-base">
           <li className="cursor-pointer">
             <button onClick={() => onNavClick('accueil')} className={getLinkClass('accueil')}>Accueil</button>
@@ -86,19 +59,17 @@ const Header = ({ onSignUpClick, onNavClick, currentView = 'accueil' }) => {
         </button>
       </nav>
 
-      {/* 4. Menu Burger (Visible sur mobile et tablette) */}
+      {/* Menu Burger (Mobile & Tablette) */}
       <div className="xl:hidden flex items-center">
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 focus:outline-none">
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      {/* Menu Mobile Dropdown */}
+      {/* Menu Dropdown Mobile */}
       {isMenuOpen && (
         <>
-          {/* Overlay */}
           <div className="fixed inset-0 bg-black/40 z-40 xl:hidden" onClick={() => setIsMenuOpen(false)}></div>
-
           <div className="absolute top-full left-0 w-full bg-white border-t shadow-lg py-6 flex flex-col items-center gap-6 xl:hidden z-50">
             <ul className="flex flex-col items-center gap-6 font-semibold text-slate-700 w-full">
               <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'accueil' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('accueil'); setIsMenuOpen(false); }}>Accueil</li>

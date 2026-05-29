@@ -40,7 +40,7 @@ const Connexion = ({
         
         {/* Titre Connexion */}
         <div className="flex justify-center mb-10">
-          <h2 className="bg-[#608C27] text-white text-2xl font-bold px-12 py-2 rounded-full shadow-md">
+          <h2 className="bg-[#608C27] text-white text-1xl font-bold px-12 py-2 rounded-full shadow-md">
              {title}
           </h2>
         </div>

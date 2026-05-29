@@ -68,6 +68,13 @@ function getBreakdownAmount(breakdown) {
 function getDashboardScreenForRole(role) {
   return role === 'admin' ? SCREENS.ADMIN_DASHBOARD : SCREENS.MECHANIC_DASHBOARD;
 }
+const SCREEN_TO_NAV_MAP = {
+  [SCREENS.HOME]: 'accueil',
+  [SCREENS.ABOUT]: 'a-propos',
+  [SCREENS.MECHANIC_INFO]: 'nos-techniciens',
+  [SCREENS.ADMIN_LOGIN]: 'administrateur',
+  [SCREENS.ADMIN_DASHBOARD]: 'administrateur', // Reste allumé sur administrateur si connecté
+};
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -254,8 +261,11 @@ function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#608C27]">
-      <Header onSignUpClick={openLogin} onNavClick={handleNavClick} />
-
+      <Header 
+        currentView={SCREEN_TO_NAV_MAP[screen] || 'accueil'} 
+        onSignUpClick={openLogin} 
+        onNavClick={handleNavClick} 
+      />
       <main className="flex-1">
         {isBootstrappingUser ? (
           <div className="flex items-center justify-center text-white font-bold">
