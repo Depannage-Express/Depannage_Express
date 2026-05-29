@@ -1,76 +1,86 @@
-const StatutMissions = () => {
-  // Données simulées basées sur ton image
-  const missions = [
-    {
-      id: 1,
-      description: "Panne de moteur",
-      localisation: "Banikani",
-      avis: "Très satisfait",
-      date: "07:50 20/04/2026",
-      distance: "3 km",
-      credit: "+ 2"
-    },
-    {
-      id: 2,
-      description: "Panne de moteur",
-      localisation: "Banikani",
-      avis: "Très satisfait",
-      date: "07:50 20/04/2026",
-      distance: "3 km",
-      credit: "+ 2"
-    },
-    {
-      id: 3,
-      description: "Panne de moteur",
-      localisation: "Banikani",
-      avis: "Très satisfait",
-      date: "07:50 20/04/2026",
-      distance: "3 km",
-      credit: "+ 2"
-    }
-  ];
+import { useEffect, useState } from 'react';
+import { fetchMechanicRequests } from '../lib/api';
+
+const STATUS_LABELS = {
+  pending: 'En attente',
+  assigned: 'Assignée',
+  in_progress: 'En cours',
+  completed: 'Terminée',
+  cancelled: 'Annulée',
+};
+
+const StatutMissions = ({ onBack }) => {
+  const [missions, setMissions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchMechanicRequests();
+        setMissions(data.results || []);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0D2B0D] p-4 md:p-8 flex flex-col items-center rounded-2xl">
-      
-      <div className="bg-[#0D2B0D] p-6 flex  justify-between">
-        
-        <h2 className="text-white text-xl font-bold uppercase tracking-widest flex items-center gap-3">
-            Statut des missions
+
+      <div className="p-6 flex justify-between w-full max-w-4xl">
+        <h2 className="text-white text-xl font-bold uppercase tracking-widest">
+          Statut des missions
         </h2>
-        <div className="w-10"></div>
       </div>
-      
-      {/* Liste des cartes */}
+
+      {isLoading ? (
+        <p className="text-white/70 mt-10">Chargement...</p>
+      ) : null}
+
+      {error ? (
+        <p className="text-red-400 mt-6">{error}</p>
+      ) : null}
+
+      {!isLoading && !error && missions.length === 0 ? (
+        <p className="text-white/70 mt-10">Aucune mission pour le moment.</p>
+      ) : null}
+
       <div className="w-full max-w-4xl space-y-4">
         {missions.map((mission) => (
-          <div 
-            key={mission.id} 
+          <div
+            key={mission.id}
             className="bg-white rounded-3xl p-6 shadow-lg flex flex-col md:flex-row justify-between gap-4"
           >
-            {/* Colonne Gauche */}
             <div className="space-y-2">
               <p className="text-black font-bold text-lg">
-                Description : <span className="font-medium">{mission.description}</span>
+                Description : <span className="font-medium">{mission.breakdown_description || mission.breakdown_type || '—'}</span>
               </p>
               <p className="text-black font-bold text-lg">
-                Localisation : <span className="font-medium">{mission.localisation}</span>
+                Client : <span className="font-medium">{mission.driver_name}</span>
               </p>
-              <p className="text-black font-bold text-lg mt-4">
-                Avis : <span className="font-medium">{mission.avis}</span>
+              <p className="text-black font-bold text-lg">
+                Localisation : <span className="font-medium">{mission.address_description || 'GPS'}</span>
               </p>
             </div>
 
-            {/* Colonne Droite */}
-            <div className="space-y-2 md:text-left">
+            <div className="space-y-2 md:text-right">
               <p className="text-black font-bold text-lg">
-                Date : <span className="font-medium">{mission.date}</span>
+                Date : <span className="font-medium">{new Date(mission.created_at).toLocaleString('fr-FR')}</span>
               </p>
+              {mission.assignment_distance_km ? (
+                <p className="text-black font-bold text-lg">
+                  Distance : <span className="font-medium">{mission.assignment_distance_km} km</span>
+                </p>
+              ) : null}
               <p className="text-black font-bold text-lg">
-                Distance : <span className="font-medium">{mission.distance}</span>
-              </p>
-              <p className="text-black font-bold text-lg mt-4">
-                Crédit : <span className="font-medium">{mission.credit}</span>
+                Statut :{' '}
+                <span className={`font-medium ${mission.status === 'completed' ? 'text-green-600' : mission.status === 'cancelled' ? 'text-red-600' : 'text-orange-600'}`}>
+                  {STATUS_LABELS[mission.status] || mission.status}
+                </span>
               </p>
             </div>
           </div>

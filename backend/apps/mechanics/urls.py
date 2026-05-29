@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('specialties/', views.SpecialtyListView.as_view(), name='specialties-list'),
+    path('public/', views.MechanicPublicListView.as_view(), name='mechanics-public-list'),
     path('profile/create/', views.create_profile_view, name='mechanic-create-profile'),
     path('profile/me/', views.my_profile_view, name='mechanic-my-profile'),
     path('profile/availability/', views.toggle_availability_view, name='mechanic-toggle-availability'),

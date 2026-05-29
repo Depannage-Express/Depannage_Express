@@ -7,4 +7,5 @@ urlpatterns = [
     path('my-requests/', views.my_breakdown_requests, name='breakdown-my-requests'),
     path('admin/', views.BreakdownAdminListView.as_view(), name='breakdown-admin-list'),
     path('admin/<uuid:pk>/', views.breakdown_detail_admin, name='breakdown-admin-detail'),
+    path('status/<uuid:pk>/', views.breakdown_status_public, name='breakdown-status-public'),
 ]

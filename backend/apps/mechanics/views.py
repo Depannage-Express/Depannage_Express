@@ -67,6 +67,18 @@ def mechanic_public_profile(request, pk):
     return Response(serializer.data)
 
 
+# ─── Public mechanic list ─────────────────────────────────────────────────────
+
+class MechanicPublicListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = MechanicPublicSerializer
+
+    def get_queryset(self):
+        return MechanicProfile.objects.select_related('user').prefetch_related('specialties').filter(
+            status='approved'
+        ).order_by('-average_rating')
+
+
 # ─── Admin: list pending mechanics ───────────────────────────────────────────
 
 class MechanicListAdminView(generics.ListAPIView):

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import IsAdmin, IsMechanic
 from apps.geolocation.utils import find_nearest_mechanic
+from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
 from .models import BreakdownRequest
 from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer
@@ -95,3 +96,28 @@ def breakdown_detail_admin(request, pk):
     except BreakdownRequest.DoesNotExist:
         return Response({'error': 'Demande introuvable.'}, status=404)
     return Response(BreakdownRequestSerializer(req).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def breakdown_status_public(request, pk):
+    try:
+        req = BreakdownRequest.objects.select_related('assigned_mechanic__user').prefetch_related(
+            'assigned_mechanic__specialties'
+        ).get(pk=pk)
+    except BreakdownRequest.DoesNotExist:
+        return Response({'error': 'Demande introuvable.'}, status=404)
+
+    mechanic_data = None
+    if req.assigned_mechanic:
+        mechanic_data = MechanicPublicSerializer(req.assigned_mechanic).data
+
+    return Response({
+        'id': str(req.id),
+        'status': req.status,
+        'breakdown_type': req.breakdown_type,
+        'created_at': req.created_at,
+        'assigned_at': req.assigned_at,
+        'assignment_distance_km': str(req.assignment_distance_km) if req.assignment_distance_km else None,
+        'assigned_mechanic': mechanic_data,
+    })

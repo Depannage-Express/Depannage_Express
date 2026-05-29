@@ -170,3 +170,13 @@ export function fetchAdminMechanics(status) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';
   return apiRequest(`/mechanics/admin/list/${query}`);
 }
+
+export async function fetchBreakdownStatus(id) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/`);
+  return parseResponse(response);
+}
+
+export async function fetchPublicMechanics() {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/public/`);
+  return parseResponse(response);
+}
