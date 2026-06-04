@@ -1,6 +1,6 @@
 import { Search, ChevronDown, ChevronUp, Star } from 'lucide-react';
 
-const SupervisionInterventions = () => {
+const SupervisionInterventions = ({ onBack }) => {
   const interventions = [
     { id: 45, titre: "Panne de moteur (Conducteur)", client: "Moussa A.", meca: "Sara T.", montant: "150.000", heure: "11/05/2026, 12:15", statut: "Intervenant affecté", sIcon: "✅" },
     { id: 45, titre: "Panne de moteur (Conducteur)", client: "Moussa A.", montant: "Montant/Crédit FCFA", heure: "11/05/2026, 12:15", statut: "En route", sIcon: "🟡" },
@@ -15,6 +15,11 @@ const SupervisionInterventions = () => {
         
         {/* ENTETE (Respectant ton style souligné) */}
         <div className="flex justify-center items-center bg-[#0D2B0D] rounded-t-[1.5rem] p-6 border-b border-gray-200">
+          {onBack && (
+            <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
+              ← Retour
+            </button>
+          )}
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Supervision des Interventions</h2>
         </div>
 
@@ -66,9 +71,9 @@ const SupervisionInterventions = () => {
 
                   {/* Boutons alignés en bas à droite */}
                   <div className="flex justify-end gap-2 mt-4">
-                    <button className="bg-[#1a301a] text-white text-[10px] px-5 py-2 rounded-xl font-bold uppercase tracking-tight shadow-sm hover:scale-105 transition-transform">[Contrôler]</button>
+                    <button className="bg-[#1a301a] text-white text-[10px] px-5 py-2 rounded-xl font-bold uppercase tracking-tight shadow-sm hover:scale-105 transition-transform">Contrôler</button>
                     <button className="bg-[#608C27] text-white text-[10px] px-5 py-2 rounded-xl font-bold uppercase tracking-tight shadow-sm hover:scale-105 transition-transform">Valider</button>
-                    <button className="bg-black text-white text-[10px] px-5 py-2 rounded-xl font-bold uppercase tracking-tight shadow-sm hover:scale-105 transition-transform">[Signaler]</button>
+                    <button className="bg-black text-white text-[10px] px-5 py-2 rounded-xl font-bold uppercase tracking-tight shadow-sm hover:scale-105 transition-transform">Signaler</button>
                   </div>
                 </div>
               ))}
@@ -93,8 +98,8 @@ const SupervisionInterventions = () => {
               ))}
 
               <div className="space-y-3 pt-6">
-                <button className="w-full text-left text-[10px] font-bold p-1 hover:underline text-gray-600">[Rapport Hebdomadaire PDF]</button>
-                <button className="w-full text-left text-[10px] font-bold p-1 hover:underline text-gray-600">[Rapport Mensuel PDF]</button>
+                <button className="w-full text-left text-[10px] font-bold p-1 hover:underline text-gray-600">Rapport hebdomadaire PDF</button>
+                <button className="w-full text-left text-[10px] font-bold p-1 hover:underline text-gray-600">Rapport mensuel PDF</button>
               </div>
 
               

@@ -1,6 +1,6 @@
 import { Filter, Search,ChevronUp } from 'lucide-react';
 
-const Signalements = () => {
+const Signalements = ({ onBack }) => {
   const signalements = [
     { id: 12, titre: "ABUS DE LANGAGE", gravite: "Élevé", emetteur: "Moussa A.", cible: "Sara T.", date: "11/05/2026, 14:15", color: "text-red-600" },
     { id: 11, titre: "RETARD IMPORTANT", gravite: "Moyen", emetteur: "Jean K.", cible: "Sara T.", date: "11/05/2026, 11:30", color: "text-yellow-600" },
@@ -10,6 +10,11 @@ const Signalements = () => {
   return (
         <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
             <div className="bg-[#0D2B0D] text-white p-4 flex justify-center">
+            {onBack && (
+              <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
+                ← Retour
+              </button>
+            )}
             <h2 className="text-3xl font-bold mb-6  flex ">Gestion des Incidents </h2>
             </div>
 
@@ -38,11 +43,11 @@ const Signalements = () => {
                             <div>
                                 <h4 className="font-bold text-sm uppercase">ID #{s.id} | {s.titre} <span className="text-xs font-normal text-gray-500">({s.gravite})</span></h4>
                                 <p className="text-[11px] text-gray-600 mt-1">
-                                    Émetteur: <span className="font-bold">{s.emetteur}</span> | Cible: <span className="font-bold">{s.cible}</span> | Date: {s.date} | Action: <span className="text-gray-400 cursor-pointer">[Ouvrir]</span>
+                                    Émetteur: <span className="font-bold">{s.emetteur}</span> | Cible: <span className="font-bold">{s.cible}</span> | Date: {s.date}
                                 </p>
                             </div>
                         </div>
-                        <button className="text-xs font-bold bg-white border border-gray-200 px-3 py-1 rounded">Action: [Ouvrir]</button>
+                        <button className="text-xs font-bold bg-white border border-gray-200 px-3 py-1 rounded">Ouvrir</button>
                     </div>
                     ))}
                 </div>
@@ -57,13 +62,17 @@ const Signalements = () => {
                         </div>
                         <div className="text-[11px] space-y-4 leading-relaxed">
                             <p><span className="font-bold">Description:</span> Le conducteur Moussa A. signale que la mécanicienne Sara T. a utilisé un langage inapproprié...</p>
-                            <p><span className="font-bold">Photos:</span> <span className="text-blue-500 cursor-pointer text-[10px]">[Photo1.jpg] [Photo2.jpg]</span></p>
-                            <p><span className="font-bold">Actions:</span> [Suspendre Cible] [Avertir Cible] [Rejeter]</p>
+                            <p><span className="font-bold">Photos :</span> <span className="text-blue-500 cursor-pointer text-[10px]">Photo1.jpg · Photo2.jpg</span></p>
+                            <div className="flex gap-1 flex-wrap">
+                              <button className="bg-orange-100 text-orange-700 text-[9px] px-2 py-1 rounded font-bold">Suspendre</button>
+                              <button className="bg-yellow-100 text-yellow-700 text-[9px] px-2 py-1 rounded font-bold">Avertir</button>
+                              <button className="bg-gray-100 text-gray-600 text-[9px] px-2 py-1 rounded font-bold">Rejeter</button>
+                            </div>
                         </div>
                     </div>
               
-                    <button className="w-full py-3 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 uppercase shadow-sm">[Rapport Mensuel PDF]</button>
-                    <button className="w-full py-3 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 uppercase shadow-sm">[Rapport Hebdomadaire PDF]</button>
+                    <button className="w-full py-3 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 uppercase shadow-sm">Rapport mensuel PDF</button>
+                    <button className="w-full py-3 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 uppercase shadow-sm">Rapport hebdomadaire PDF</button>
                 </div>
             </div>
         </div>

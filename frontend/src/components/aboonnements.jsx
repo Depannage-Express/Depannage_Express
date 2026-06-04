@@ -1,6 +1,6 @@
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 
-const Abonnements = () => {
+const Abonnements = ({ onBack }) => {
   const abonnes = [
     { id: "P001", name: "Sara TCHAKOR", tel: "+229 93457761", email: "sarakoff@gmail.com", active: true },
     { id: "P002", name: "Sara TCHAKOR", tel: "+229 93457762", email: "sarakoffk@gmail.com", active: true },
@@ -18,6 +18,11 @@ const Abonnements = () => {
       <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden p-6 md:p-10">
         
         <div className="bg-[#0D2B0D] text-white -mt-10 -ml-10 -mr-10 p-4 flex justify-center">
+            {onBack && (
+              <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
+                ← Retour
+              </button>
+            )}
             <h2 className="text-3xl font-bold mb-6  flex ">Liste Abonnés Premium </h2>
             </div>
 
@@ -29,11 +34,11 @@ const Abonnements = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="text-sm font-bold border-b border-white">
-                  <th className="pb-4 px-2">Name</th>
+                  <th className="pb-4 px-2">Nom</th>
                   <th className="pb-4 px-2">ID</th>
                   <th className="pb-4 px-2">Téléphone</th>
                   <th className="pb-4 px-2">Email</th>
-                  <th className="pb-4 px-2 text-center">Active</th>
+                  <th className="pb-4 px-2 text-center">Actif</th>
                   <th className="pb-4 px-2"></th>
                 </tr>
               </thead>
@@ -53,7 +58,7 @@ const Abonnements = () => {
                       {user.active && <Check size={18} className="mx-auto" />}
                     </td>
                     <td className="py-4 px-2">
-                      <button className="bg-white px-4 py-1 rounded shadow-sm text-[10px] font-bold hover:bg-gray-300">Détails: [Ouvrir]</button>
+                      <button className="bg-white px-4 py-1 rounded shadow-sm text-[10px] font-bold hover:bg-gray-300">Détails</button>
                     </td>
                   </tr>
                 ))}
@@ -84,8 +89,8 @@ const Abonnements = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button className="bg-gray-200 px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-gray-300 uppercase">[Générer Reçu]</button>
-              <button className="bg-gray-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-white0 uppercase">[Rapport PDF mensuel]</button>
+              <button className="bg-gray-200 px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-gray-300 uppercase">Générer reçu</button>
+              <button className="bg-gray-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-gray-500 uppercase">Rapport PDF mensuel</button>
             </div>
           </div>
 
@@ -102,7 +107,10 @@ const Abonnements = () => {
                 <p><span className="font-bold underline">Description:</span> L'abonnement de Sara TCHAKOR arrive bientôt à expiration. Cotonou, Benin.</p>
                 <p><span className="font-bold underline">Date Expiration:</span> 12/06/2026 (Dans 1 Mois)</p>
                 <p><span className="font-bold underline">Plan:</span> Annuel</p>
-                <p><span className="font-bold underline">Actions:</span> <span className="cursor-pointer hover:text-blue-600">[Avertir l'utilisateur]</span> <span className="cursor-pointer hover:text-blue-600">[Manuel Renouvellement]</span></p>
+                <div className="flex gap-2">
+                  <button className="bg-blue-50 text-blue-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-blue-100">Avertir</button>
+                  <button className="bg-green-50 text-green-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-green-100">Renouveler</button>
+                </div>
               </div>
             </div>
 

@@ -4,11 +4,18 @@ from .models import PaymentTransaction
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
+    mechanic_name = serializers.SerializerMethodField()
+
+    def get_mechanic_name(self, obj):
+        if obj.mechanic and obj.mechanic.user:
+            return obj.mechanic.user.full_name
+        return None
+
     class Meta:
         model = PaymentTransaction
         fields = [
             'id', 'payer_name', 'payer_phone', 'amount', 'currency',
-            'payment_method', 'payment_for', 'status',
+            'payment_method', 'payment_for', 'status', 'mechanic_name',
             'breakdown_request', 'intervention', 'mechanic',
             'provider_reference', 'paid_at', 'metadata',
             'created_at', 'updated_at',

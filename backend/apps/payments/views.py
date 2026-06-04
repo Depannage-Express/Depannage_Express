@@ -42,6 +42,18 @@ def confirm_payment(request, pk):
     except PaymentTransaction.DoesNotExist:
         return Response({'error': 'Paiement introuvable.'}, status=404)
 
+    # Vérification : le demandeur doit fournir l'ID de la demande de dépannage
+    # liée au paiement. Sans compte, c'est le seul "secret" que le conducteur possède.
+    breakdown_request_id = request.data.get('breakdown_request_id')
+    if not breakdown_request_id:
+        return Response({'error': 'breakdown_request_id requis.'}, status=400)
+
+    if payment.breakdown_request is None or str(payment.breakdown_request.id) != str(breakdown_request_id):
+        return Response({'error': 'Confirmation de paiement non autorisée.'}, status=403)
+
+    if payment.status == 'paid':
+        return Response(PaymentStatusSerializer(payment).data)
+
     payment.status = 'paid'
     payment.paid_at = timezone.now()
     payment.save(update_fields=['status', 'paid_at'])
@@ -53,4 +65,6 @@ def confirm_payment(request, pk):
 class PaymentAdminListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = PaymentTransactionSerializer
-    queryset = PaymentTransaction.objects.all().order_by('-created_at')
+    queryset = PaymentTransaction.objects.select_related(
+        'mechanic__user'
+    ).all().order_by('-created_at')

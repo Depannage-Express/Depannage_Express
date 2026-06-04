@@ -38,7 +38,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const authPayload = await registerMechanic(form);
+      const authPayload = await registerMechanic({ ...form, role: 'mechanic_standard' });
       setAuthTokens(authPayload);
       setSuccess('Compte créé. Complétez ensuite le profil mécanicien et les justificatifs.');
       if (onRegisterSuccess) {

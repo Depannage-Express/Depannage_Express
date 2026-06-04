@@ -32,6 +32,11 @@ const StatutMissions = ({ onBack }) => {
     <div className="min-h-screen bg-[#0D2B0D] p-4 md:p-8 flex flex-col items-center rounded-2xl">
 
       <div className="p-6 flex justify-between w-full max-w-4xl">
+        {onBack && (
+          <button onClick={onBack} className="text-white font-bold hover:text-[#608C27] transition-colors">
+            ← Retour
+          </button>
+        )}
         <h2 className="text-white text-xl font-bold uppercase tracking-widest">
           Statut des missions
         </h2>

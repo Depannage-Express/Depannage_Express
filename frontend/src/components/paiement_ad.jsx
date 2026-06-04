@@ -11,7 +11,7 @@ const STATUS_LABELS = {
   cancelled: { label: 'Annulé', color: 'text-gray-400' },
 };
 
-const GestionPaiements = () => {
+const GestionPaiements = ({ onBack }) => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,9 +21,9 @@ const GestionPaiements = () => {
         const items = Array.isArray(data) ? data : (data?.results ?? []);
         setTransactions(items.map((t) => ({
           id: t.id,
-          titre: t.payment_for === 'premium' ? 'Contact Premium' : 'Intervention Mécanique',
+          titre: t.payment_for === 'premium_subscription' ? 'Contact Premium' : 'Intervention Mécanique',
           client: t.payer_name || 'Client inconnu',
-          meca: t.mechanic_name || '—',
+          meca: t.mechanic_name || t.mechanic_display || '—',
           montant: `${Number(t.amount).toLocaleString('fr-FR')} FCFA`,
           date: t.created_at ? new Date(t.created_at).toLocaleString('fr-FR') : '—',
           statut: STATUS_LABELS[t.status]?.label || t.status,
@@ -41,6 +41,11 @@ const GestionPaiements = () => {
       
       {/* ENTETE INTERNE (Copie conforme Image 1) */}
       <div className="flex justify-center items-center bg-[#0D2B0D] rounded-t-[1.5rem] p-6 border-b border-gray-200 max-w-[95%] mx-auto mt-10">
+        {onBack && (
+          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
+            ← Retour
+          </button>
+        )}
         <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Gestion des Paiements</h2>
       </div>
 
