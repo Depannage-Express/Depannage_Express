@@ -72,6 +72,45 @@ async function fetchWithTimeout(url, options = {}) {
   }
 }
 
+async function tryRefreshAndRetry(path, options) {
+  const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refresh) {
+    clearAuthTokens();
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
+  }
+
+  let refreshResponse;
+  try {
+    refreshResponse = await fetchWithTimeout(`${API_BASE_URL}/auth/token/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    });
+  } catch {
+    clearAuthTokens();
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
+  }
+
+  if (!refreshResponse.ok) {
+    clearAuthTokens();
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
+  }
+
+  const tokens = await refreshResponse.json();
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+  if (tokens.refresh) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+  }
+
+  const retryHeaders = new Headers(options.headers || {});
+  retryHeaders.set('Authorization', `Bearer ${tokens.access}`);
+  const retryResponse = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: retryHeaders,
+  });
+  return parseResponse(retryResponse);
+}
+
 async function apiRequest(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const token = getAccessToken();
@@ -86,7 +125,7 @@ async function apiRequest(path, options = {}) {
   });
 
   if (response.status === 401) {
-    clearAuthTokens();
+    return tryRefreshAndRetry(path, options);
   }
 
   return parseResponse(response);
@@ -176,7 +215,79 @@ export async function fetchBreakdownStatus(id) {
   return parseResponse(response);
 }
 
-export async function fetchPublicMechanics() {
-  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/public/`);
+export async function fetchPublicMechanics(query = '') {
+  const qs = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/public/${qs}`);
   return parseResponse(response);
+}
+
+export async function fetchPremiumMechanics() {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/public/?is_premium=true`);
+  return parseResponse(response);
+}
+
+export async function fetchMechanicDetails(id) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/profile/${id}/`);
+  return parseResponse(response);
+}
+
+export async function fetchMechanicReviews(id) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/profile/${id}/reviews/`);
+  return parseResponse(response);
+}
+
+export async function fetchPlatformStats() {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/stats/`);
+  return parseResponse(response);
+}
+
+export function fetchAdminStats() {
+  return apiRequest('/breakdowns/admin/stats/');
+}
+
+export async function fetchMessages(breakdownRequestId) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/${breakdownRequestId}/messages/`);
+  return parseResponse(response);
+}
+
+export function sendMessage(breakdownRequestId, payload) {
+  return apiRequest(`/breakdowns/${breakdownRequestId}/messages/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitReview(mechanicProfileId, payload) {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/mechanics/profile/${mechanicProfileId}/reviews/`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  return parseResponse(response);
+}
+
+export async function createPayment(payload) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/payments/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse(response);
+}
+
+export async function confirmPayment(paymentId, breakdownRequestId) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/payments/${paymentId}/confirm/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ breakdown_request_id: breakdownRequestId }),
+  });
+  return parseResponse(response);
+}
+
+export function fetchAdminPayments() {
+  return apiRequest('/payments/admin/');
 }

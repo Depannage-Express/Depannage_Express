@@ -10,11 +10,11 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     email: '',
     password: '',
     password_confirm: '',
-    role: 'mechanic_standard',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileName, setFileName] = useState('');
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -25,12 +25,22 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     event.preventDefault();
     setError('');
     setSuccess('');
+
+    if (form.password !== form.password_confirm) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+    if (form.password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const authPayload = await registerMechanic(form);
       setAuthTokens(authPayload);
-      setSuccess('Compte cree. Completer ensuite le profil mecanicien et les justificatifs.');
+      setSuccess('Compte créé. Complétez ensuite le profil mécanicien et les justificatifs.');
       if (onRegisterSuccess) {
         onRegisterSuccess(authPayload);
       } else if (onInfo) {
@@ -43,138 +53,150 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     }
   };
 
+  const inputClass = "w-full px-4 py-3 rounded-xl bg-gray-200 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold text-sm transition-all";
+  const labelClass = "block text-white/70 text-[11px] font-bold uppercase tracking-widest mb-1 pl-1";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#608C27]">
-      
-      <div className="flex-grow flex items-center justify-center py-12 px-4">
+      <div className="flex-grow flex items-center justify-center py-10 px-4">
         <div className="bg-[#0D2B0D] w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/10">
-          
-          {/* Titre Inscription */}
+
+          {/* Titre */}
           <div className="flex justify-center mb-8">
-            <h2 className="bg-[#608C27] text-white text-2xl font-bold px-10 py-2 rounded-full shadow-md">
+            <h2 className="bg-[#608C27] text-white text-xl font-bold px-10 py-2 rounded-full shadow-md tracking-wide">
               Inscription
             </h2>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            {/* Champs de saisie */}
-            <div>
-              <input 
-                type="text" 
-                placeholder="Nom:" 
-                name="last_name"
-                value={form.last_name}
-                onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
-              />
-            </div>
-            
-            <div>
-              <input 
-                type="text" 
-                placeholder="Prénom:" 
-                name="first_name"
-                value={form.first_name}
-                onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
-              />
+          <form className="space-y-4" onSubmit={handleSubmit}>
+
+            {/* Nom + Prénom côte à côte */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Nom</label>
+                <input
+                  type="text"
+                  placeholder="Dupont"
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Prénom</label>
+                <input
+                  type="text"
+                  placeholder="Jean"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
             </div>
 
             <div>
-              <input 
-                type="tel" 
-                placeholder="Numéro:" 
+              <label className={labelClass}>Téléphone</label>
+              <input
+                type="tel"
+                placeholder="+229 01 00 00 00 00"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+                className={inputClass}
               />
             </div>
 
             <div>
+              <label className={labelClass}>Email</label>
               <input
                 type="email"
-                placeholder="Email:"
+                placeholder="exemple@mail.com"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+                className={inputClass}
               />
             </div>
 
             <div>
+              <label className={labelClass}>Mot de passe</label>
               <input
                 type="password"
-                placeholder="Mot de passe:"
+                placeholder="••••••••"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+                className={inputClass}
               />
             </div>
 
             <div>
+              <label className={labelClass}>Confirmer le mot de passe</label>
               <input
                 type="password"
-                placeholder="Confirmer le mot de passe:"
+                placeholder="••••••••"
                 name="password_confirm"
                 value={form.password_confirm}
                 onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+                className={inputClass}
               />
             </div>
 
+            {/* Preuve de compétence */}
             <div>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full p-4 rounded-xl bg-gray-200 text-black focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
-              >
-                <option value="mechanic_standard">Mecanicien standard</option>
-                <option value="mechanic_premium">Mecanicien premium</option>
-              </select>
-            </div>
-
-            {/* Section Preuve de compétence */}
-            <div className="space-y-2">
-              <div className="w-full p-3 rounded-xl bg-gray-200 text-center font-bold text-gray-800">
-                Preuve de compétence
-              </div>
-              <label className="flex flex-col items-center justify-center w-full h-24 bg-gray-400 rounded-xl cursor-pointer hover:bg-gray-500 transition-colors border-2 border-dashed border-gray-300">
-                <div className="flex flex-col items-center justify-center pt-2">
-                  <Upload size={24} className="text-[#0D2B0D] mb-1" />
-                  <p className="text-[10px] text-[#0D2B0D] px-4 text-center leading-tight">
-                    Cliquez ici pour ajouter un diplôme ou attestation (image ou pdf).fichier
-                  </p>
+              <label className={labelClass}>Preuve de compétence</label>
+              <label className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 cursor-pointer transition-all group">
+                <div className="flex items-center gap-3">
+                  <Upload size={18} className="text-[#608C27] shrink-0" />
+                  <span className="text-gray-600 text-sm font-semibold group-hover:text-black transition-colors">
+                    {fileName || 'Diplôme ou attestation'}
+                  </span>
                 </div>
-                <input type="file" className="hidden" />
+                <span className="text-[10px] text-[#608C27] font-bold uppercase tracking-wider border border-[#608C27] px-2 py-1 rounded-lg">
+                  Parcourir
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
+                />
               </label>
             </div>
 
-            <div className="w-full min-h-12 rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic p-3">
-              {error || success || "Le dossier de verification sera complete dans le profil mecanicien."}
+            {/* Zone notification */}
+            <div className="w-full rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic px-4 py-3 min-h-[44px] flex items-center justify-center">
+              {error || success || "Le dossier de vérification sera complété dans le profil mécanicien."}
             </div>
 
             {/* Bouton Soumettre */}
-            <div className="flex justify-end mt-6">
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="bg-[#608C27] text-white font-bold py-3 px-8 rounded-2xl hover:bg-black transition-all shadow-lg transform hover:scale-105"
-              >
-                {isSubmitting ? 'Envoi...' : 'Soumettre'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-[#608C27] text-white font-bold py-4 rounded-2xl hover:bg-white hover:text-[#0D2B0D] transition-all shadow-lg mt-2 tracking-wide text-sm"
+            >
+              {isSubmitting ? 'Création en cours...' : 'Créer mon compte'}
+            </button>
           </form>
 
-          {/* Lien de redirection */}
-          <div className="mt-8 text-center">
-            <button 
-              onClick={onSignUpClick}
-              className="text-white hover:text-[#608C27] text-sm font-bold transition-colors">
-              Cliquez ici si vous avez déjà un compte
-            </button>
+          {/* Séparateur + lien connexion */}
+          <div className="mt-7">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-white/15" />
+              <span className="text-white/40 text-xs font-medium">ou</span>
+              <div className="flex-1 h-px bg-white/15" />
+            </div>
+            <div className="mt-5 text-center">
+              <p className="text-white/50 text-xs mb-2">Vous avez déjà un compte ?</p>
+              <button
+                onClick={onSignUpClick}
+                className="text-[#608C27] font-bold text-sm hover:text-white transition-colors"
+              >
+                Se connecter →
+              </button>
+            </div>
           </div>
 
         </div>

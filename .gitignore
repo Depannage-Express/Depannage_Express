@@ -11,3 +11,10 @@ node_modules/
 dist/
 backend/
 Document/
+
+# Variables d'environnement — ne jamais committer
+.env
+.env.local
+.env.production
+frontend/.env
+backend/.env

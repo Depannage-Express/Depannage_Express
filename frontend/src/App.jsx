@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { clearAuthTokens, fetchCurrentUser, getAccessToken } from './lib/api';
+import { clearAuthTokens, fetchCurrentUser, getAccessToken, logoutMechanic } from './lib/api';
 import Header from './components/header';
 import Hero from './components/hero';
 import Demande from './components/demande_depannage';
@@ -81,6 +81,8 @@ function App() {
   const [isBootstrappingUser, setIsBootstrappingUser] = useState(true);
   const [screen, setScreen] = useState(SCREENS.HOME);
   const [currentBreakdown, setCurrentBreakdown] = useState(null);
+  const [currentPayment, setCurrentPayment] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const hydrateUser = async () => {
@@ -119,6 +121,20 @@ function App() {
 
   const resetBreakdownFlow = () => {
     setCurrentBreakdown(null);
+    setCurrentPayment(null);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutMechanic();
+    } catch {
+      // ignore logout errors
+    } finally {
+      clearAuthTokens();
+      setCurrentUser(null);
+      setSearchQuery('');
+      setScreen(SCREENS.HOME);
+    }
   };
 
   const goHome = () => {
@@ -130,12 +146,21 @@ function App() {
   const openRegister = () => setScreen(SCREENS.REGISTER);
   const openAdminLogin = () => setScreen(SCREENS.ADMIN_LOGIN);
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      setScreen(SCREENS.MECHANIC_INFO);
+    }
+  };
+
   const handleNavClick = (page) => {
     switch (page) {
       case 'accueil':
+        setSearchQuery('');
         goHome();
         break;
       case 'a-propos':
+        setSearchQuery('');
         setScreen(SCREENS.ABOUT);
         break;
       case 'nos-techniciens':
@@ -177,9 +202,20 @@ function App() {
   const renderMainScreen = () => {
     switch (screen) {
       case SCREENS.DISCUSSION_DRIVER:
-        return <DiscussionCond onBackClick={() => setScreen(SCREENS.BILLING)} />;
+        return (
+          <DiscussionCond
+            onBackClick={() => setScreen(SCREENS.BILLING)}
+            breakdownRequestId={currentBreakdown?.id}
+            driverName={currentBreakdown?.driver_name}
+          />
+        );
       case SCREENS.DISCUSSION_MECHANIC:
-        return <DiscussionMeca onBackClick={() => setScreen(SCREENS.MECHANIC_DASHBOARD)} />;
+        return (
+          <DiscussionMeca
+            onBack={() => setScreen(SCREENS.MECHANIC_DASHBOARD)}
+            currentUser={currentUser}
+          />
+        );
       case SCREENS.INFO:
         return <Info onInfo={goHome} />;
       case SCREENS.LOGIN:
@@ -212,11 +248,18 @@ function App() {
       case SCREENS.ADMIN_DASHBOARD:
         return <DashboardAdmin />;
       case SCREENS.MECHANIC_INFO:
-        return <InfoMecanicien onBack={goHome} />;
+        return <InfoMecanicien onBack={() => { setSearchQuery(''); goHome(); }} searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')} />;
       case SCREENS.ABOUT:
         return <APropos />;
       case SCREENS.THANK_YOU:
-        return <Remerciement onRemerc={goHome} />;
+        return (
+          <Remerciement
+            onRemerc={goHome}
+            mechanicProfileId={currentBreakdown?.assigned_mechanic}
+            reviewerName={currentBreakdown?.driver_name}
+            breakdownId={currentBreakdown?.id}
+          />
+        );
       case SCREENS.NO_FINISH:
         return <Nofinish onFinish={goHome} />;
       case SCREENS.INTERVENTION:
@@ -227,9 +270,25 @@ function App() {
           />
         );
       case SCREENS.PAYMENT_CONFIRMATION:
-        return <ConfirmerPaiement onabout={() => setScreen(SCREENS.INTERVENTION)} />;
+        return (
+          <ConfirmerPaiement
+            onabout={() => setScreen(SCREENS.INTERVENTION)}
+            paymentId={currentPayment?.id}
+            breakdownId={currentBreakdown?.id}
+          />
+        );
       case SCREENS.PAYMENT:
-        return <Paiement onPayerClick={() => setScreen(SCREENS.PAYMENT_CONFIRMATION)} />;
+        return (
+          <Paiement
+            onPayerClick={(payment) => {
+              setCurrentPayment(payment);
+              setScreen(SCREENS.PAYMENT_CONFIRMATION);
+            }}
+            payerName={currentBreakdown?.driver_name}
+            amount={currentAmount}
+            breakdownId={currentBreakdown?.id}
+          />
+        );
       case SCREENS.BILLING:
         return (
           <Facturation
@@ -239,7 +298,7 @@ function App() {
           />
         );
       case SCREENS.BREAKDOWN_TRACKING:
-        return <Suivre requestId={currentBreakdown?.id} />;
+        return <Suivre requestId={currentBreakdown?.id} onBack={goHome} />;
       case SCREENS.BREAKDOWN_CONFIRMATION:
         return (
           <Confirmation
@@ -261,10 +320,14 @@ function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#608C27]">
-      <Header 
-        currentView={SCREEN_TO_NAV_MAP[screen] || 'accueil'} 
-        onSignUpClick={openLogin} 
-        onNavClick={handleNavClick} 
+      <Header
+        currentView={SCREEN_TO_NAV_MAP[screen] || 'accueil'}
+        onSignUpClick={openLogin}
+        onLogoutClick={handleLogout}
+        currentUser={currentUser}
+        onNavClick={handleNavClick}
+        onSearch={handleSearch}
+        searchQuery={searchQuery}
       />
       <main className="flex-1">
         {isBootstrappingUser ? (

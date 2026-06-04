@@ -1,11 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Filter, Search, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { fetchAdminPayments } from '../lib/api';
+
+const STATUS_LABELS = {
+  pending: { label: 'En attente', color: 'text-yellow-500' },
+  authorized: { label: 'Autorisé', color: 'text-blue-500' },
+  paid: { label: 'Payé', color: 'text-green-600' },
+  failed: { label: 'Échoué', color: 'text-red-500' },
+  refunded: { label: 'Remboursé', color: 'text-purple-500' },
+  cancelled: { label: 'Annulé', color: 'text-gray-400' },
+};
 
 const GestionPaiements = () => {
-  const [transactions, setTransactions] = useState([
-    { id: 34, titre: "Intervention Auto-Mécanique", client: "Moussa A.", meca: "Sara T.", montant: "150.000 FCFA", date: "11/05/2026 14:36", statut: "Non Vérifié", color: "text-green-600" },
-    { id: 31, titre: "Intervention Auto-Mécanique", client: "Moussa A.", meca: "Sara T.", montant: "250.000 FCFA", date: "11/05/2026 11:20", statut: "En Cours", color: "text-yellow-500" },
-  ]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAdminPayments()
+      .then((data) => {
+        const items = Array.isArray(data) ? data : (data?.results ?? []);
+        setTransactions(items.map((t) => ({
+          id: t.id,
+          titre: t.payment_for === 'premium' ? 'Contact Premium' : 'Intervention Mécanique',
+          client: t.payer_name || 'Client inconnu',
+          meca: t.mechanic_name || '—',
+          montant: `${Number(t.amount).toLocaleString('fr-FR')} FCFA`,
+          date: t.created_at ? new Date(t.created_at).toLocaleString('fr-FR') : '—',
+          statut: STATUS_LABELS[t.status]?.label || t.status,
+          color: STATUS_LABELS[t.status]?.color || 'text-gray-500',
+          raw: t,
+        })));
+      })
+      .catch(() => setTransactions([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     /* FOND GLOBAL AVEC LA BANDE VERTE COMME IMAGE 1 */
@@ -28,7 +56,7 @@ const GestionPaiements = () => {
                 <button className="flex-1 bg-gray-50 border p-2 rounded-xl text-[10px] font-bold flex justify-between items-center"><Filter size={12}/> Gravité</button>
               </div>
               <div className="relative">
-                <input type="text" placeholder="[Rechercher...]" className="w-full bg-gray-50 border rounded-xl p-2 text-[10px] outline-none" />
+                <input type="text" placeholder="Rechercher..." className="w-full bg-gray-50 border rounded-xl p-2 text-[10px] outline-none" />
                 <Search className="absolute right-3 top-2 text-gray-400" size={14} />
               </div>
             </div>
@@ -36,14 +64,17 @@ const GestionPaiements = () => {
             <div className="bg-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100">
               <h3 className="font-black uppercase text-[10px] mb-4">Transactions Récentes</h3>
               <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div key={i} className="bg-gray-50 border border-gray-100 rounded-2xl p-3 text-[10px]">
-                    <p className="font-black">MOUSSA ADEBAYO</p>
-                    <p className="text-gray-400 text-[8px]">ID: 0346831061</p>
-                    <p className="mt-1">👤 Client: Moussa A.</p>
-                    <p>💰 11/05/2026</p>
+                {transactions.slice(0, 3).map((t) => (
+                  <div key={t.id} className="bg-gray-50 border border-gray-100 rounded-2xl p-3 text-[10px]">
+                    <p className="font-black truncate">{t.client.toUpperCase()}</p>
+                    <p className="text-gray-400 text-[8px] truncate">ID: {String(t.id).slice(0, 12)}…</p>
+                    <p className="mt-1">👤 {t.client}</p>
+                    <p>💰 {t.date}</p>
                   </div>
                 ))}
+                {!loading && transactions.length === 0 && (
+                  <p className="text-gray-400 text-[10px] text-center py-2">Aucune transaction</p>
+                )}
               </div>
             </div>
           </div>
@@ -51,6 +82,12 @@ const GestionPaiements = () => {
           {/* COLONNE CENTRE (FILE D'ATTENTE) */}
           <div className="lg:col-span-2 space-y-4">
             <h3 className="font-bold text-sm text-gray-700 uppercase px-2 tracking-widest">Transactions (File d'attente)</h3>
+            {loading && (
+              <p className="text-center text-gray-400 text-sm py-8 animate-pulse">Chargement des transactions…</p>
+            )}
+            {!loading && transactions.length === 0 && (
+              <p className="text-center text-gray-400 text-sm py-8">Aucune transaction pour le moment.</p>
+            )}
             {transactions.map((t) => (
               <div key={t.id} className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-50 relative group min-h-[180px]">
                 <div className="flex justify-between items-stretch h-full">
@@ -97,18 +134,18 @@ const GestionPaiements = () => {
               </div>
               <div className="text-[11px] space-y-4 leading-relaxed text-gray-600">
                 <p><span className="font-black">Description:</span> Intervention mécanique complète pour moteur diesel...</p>
-                <p><span className="font-black">Preuves:</span> <span className="text-blue-500 underline">[Photo Facture] [Photo Paiement]</span></p>
+                <p><span className="font-black">Preuves :</span> <span className="text-blue-500 underline">Photo facture · Photo paiement</span></p>
                 <div className="pt-4 space-y-2">
                   <p className="font-bold uppercase text-[9px] text-gray-400">Actions rapides</p>
                   <div className="flex flex-wrap gap-1">
-                     <span className="bg-gray-100 p-1 rounded cursor-pointer">[Contacter]</span>
-                     <span className="bg-gray-100 p-1 rounded cursor-pointer text-red-500">[Signalement]</span>
+                     <button className="bg-gray-100 text-gray-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-gray-200">Contacter</button>
+                     <button className="bg-red-50 text-red-500 text-[9px] px-2 py-1 rounded font-bold hover:bg-red-100">Signaler</button>
                   </div>
                 </div>
               </div>
             </div>
-            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">[Rapport Mensuel PDF]</button>
-            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">[Rapport Hebdomadaire PDF]</button>
+            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">Rapport mensuel PDF</button>
+            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">Rapport hebdomadaire PDF</button>
           </div>
         </div>
       </div>
