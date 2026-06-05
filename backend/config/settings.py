@@ -4,7 +4,6 @@ Clean production-ready configuration
 """
 
 import os
-import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 
@@ -106,36 +105,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # DATABASE
 # ─────────────────────────────────────────
 
-# DATABASE_URL (Supabase / Render) has priority
-_database_url = os.getenv('DATABASE_URL')
-if _database_url:
+DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').lower()
+
+if DB_ENGINE == 'postgresql':
     DATABASES = {
-        'default': dj_database_url.parse(
-            _database_url,
-            conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', '60')),
-        )
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'postgres'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+        }
     }
 else:
-    DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').lower()
-    if DB_ENGINE == 'postgresql':
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': os.getenv('DB_NAME', 'depannage_express'),
-                'USER': os.getenv('DB_USER', 'postgres'),
-                'PASSWORD': os.getenv('DB_PASSWORD', ''),
-                'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-                'PORT': os.getenv('DB_PORT', '5432'),
-                'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
-            }
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.getenv('SQLITE_NAME', BASE_DIR / 'db.sqlite3'),
         }
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': os.getenv('SQLITE_NAME', BASE_DIR / 'db.sqlite3'),
-            }
-        }
+    }
 
 # ─────────────────────────────────────────
 # AUTH
