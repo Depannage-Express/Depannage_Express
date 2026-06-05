@@ -24,6 +24,11 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# Render injecte automatiquement RENDER_EXTERNAL_HOSTNAME
+_render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
+
 # ─────────────────────────────────────────
 # APPLICATIONS
 # ─────────────────────────────────────────
