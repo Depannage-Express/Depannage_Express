@@ -1,4 +1,5 @@
 # apps/breakdowns/models.py
+import uuid
 from django.db import models
 from apps.core.models import TimestampedModel
 
@@ -15,6 +16,8 @@ class BreakdownRequest(TimestampedModel):
     # Driver info (no account needed)
     driver_name = models.CharField(max_length=150)
     driver_phone = models.CharField(max_length=20)
+    # Jeton opaque remis au conducteur à la création — requis pour toute action driver
+    driver_token = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     driver_id_card = models.FileField(upload_to='breakdowns/id_cards/')
     driver_selfie = models.FileField(upload_to='breakdowns/selfies/')
 
@@ -67,3 +70,25 @@ class BreakdownRequest(TimestampedModel):
 
     def __str__(self):
         return f"Demande #{self.id} - {self.driver_name} ({self.status})"
+
+
+class Message(TimestampedModel):
+    SENDER_CHOICES = [
+        ('driver', 'Conducteur'),
+        ('mechanic', 'Mécanicien'),  # conservé pour données existantes
+        ('admin', 'Administrateur'),
+    ]
+
+    breakdown_request = models.ForeignKey(
+        BreakdownRequest, on_delete=models.CASCADE, related_name='messages'
+    )
+    sender_type = models.CharField(max_length=10, choices=SENDER_CHOICES)
+    sender_name = models.CharField(max_length=150)
+    content = models.TextField()
+
+    class Meta:
+        db_table = 'breakdowns_message'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message {self.sender_type} → demande #{self.breakdown_request_id}"

@@ -1,23 +1,52 @@
-import { useState } from 'react' 
+import { useEffect, useState } from 'react'
 import '../index.css'
 import logo from '../assets/logo.png';
-import { Search, Menu, X } from 'lucide-react' 
+import { Search, Menu, X } from 'lucide-react'
 
-const Header = ({ onSignUpClick, onNavClick, currentView = 'accueil' }) => {
+const Header = ({
+  onSignUpClick,
+  onLogoutClick,
+  onNavClick,
+  currentView = 'accueil',
+  currentUser = null,
+  onSearch,
+  searchQuery = '',
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Sync local input when external query is cleared (e.g. navigate away)
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  const triggerSearch = (value) => {
+    if (onSearch) onSearch(value.trim());
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      triggerSearch(inputValue);
+      setIsSearchOpen(false);
+    }
+    if (e.key === 'Escape') {
+      setInputValue('');
+      triggerSearch('');
+      setIsSearchOpen(false);
+    }
+  };
 
   const getLinkClass = (pageName) => {
-    return currentView === pageName 
-      ? 'text-[#608C27] font-extrabold border-b-2 border-[#608C27] pb-1' 
+    return currentView === pageName
+      ? 'text-[#608C27] font-extrabold border-b-2 border-[#608C27] pb-1'
       : 'text-slate-700 hover:text-[#608C27] transition-colors';
   };
 
   return (
-    /* MODIFICATION : On change xl:flex en lg:flex pour s'adapter à partir de 1024px (Nest Hub) */
     <header className="w-full bg-white py-2 px-4 md:px-8 grid grid-cols-3 md:flex md:items-center md:justify-between shadow-sm relative z-50">
-      
-      {/* 1. BLOC GAUCHE : Logo et Nom */}
+
+      {/* 1. Logo */}
       <div className="flex items-center gap-2 md:gap-3 my-1 justify-self-start md:justify-start shrink-0">
         <img src={logo} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
         <p className="font-bold text-xs md:text-sm lg:text-base leading-tight text-slate-800">
@@ -25,85 +54,125 @@ const Header = ({ onSignUpClick, onNavClick, currentView = 'accueil' }) => {
         </p>
       </div>
 
-      {/* 2. BLOC CENTRAL : Recherche */}
-      <div className="flex items-center justify-center relative w-full md:max-w-xs md:mx-4 justify-self-center">         
-        {/* Version Desktop / Tablette (md et plus) */}
-        <div className="hidden md:block relative w-full">
-          <input 
-            type="text" 
-            placeholder='Rechercher...'
-            className='text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-1.5 rounded-lg w-full transition-all duration-300 text-sm'
+      {/* 2. Recherche */}
+      <div className="flex items-center justify-center relative w-full md:max-w-xs md:mx-4 justify-self-center">
+        {/* Desktop */}
+        <div className="hidden md:flex relative w-full items-center">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Rechercher un mécanicien..."
+            className="text-[#0D2B0D] border border-[#0D2B0D] pl-4 pr-10 py-1.5 rounded-lg w-full transition-all duration-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
           />
-          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0D2B0D]" />
+          <button
+            onClick={() => triggerSearch(inputValue)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#0D2B0D] hover:text-[#608C27] transition-colors"
+            aria-label="Lancer la recherche"
+          >
+            <Search size={16} />
+          </button>
         </div>
-        
-        {/* Version Mobile (sous md) */}
+
+        {/* Mobile */}
         <div className="md:hidden flex items-center justify-center w-full">
           {isSearchOpen ? (
-            <div className="absolute left-1/2 -translate-x-1/2 top-[-14px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[150px]">
-              <input 
+            <div className="absolute left-1/2 -translate-x-1/2 top-[-14px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[200px]">
+              <input
                 autoFocus
-                type="text" 
-                placeholder='Rechercher...'
-                className='text-[#0D2B0D] w-full bg-transparent outline-none p-1 text-xs'
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Mécanicien, ville..."
+                className="text-[#0D2B0D] w-full bg-transparent outline-none p-1 text-xs"
               />
+              <button
+                onClick={() => { triggerSearch(inputValue); setIsSearchOpen(false); }}
+                className="mr-1 text-[#608C27]"
+              >
+                <Search size={14} />
+              </button>
               <button onClick={() => setIsSearchOpen(false)}>
                 <X size={16} className="text-[#0D2B0D] shrink-0" />
               </button>
             </div>
           ) : (
-            <button 
-              onClick={() => setIsSearchOpen(true)} 
-              className="p-2 text-[#0D2B0D] hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center"
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="p-2 text-[#0D2B0D] hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center relative"
             >
               <Search size={22} />
+              {searchQuery && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-[#608C27] rounded-full" />
+              )}
             </button>
           )}
         </div>
       </div>
 
-      {/* 3. Navigation Desktop (MODIFICATION : visible à partir de lg au lieu de xl) */}
+      {/* 3. Navigation Desktop */}
       <nav className="hidden lg:flex items-center gap-6 font-semibold">
         <ul className="flex gap-4 lg:gap-6 items-center text-sm lg:text-base">
           <li className="cursor-pointer">
             <button onClick={() => onNavClick('accueil')} className={getLinkClass('accueil')}>Accueil</button>
           </li>
           <li className="cursor-pointer">
-            <button onClick={() => onNavClick('a-propos')} className={getLinkClass('a-propos')}>A Propos</button>
+            <button onClick={() => onNavClick('a-propos')} className={getLinkClass('a-propos')}>À propos</button>
           </li>
           <li className="cursor-pointer">
             <button onClick={() => onNavClick('nos-techniciens')} className={getLinkClass('nos-techniciens')}>Nos Techniciens</button>
           </li>
           <li className="cursor-pointer">
-            <button onClick={() => onNavClick('administrateur')} className={getLinkClass('administrateur')}>Administrateur</button>
+            <button onClick={() => onNavClick('historique')} className={getLinkClass('historique')}>Mon historique</button>
           </li>
         </ul>
-        <button 
-          onClick={onSignUpClick}
-          className="bg-[#608C27] text-white px-4 lg:px-5 py-2 rounded-lg font-bold hover:bg-[#0D2B0D] transition-colors shadow-md text-sm whitespace-nowrap">
-          Connexion
-        </button>
+        {currentUser ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
+              {currentUser.full_name || currentUser.email}
+            </span>
+            <button
+              onClick={onLogoutClick}
+              className="bg-red-600 text-white px-4 lg:px-5 py-2 rounded-lg font-bold hover:bg-red-800 transition-colors shadow-md text-sm whitespace-nowrap">
+              Déconnexion
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onSignUpClick}
+            className="bg-[#608C27] text-white px-4 lg:px-5 py-2 rounded-lg font-bold hover:bg-[#0D2B0D] transition-colors shadow-md text-sm whitespace-nowrap">
+            Connexion
+          </button>
+        )}
       </nav>
 
-      {/* 4. Menu Burger (MODIFICATION : caché à partir de lg au lieu de xl) */}
+      {/* 4. Menu Burger Mobile */}
       <div className="lg:hidden flex items-center justify-self-end md:justify-end">
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 p-2 hover:bg-slate-100 rounded-full transition-colors focus:outline-none">
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      {/* Menu Dropdown Mobile (MODIFICATION : caché à partir de lg) */}
+      {/* Menu Dropdown Mobile */}
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setIsMenuOpen(false)}></div>
           <div className="absolute top-full left-0 w-full bg-white border-t shadow-lg py-6 flex flex-col items-center gap-6 lg:hidden z-50">
             <ul className="flex flex-col items-center gap-6 font-semibold text-slate-700 w-full">
               <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'accueil' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('accueil'); setIsMenuOpen(false); }}>Accueil</li>
-              <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'a-propos' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('a-propos'); setIsMenuOpen(false); }}>A Propos</li>
+              <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'a-propos' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('a-propos'); setIsMenuOpen(false); }}>À propos</li>
               <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'nos-techniciens' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('nos-techniciens'); setIsMenuOpen(false); }}>Nos Techniciens</li>
-              <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'administrateur' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('administrateur'); setIsMenuOpen(false); }}>Administrateur</li>
+              <li className={`text-lg py-2 border-b w-4/5 text-center cursor-pointer ${currentView === 'historique' ? 'text-[#608C27] font-bold' : ''}`} onClick={() => { onNavClick('historique'); setIsMenuOpen(false); }}>Mon historique</li>
             </ul>
-            <button onClick={() => { onSignUpClick(); setIsMenuOpen(false); }} className="bg-[#608C27] text-white w-4/5 py-3 rounded-lg font-bold">Connexion</button>
+            {currentUser ? (
+              <button onClick={() => { onLogoutClick(); setIsMenuOpen(false); }} className="bg-red-600 text-white w-4/5 py-3 rounded-lg font-bold">
+                Déconnexion
+              </button>
+            ) : (
+              <button onClick={() => { onSignUpClick(); setIsMenuOpen(false); }} className="bg-[#608C27] text-white w-4/5 py-3 rounded-lg font-bold">Connexion</button>
+            )}
           </div>
         </>
       )}

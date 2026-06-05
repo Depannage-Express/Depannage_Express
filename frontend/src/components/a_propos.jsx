@@ -5,7 +5,7 @@ const APropos = () => {
       <div className="bg-white p-8 lg:p-12 pb-10 flex-1">        
         {/* ENTETE (Style image_e10af5.png) */}
         <div className="flex justify-center items-center bg-[#0D2B0D] p-8 border-b border-gray-200">
-          <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">À PROPOS DE DEPANNAGE EXPRESS</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">À PROPOS DE DÉPANNAGE EXPRESS</h2>
         </div>
 
           <div className="bg-white p-8 lg:p-12 pb-20 md:pb-32 ">         
@@ -84,10 +84,10 @@ const APropos = () => {
 
               {/* Boutons PDF Style Maquette */}
             <div className="flex flex-wrap items-center gap-4 pt-10">                <button className="bg-gray-100 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-gray-200 transition-colors shadow-sm">
-                  [Rapport d'Impact PDF]
+                  Rapport d'impact PDF
                 </button>
                 <button className="bg-gray-100 px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-gray-200 transition-colors shadow-sm">
-                  [Présentation PDF]
+                  Présentation PDF
                 </button>
               </div>
 

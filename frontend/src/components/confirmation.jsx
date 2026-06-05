@@ -7,7 +7,7 @@ const Confirmation = ({ onValidation, requestId }) => {
                 <Loader2 className="animate-spin text-[#608C27] w-12 h-12" />
                 <p className="text-center mt-4 font-medium">Recherche d'un mécanicien proche...</p>
                 {requestId ? (
-                    <p className="text-center mt-2 text-sm text-gray-600">Reference : {requestId}</p>
+                    <p className="text-center mt-2 text-sm text-gray-600">Référence : {requestId}</p>
                 ) : null}
 
                 <button

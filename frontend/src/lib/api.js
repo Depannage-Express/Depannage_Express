@@ -210,6 +210,14 @@ export function fetchAdminMechanics(status) {
   return apiRequest(`/mechanics/admin/list/${query}`);
 }
 
+export function validateAdminMechanic(profileId, action, rejectionReason = '') {
+  return apiRequest(`/mechanics/admin/${profileId}/validate/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, rejection_reason: rejectionReason }),
+  });
+}
+
 export async function fetchBreakdownStatus(id) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/`);
   return parseResponse(response);
@@ -236,6 +244,15 @@ export async function fetchMechanicReviews(id) {
   return parseResponse(response);
 }
 
+export async function postMechanicReview(id, { reviewer_name, rating, comment }) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/profile/${id}/reviews/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reviewer_name, rating, comment }),
+  });
+  return parseResponse(response);
+}
+
 export async function fetchPlatformStats() {
   const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/stats/`);
   return parseResponse(response);
@@ -256,6 +273,27 @@ export function sendMessage(breakdownRequestId, payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+}
+
+// Messagerie mécanicien ↔ admin
+export function fetchMechanicAdminMessages(mechanicId) {
+  const qs = mechanicId ? `?mechanic_id=${mechanicId}` : '';
+  return apiRequest(`/mechanics/messages/admin/${qs}`);
+}
+
+export function sendMechanicAdminMessage(content, mechanicId) {
+  const body = mechanicId
+    ? { content, mechanic_id: mechanicId }
+    : { content };
+  return apiRequest('/mechanics/messages/admin/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export function fetchMechanicAdminConversations() {
+  return apiRequest('/mechanics/messages/admin/conversations/');
 }
 
 export async function submitReview(mechanicProfileId, payload) {
@@ -290,4 +328,74 @@ export async function confirmPayment(paymentId, breakdownRequestId) {
 
 export function fetchAdminPayments() {
   return apiRequest('/payments/admin/');
+}
+
+export async function fetchInterventionForBreakdown(breakdownId) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/${breakdownId}/intervention/`);
+  return parseResponse(response);
+}
+
+export async function driverConfirmIntervention(interventionId) {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/interventions/${interventionId}/driver-confirm/`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+  );
+  return parseResponse(response);
+}
+
+export async function submitReviewForIntervention(interventionId, payload) {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/interventions/${interventionId}/review/`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  return parseResponse(response);
+}
+
+export function createSubscriptionPayment(payload) {
+  return apiRequest('/payments/subscription/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function confirmSubscriptionPayment(paymentId) {
+  return apiRequest(`/payments/subscription/${paymentId}/confirm/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export function fetchAdminReviews({ rating, mechanic } = {}) {
+  const params = new URLSearchParams();
+  if (rating) params.set('rating', rating);
+  if (mechanic) params.set('mechanic', mechanic);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return apiRequest(`/mechanics/admin/reviews/${qs}`);
+}
+
+export function deleteAdminReview(reviewId) {
+  return apiRequest(`/mechanics/admin/reviews/${reviewId}/`, { method: 'DELETE' });
+}
+
+export async function requestOTP(phone) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/otp/request/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  return parseResponse(response);
+}
+
+export async function verifyOTP(phone, code) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/otp/verify/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  });
+  return parseResponse(response);
 }

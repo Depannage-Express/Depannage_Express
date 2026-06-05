@@ -8,5 +8,8 @@ urlpatterns = [
     path('<uuid:pk>/refuse/', views.refuse_intervention, name='intervention-refuse'),
     path('<uuid:pk>/start/', views.start_intervention, name='intervention-start'),
     path('<uuid:pk>/complete/', views.complete_intervention, name='intervention-complete'),
+    path('<uuid:pk>/driver-confirm/', views.driver_confirm_intervention, name='intervention-driver-confirm'),
+    path('<uuid:pk>/review/', views.submit_review_for_intervention, name='intervention-submit-review'),
+    path('<uuid:pk>/cancel/', views.admin_cancel_intervention, name='intervention-admin-cancel'),
     path('admin/', views.InterventionAdminListView.as_view(), name='intervention-admin-list'),
 ]

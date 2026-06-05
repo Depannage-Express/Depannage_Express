@@ -4,14 +4,16 @@ from apps.core.models import TimestampedModel
 
 
 class Intervention(TimestampedModel):
+    # Statuts alignés sur la state machine (apps/core/state_machine.py)
     STATUS_CHOICES = [
-        ('pending_acceptance', 'En attente d\'acceptation'),
-        ('accepted', 'Acceptée'),
-        ('refused', 'Refusée'),
-        ('in_progress', 'En cours'),
-        ('completed', 'Terminée'),
-        ('disputed', 'Litigieuse'),
-        ('cancelled', 'Annulée'),
+        ('pending_acceptance', "En attente d'acceptation"),
+        ('accepted',           'Acceptée'),
+        ('refused',            'Refusée'),
+        ('in_progress',        'En cours'),
+        ('completed',          'Terminée'),
+        ('paid',               'Payée'),
+        ('reviewed',           'Évaluée'),
+        ('cancelled',          'Annulée'),
     ]
 
     breakdown_request = models.OneToOneField(
@@ -36,6 +38,9 @@ class Intervention(TimestampedModel):
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    # Payment
+    paid_at = models.DateTimeField(null=True, blank=True)
+
     # Results
     mechanic_notes = models.TextField(blank=True)
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -44,6 +49,10 @@ class Intervention(TimestampedModel):
     # Proof
     before_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
     after_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
+
+    # Driver confirmation (conservé pour compatibilité frontend)
+    driver_confirmed = models.BooleanField(default=False)
+    driver_confirmed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'interventions_intervention'

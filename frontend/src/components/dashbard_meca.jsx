@@ -1,22 +1,31 @@
-import { useState } from 'react'; 
+import { useState } from 'react';
 import ListesCommandes from './listes_demandes';
 import Notifications from './notification';
-import DiscussionMeca from './discussion_meca'; 
+import DiscussionMeca from './discussion_meca';
 import StatutMissions from './statut';
 import MonCompte from './compteMeca';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle } from 'lucide-react';
+import Abonnement from './abonnement';
+import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown } from 'lucide-react';
 
 const DashboardMecanicien = ({ currentUser }) => {
 
   // 1. Créer l'état pour savoir quelle "sous-page" afficher
   const [view, setView] = useState('menu');
   // Données pour les cartes du menu
+  const isPremium = currentUser?.role === 'mechanic_premium';
+
   const menuItems = [
     { id: 'liste-commandes', title: "Listes des Demandes", icon: <ClipboardList size={40} />, color: "bg-[#608C27]" },
     { id: 'notif', title: "Notification", icon: <Bell size={40} />, color: "bg-[#608C27]" },
     { id: 'compte', title: "Mon compte", icon: <UserCircle size={40} />, color: "bg-[#608C27]" },
     { id: 'statut', title: "Statut des missions", icon: <Activity size={40} />, color: "bg-[#608C27]" },
     { id: 'discuter', title: "Discuter", icon: <MessageCircle size={40} />, color: "bg-[#608C27]" },
+    {
+      id: 'abonnement',
+      title: isPremium ? "Plan Premium" : "Passer Premium",
+      icon: <Crown size={40} />,
+      color: isPremium ? "bg-yellow-500" : "bg-[#0D2B0D]",
+    },
   ];
 
 
@@ -33,7 +42,9 @@ const DashboardMecanicien = ({ currentUser }) => {
       case 'statut':
                 return <StatutMissions onBack={()=> setView('menu')}/>;
       case 'discuter':
-                return <DiscussionMeca onBack={() => setView('menu')} />;
+                return <DiscussionMeca onBack={() => setView('menu')} currentUser={currentUser} />;
+      case 'abonnement':
+                return <Abonnement onBack={() => setView('menu')} currentUser={currentUser} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
@@ -64,15 +75,28 @@ const DashboardMecanicien = ({ currentUser }) => {
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
         
         {/* En-tête du Menu */}
-        <div className="bg-[#0D2B0D] py-4 text-center">
-          <h2 className="text-white text-2xl font-bold uppercase tracking-widest">
-            Votre menu principal
-          </h2>
-          {currentUser ? (
-            <p className="text-sm text-white/80 mt-2">
-              Connecte en tant que {currentUser.full_name}
-            </p>
-          ) : null}
+        <div className="bg-[#0D2B0D] py-4 px-6 flex items-center justify-between">
+          <div className="text-center flex-1">
+            <h2 className="text-white text-2xl font-bold uppercase tracking-widest">
+              Votre menu principal
+            </h2>
+            {currentUser ? (
+              <p className="text-sm text-white/80 mt-1">
+                Connecté en tant que {currentUser.full_name}
+              </p>
+            ) : null}
+          </div>
+          <button
+            onClick={() => setView('abonnement')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all shrink-0 ${
+              isPremium
+                ? 'bg-yellow-400 text-[#0D2B0D] border-yellow-300 hover:bg-yellow-300'
+                : 'bg-[#608C27] text-white border-[#608C27] hover:bg-yellow-400 hover:text-[#0D2B0D] hover:border-yellow-400'
+            }`}
+          >
+            <Crown size={18} />
+            {isPremium ? 'Premium' : 'Passer Premium'}
+          </button>
         </div>
 
         {/* Grille des fonctionnalités */}
@@ -103,7 +127,7 @@ const DashboardMecanicien = ({ currentUser }) => {
           />
 
           {/* Discuter (Droite Bas) */}
-          <MenuCard item={menuItems[4]} 
+          <MenuCard item={menuItems[4]}
             onClick={() => setView('discuter')}
           />
 

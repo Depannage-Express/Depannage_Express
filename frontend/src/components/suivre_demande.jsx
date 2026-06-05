@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchBreakdownStatus } from '../lib/api';
 
 const STATUS_LABELS = {
@@ -9,9 +9,13 @@ const STATUS_LABELS = {
   cancelled: { text: 'Demande annulée', color: 'text-red-600' },
 };
 
-const Suivre = ({ requestId }) => {
+const NO_MECHANIC_TIMEOUT_MS = 25000;
+
+const Suivre = ({ requestId, onBack }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [noMechanicAvailable, setNoMechanicAvailable] = useState(false);
+  const noMechanicTimerRef = useRef(null);
 
   useEffect(() => {
     if (!requestId) return;
@@ -21,6 +25,9 @@ const Suivre = ({ requestId }) => {
         const result = await fetchBreakdownStatus(requestId);
         setData(result);
         setError('');
+        if (result.status !== 'pending') {
+          clearTimeout(noMechanicTimerRef.current);
+        }
       } catch (e) {
         setError(e.message);
       }
@@ -28,10 +35,41 @@ const Suivre = ({ requestId }) => {
 
     poll();
     const interval = window.setInterval(poll, 10000);
-    return () => window.clearInterval(interval);
+
+    noMechanicTimerRef.current = window.setTimeout(() => {
+      setNoMechanicAvailable(true);
+    }, NO_MECHANIC_TIMEOUT_MS);
+
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(noMechanicTimerRef.current);
+    };
   }, [requestId]);
 
   const statusInfo = data ? (STATUS_LABELS[data.status] || { text: data.status, color: 'text-gray-600' }) : null;
+
+  if (noMechanicAvailable && data?.status === 'pending') {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
+        <div className="bg-white p-10 rounded-xl shadow-2xl flex flex-col items-center max-w-md w-full text-center">
+          <p className="text-4xl mb-4">😔</p>
+          <p className="font-bold text-xl text-[#0D2B0D] mb-2">Aucun mécanicien disponible</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Aucun mécanicien n'est disponible dans votre zone pour le moment.
+            Veuillez réessayer ultérieurement.
+          </p>
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="bg-[#608C27] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#0D2B0D] transition-colors"
+            >
+              Retour à l'accueil
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">

@@ -9,7 +9,7 @@ const Footer = () => {
         {/* Section Copyright */}
         <div className="flex items-center justify-center md:justify-start">
           <p className="text-sm">
-            © Tout droit réservé 2026
+            © Tous droits réservés 2026
           </p>
         </div>
 
@@ -51,7 +51,7 @@ const Footer = () => {
             </li>
             <li className="flex items-center justify-center md:justify-start gap-3">
               <FaFacebook size={18} className="text-white" />
-              <a href="" className="hover:text-[#608C27]">
+              <a href="#" className="hover:text-[#608C27]">
                 Dépannage Express
               </a>
             </li>

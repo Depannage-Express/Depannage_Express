@@ -167,9 +167,19 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
             </div>
 
             {/* Zone notification */}
-            <div className="w-full rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic px-4 py-3 min-h-[44px] flex items-center justify-center">
-              {error || success || "Le dossier de vérification sera complété dans le profil mécanicien."}
-            </div>
+            {error ? (
+              <div className="w-full rounded-xl bg-red-100 border border-red-400 text-red-700 text-center text-sm font-medium italic px-4 py-3 min-h-[44px] flex items-center justify-center">
+                {error}
+              </div>
+            ) : success ? (
+              <div className="w-full rounded-xl bg-green-100 border border-green-400 text-green-700 text-center text-sm font-medium italic px-4 py-3 min-h-[44px] flex items-center justify-center">
+                {success}
+              </div>
+            ) : (
+              <div className="w-full rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic px-4 py-3 min-h-[44px] flex items-center justify-center">
+                Le dossier de vérification sera complété dans le profil mécanicien.
+              </div>
+            )}
 
             {/* Bouton Soumettre */}
             <button

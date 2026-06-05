@@ -21,6 +21,8 @@ import DiscussionCond from './components/discussion';
 import DiscussionMeca from './components/discussion_meca';
 import DashboardAdmin from './components/dashboard_admin';
 import APropos from './components/a_propos';
+import EnAttenteValidation from './components/en_attente_validation';
+import HistoriqueOTP from './components/historique_otp';
 import './index.css';
 
 const BREAKDOWN_PRICING = {
@@ -52,6 +54,8 @@ const SCREENS = {
   INTERVENTION: 'intervention',
   NO_FINISH: 'no_finish',
   THANK_YOU: 'thank_you',
+  PENDING_VALIDATION: 'pending_validation',
+  HISTORY_OTP: 'history_otp',
 };
 
 function getBreakdownAmount(breakdown) {
@@ -65,15 +69,22 @@ function getBreakdownAmount(breakdown) {
   return BREAKDOWN_PRICING.general;
 }
 
-function getDashboardScreenForRole(role) {
-  return role === 'admin' ? SCREENS.ADMIN_DASHBOARD : SCREENS.MECHANIC_DASHBOARD;
+function getScreenForUser(user) {
+  if (!user) return SCREENS.HOME;
+  if (user.role === 'admin') return SCREENS.ADMIN_DASHBOARD;
+  // Mécanicien : uniquement si profil approuvé
+  if (user.mechanic_profile_status === 'approved') return SCREENS.MECHANIC_DASHBOARD;
+  return SCREENS.PENDING_VALIDATION;
 }
 const SCREEN_TO_NAV_MAP = {
   [SCREENS.HOME]: 'accueil',
   [SCREENS.ABOUT]: 'a-propos',
   [SCREENS.MECHANIC_INFO]: 'nos-techniciens',
   [SCREENS.ADMIN_LOGIN]: 'administrateur',
-  [SCREENS.ADMIN_DASHBOARD]: 'administrateur', // Reste allumé sur administrateur si connecté
+  [SCREENS.ADMIN_DASHBOARD]: 'administrateur',
+  [SCREENS.MECHANIC_DASHBOARD]: 'accueil',
+  [SCREENS.PENDING_VALIDATION]: 'accueil',
+  [SCREENS.HISTORY_OTP]: 'historique',
 };
 
 function App() {
@@ -82,6 +93,7 @@ function App() {
   const [screen, setScreen] = useState(SCREENS.HOME);
   const [currentBreakdown, setCurrentBreakdown] = useState(null);
   const [currentPayment, setCurrentPayment] = useState(null);
+  const [currentIntervention, setCurrentIntervention] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -94,7 +106,7 @@ function App() {
       try {
         const user = await fetchCurrentUser();
         setCurrentUser(user);
-        setScreen(getDashboardScreenForRole(user?.role));
+        setScreen(getScreenForUser(user));
       } catch {
         clearAuthTokens();
         setCurrentUser(null);
@@ -122,6 +134,7 @@ function App() {
   const resetBreakdownFlow = () => {
     setCurrentBreakdown(null);
     setCurrentPayment(null);
+    setCurrentIntervention(null);
   };
 
   const handleLogout = async () => {
@@ -157,7 +170,11 @@ function App() {
     switch (page) {
       case 'accueil':
         setSearchQuery('');
-        goHome();
+        if (currentUser) {
+          setScreen(getScreenForUser(currentUser));
+        } else {
+          goHome();
+        }
         break;
       case 'a-propos':
         setSearchQuery('');
@@ -169,6 +186,9 @@ function App() {
       case 'administrateur':
         openAdminLogin();
         break;
+      case 'historique':
+        setScreen(SCREENS.HISTORY_OTP);
+        break;
       default:
         break;
     }
@@ -177,13 +197,13 @@ function App() {
   const handleMechanicAuth = (authPayload) => {
     const user = authPayload?.user || null;
     setCurrentUser(user);
-    setScreen(getDashboardScreenForRole(user?.role));
+    setScreen(getScreenForUser(user));
   };
 
   const handleAdminAuth = (authPayload) => {
     const user = authPayload?.user || null;
     setCurrentUser(user);
-    setScreen(getDashboardScreenForRole(user?.role));
+    setScreen(getScreenForUser(user));
   };
 
   const ensureAdminUser = (authPayload) => {
@@ -201,12 +221,24 @@ function App() {
 
   const renderMainScreen = () => {
     switch (screen) {
+      case SCREENS.PENDING_VALIDATION:
+        return (
+          <EnAttenteValidation
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onStatusChanged={(freshUser) => {
+              setCurrentUser(freshUser);
+              setScreen(getScreenForUser(freshUser));
+            }}
+          />
+        );
       case SCREENS.DISCUSSION_DRIVER:
         return (
           <DiscussionCond
             onBackClick={() => setScreen(SCREENS.BILLING)}
             breakdownRequestId={currentBreakdown?.id}
             driverName={currentBreakdown?.driver_name}
+            driverToken={currentBreakdown?.driver_token}
           />
         );
       case SCREENS.DISCUSSION_MECHANIC:
@@ -255,9 +287,8 @@ function App() {
         return (
           <Remerciement
             onRemerc={goHome}
-            mechanicProfileId={currentBreakdown?.assigned_mechanic}
+            interventionId={currentIntervention?.id}
             reviewerName={currentBreakdown?.driver_name}
-            breakdownId={currentBreakdown?.id}
           />
         );
       case SCREENS.NO_FINISH:
@@ -265,8 +296,12 @@ function App() {
       case SCREENS.INTERVENTION:
         return (
           <Intervention
+            breakdownId={currentBreakdown?.id}
             onNo={() => setScreen(SCREENS.NO_FINISH)}
-            onTerminer={() => setScreen(SCREENS.THANK_YOU)}
+            onTerminer={(interventionId) => {
+              if (interventionId) setCurrentIntervention({ id: interventionId });
+              setScreen(SCREENS.THANK_YOU);
+            }}
           />
         );
       case SCREENS.PAYMENT_CONFIRMATION:
@@ -287,6 +322,7 @@ function App() {
             payerName={currentBreakdown?.driver_name}
             amount={currentAmount}
             breakdownId={currentBreakdown?.id}
+            driverToken={currentBreakdown?.driver_token}
           />
         );
       case SCREENS.BILLING:
@@ -312,6 +348,8 @@ function App() {
             <Demande onConfirm={handleBreakdownCreated} />
           </div>
         );
+      case SCREENS.HISTORY_OTP:
+        return <HistoriqueOTP onBack={goHome} />;
       case SCREENS.HOME:
       default:
         return <Hero onStartClick={() => setScreen(SCREENS.BREAKDOWN_FORM)} onVoir={() => setScreen(SCREENS.MECHANIC_INFO)} />;

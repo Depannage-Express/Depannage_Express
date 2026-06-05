@@ -1,43 +1,34 @@
 import '../index.css'
+import { useEffect, useState } from 'react';
+import { Loader } from 'lucide-react';
 import logo from '../assets/arriere.jpeg';
+import { fetchPublicMechanics, fetchPlatformStats } from '../lib/api';
 
 const StatsAndTechs = ({ onContact, onVoir }) => {
-  const technicians = [
-    { 
-      name: "Nom & Prénom", 
-      rating: "4.8", 
-      exp: "5 ans", 
-      specialty: "Mécanicien auto", 
-      img: "/Male construction worker.jpeg" 
-    },
-    { 
-      name: "Nom & Prénom", 
-      rating: "4.8", 
-      exp: "5 ans", 
-      specialty: "Mécanicien auto", 
-      img: "/Mécanicien automobile.jpeg" 
-    },
-    { 
-      name: "Nom & Prénom", 
-      rating: "4.8", 
-      exp: "5 ans", 
-      specialty: "Mécanicien auto", 
-      img: "/Mechanic Quotes.jpeg" 
-    },{ 
-      name: "Nom & Prénom", 
-      rating: "4.8", 
-      exp: "5 ans", 
-      specialty: "Mécanicien auto", 
-      img: "/Mécanicien automobile.jpeg" 
-    },
-    { 
-      name: "Nom & Prénom", 
-      rating: "4.8", 
-      exp: "5 ans", 
-      specialty: "Mécanicien auto", 
-      img: "/Mechanic Quotes.jpeg" 
-    }
-  ];
+  const [technicians, setTechnicians] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({ total_interventions: null, total_mechanics: null, total_requests: null });
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [mechanicsData, statsData] = await Promise.all([
+          fetchPublicMechanics(),
+          fetchPlatformStats(),
+        ]);
+        const list = Array.isArray(mechanicsData) ? mechanicsData : (mechanicsData.results || []);
+        setTechnicians(list.filter(tech => tech.is_premium));
+        setStats(statsData);
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+        setTechnicians([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   return (
 <section className="flex flex-col md:flex-row bg-[#608C27] border-t-4 border-[#608C27]">
@@ -45,23 +36,29 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
       <div className="w-full md:w-1/3 bg-white flex flex-col  lg:flex-col items-center justify-center py-4 lg:py-6 gap-8">
 
         <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center">
-          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">250+</h3>
+          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">
+            {stats.total_interventions !== null ? `${stats.total_interventions}+` : '—'}
+          </h3>
           <p className="font-semibold text-[#0D2B0D] lg:text-sm md:text-sm text-2xl">
-            de service rendus
+            de services rendus
           </p>
         </div>
 
         <div className="bg-[#0D2B0D] rounded-2xl p-2 w-64  md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center shadow-lg">
-          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-white">30+</h3>
+          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-white">
+            {stats.total_mechanics !== null ? `${stats.total_mechanics}+` : '—'}
+          </h3>
           <p className="font-semibold text-white lg:text-sm md:text-sm text-2xl">
             de mécaniciens
           </p>
         </div>
 
         <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center">
-          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">100+</h3>
+          <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">
+            {stats.total_requests !== null ? `${stats.total_requests}+` : '—'}
+          </h3>
           <p className="font-semibold text-[#0D2B0D] lg:text-sm md:text-sm text-2xl">
-            de clients
+            de demandes
           </p>
         </div>
 
@@ -69,77 +66,87 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
 
       {/* PARTIE DROITE : TECHNICIENS */}
 <div className="w-full md:w-2/3 bg-[#608C27] grid grid-cols-1 justify-items-center md:grid-cols-2 lg:grid-cols-3  gap-4 py-6 lg:py-8 px-4 max-h-[500px] overflow-y-auto">
-        {technicians.map((tech, index) => (
-          <div
-            key={index}
-            className={`${
-              index === 1 || index === 3
-                ? 'bg-[#0D2B0D] text-white'
-                : 'bg-white text-[#0D2B0D]'
-            } rounded-xl p-4 shadow-lg w-full max-w-[256px] lg:max-w-[280px] border-2 border-[#0D2B0D]`}
-          >
+        {isLoading ? (
+          <div className="col-span-full flex items-center justify-center py-8">
+            <Loader className="text-white animate-spin" size={32} />
+          </div>
+        ) : technicians.length === 0 ? (
+          <div className="col-span-full text-white text-center py-8 font-semibold">
+            Aucun mécanicien premium disponible pour le moment
+          </div>
+        ) : (
+          technicians.slice(0, 6).map((tech, index) => (
+            <div
+              key={tech.id}
+              className={`${
+                index === 1 || index === 3
+                  ? 'bg-[#0D2B0D] text-white'
+                  : 'bg-white text-[#0D2B0D]'
+              } rounded-xl p-4 shadow-lg w-full max-w-[256px] lg:max-w-[280px] border-2 border-[#0D2B0D]`}
+            >
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#608C27] shrink-0">
-                <img
-                  src={tech.img}
-                  alt={tech.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#608C27] shrink-0">
+                  <img
+                    src={tech.profile_photo || tech.user_avatar || "/Male construction worker.jpeg"}
+                    alt={tech.user_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div>
+                  <h4
+                    className={`font-bold leading-tight text-sm md:text-base ${
+                      index === 1
+                        ? 'text-white'
+                        : 'text-[#0D2B0D]'
+                    }`}
+                  >
+                    {tech.user_name}
+                  </h4>
+
+                  <p className="text-xs font-medium">
+                    ({tech.average_rating ? Number(tech.average_rating).toFixed(1) : "—"} ⭐)
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <h4
-                  className={`font-bold leading-tight text-sm md:text-base ${
-                    index === 1
-                      ? 'text-white'
-                      : 'text-[#0D2B0D]'
-                  }`}
-                >
-                  {tech.name}
-                </h4>
+              <div className="space-y-1 mb-4 text-xs md:text-sm">
+                <p>
+                  <span className="font-bold">Spécialité:</span>{' '}
+                  {tech.specialties?.length > 0 ? tech.specialties[0].name : 'Mécanicien auto'}
+                </p>
 
-                <p className="text-xs font-medium">
-                  ({tech.rating} avis)
+                <p>
+                  <span className="font-bold">Expérience:</span>{' '}
+                  {tech.years_experience ? `${tech.years_experience} ans` : "Non renseigné"}
                 </p>
               </div>
+
+              <div className="flex justify-between items-center gap-2">
+
+                <button
+                  onClick={() => onVoir()}
+                  className="bg-[#608C27] text-white text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:bg-black transition-colors"
+                >
+                  Voir plus
+                </button>
+
+                <button
+                  onClick={() => onContact()}
+                  className={`${
+                    index === 1
+                      ? 'bg-white text-[#0D2B0D]'
+                      : 'bg-black text-white'
+                  } text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:opacity-80 transition-colors`}
+                >
+                  Contacter
+                </button>
+
+              </div>
             </div>
-
-            <div className="space-y-1 mb-4 text-xs md:text-sm">
-              <p>
-                <span className="font-bold">Spécialité:</span>{' '}
-                {tech.specialty}
-              </p>
-
-              <p>
-                <span className="font-bold">Expérience:</span>{' '}
-                {tech.exp}
-              </p>
-            </div>
-
-            <div className="flex justify-between items-center gap-2">
-
-              <button
-                onClick={onVoir}
-                className="bg-[#608C27] text-white text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:bg-black transition-colors"
-              >
-                Voir plus
-              </button>
-
-              <button
-                onClick={onContact}
-                className={`${
-                  index === 1
-                    ? 'bg-white text-[#0D2B0D]'
-                    : 'bg-black text-white'
-                } text-[10px] md:text-xs px-3 py-2 rounded-lg font-bold hover:opacity-80 transition-colors`}
-              >
-                Contacter
-              </button>
-
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </section>
   );

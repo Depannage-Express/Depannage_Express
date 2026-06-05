@@ -1,16 +1,20 @@
 # apps/mechanics/views.py
+from decimal import Decimal
+
+from django.db.models import Avg, Q
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAdmin, IsMechanic
+from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
-from .models import MechanicProfile, Specialty, MechanicReview
+from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage
 from .serializers import (
     MechanicProfileSerializer, MechanicPublicSerializer,
-    SpecialtySerializer, MechanicValidationSerializer, MechanicReviewSerializer
+    SpecialtySerializer, MechanicValidationSerializer, MechanicReviewSerializer,
+    MechanicAdminMessageSerializer,
 )
 
 
@@ -74,9 +78,19 @@ class MechanicPublicListView(generics.ListAPIView):
     serializer_class = MechanicPublicSerializer
 
     def get_queryset(self):
-        return MechanicProfile.objects.select_related('user').prefetch_related('specialties').filter(
+        qs = MechanicProfile.objects.select_related('user').prefetch_related('specialties').filter(
             status='approved'
-        ).order_by('-average_rating')
+        )
+        q = self.request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(city__icontains=q) |
+                Q(specialties__name__icontains=q) |
+                Q(bio__icontains=q)
+            ).distinct()
+        return qs.order_by('-average_rating')
 
 
 # ─── Admin: list pending mechanics ───────────────────────────────────────────
@@ -134,7 +148,7 @@ def validate_mechanic_view(request, pk):
 # ─── Availability toggle ─────────────────────────────────────────────────────
 
 @api_view(['POST'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def toggle_availability_view(request):
     try:
         profile = request.user.mechanic_profile
@@ -146,14 +160,145 @@ def toggle_availability_view(request):
     return Response({'is_available': profile.is_available})
 
 
-# ─── Reviews ─────────────────────────────────────────────────────────────────
+# ─── Admin reviews ───────────────────────────────────────────────────────────
 
-class ReviewListView(generics.ListAPIView):
-    permission_classes = [AllowAny]
+class ReviewAdminListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
     serializer_class = MechanicReviewSerializer
 
     def get_queryset(self):
-        mechanic_id = self.kwargs.get('pk')
-        return MechanicReview.objects.filter(
-            mechanic_id=mechanic_id, is_visible=True
+        qs = MechanicReview.objects.select_related(
+            'mechanic__user', 'intervention'
         ).order_by('-created_at')
+        rating = self.request.query_params.get('rating')
+        mechanic_id = self.request.query_params.get('mechanic')
+        if rating:
+            qs = qs.filter(rating=rating)
+        if mechanic_id:
+            qs = qs.filter(mechanic_id=mechanic_id)
+        return qs
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdmin])
+def admin_delete_review(request, pk):
+    try:
+        review = MechanicReview.objects.select_related('mechanic').get(pk=pk)
+    except MechanicReview.DoesNotExist:
+        return Response({'error': 'Avis introuvable.'}, status=404)
+
+    mechanic = review.mechanic
+    review.delete()
+
+    remaining = MechanicReview.objects.filter(mechanic=mechanic, is_visible=True)
+    count = remaining.count()
+    if count > 0:
+        avg = remaining.aggregate(avg=Avg('rating'))['avg']
+        mechanic.average_rating = Decimal(str(round(avg, 2)))
+        mechanic.total_reviews = count
+    else:
+        mechanic.average_rating = Decimal('0.00')
+        mechanic.total_reviews = 0
+    mechanic.save(update_fields=['average_rating', 'total_reviews'])
+
+    return Response({'success': True})
+
+
+# ─── Messagerie mécanicien ↔ admin ────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def mechanic_admin_messages(request):
+    """
+    GET  — mécanicien lit sa conversation avec l'admin (son propre fil).
+           admin lit le fil d'un mécanicien via ?mechanic_id=<uuid>.
+    POST — mécanicien envoie (sender_type déterminé côté serveur).
+           admin répond en passant mechanic_id dans le body.
+    """
+    is_admin = request.user.role == 'admin'
+
+    if is_admin:
+        mechanic_id = request.query_params.get('mechanic_id') or request.data.get('mechanic_id')
+        if not mechanic_id:
+            return Response({'error': 'mechanic_id requis.'}, status=400)
+        try:
+            profile = MechanicProfile.objects.select_related('user').get(pk=mechanic_id)
+        except MechanicProfile.DoesNotExist:
+            return Response({'error': 'Mécanicien introuvable.'}, status=404)
+    else:
+        if request.user.role not in ('mechanic_standard', 'mechanic_premium') or request.user.is_blocked:
+            return Response({'error': 'Accès non autorisé.'}, status=403)
+        try:
+            profile = request.user.mechanic_profile
+        except MechanicProfile.DoesNotExist:
+            return Response({'error': 'Profil mécanicien introuvable.'}, status=404)
+
+    if request.method == 'GET':
+        msgs = MechanicAdminMessage.objects.filter(mechanic=profile)
+        return Response(MechanicAdminMessageSerializer(msgs, many=True).data)
+
+    # POST
+    content = (request.data.get('content') or '').strip()
+    if not content:
+        return Response({'error': 'Message vide.'}, status=400)
+
+    if is_admin:
+        full = f"{request.user.first_name} {request.user.last_name}".strip()
+        sender_name = full or 'Administration'
+        sender_type_val = 'admin'
+    else:
+        full = f"{request.user.first_name} {request.user.last_name}".strip()
+        sender_name = full or request.user.email
+        sender_type_val = 'mechanic'
+
+    msg = MechanicAdminMessage.objects.create(
+        mechanic=profile,
+        sender_type=sender_type_val,
+        sender_name=sender_name,
+        content=content,
+    )
+    return Response(MechanicAdminMessageSerializer(msg).data, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def mechanic_admin_conversations(request):
+    """Liste tous les mécaniciens approuvés avec leur nombre de messages (pour l'interface admin)."""
+    from django.db.models import Count, Max
+    profiles = (
+        MechanicProfile.objects
+        .filter(status='approved')
+        .select_related('user')
+        .annotate(
+            msg_count=Count('admin_messages'),
+            last_msg_at=Max('admin_messages__created_at'),
+        )
+        .order_by('-last_msg_at', '-created_at')
+    )
+    return Response([{
+        'mechanic_id': str(p.id),
+        'name': p.user.full_name,
+        'msg_count': p.msg_count,
+        'last_message_at': p.last_msg_at,
+    } for p in profiles])
+
+
+# ─── Reviews (public) ─────────────────────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def mechanic_reviews(request, pk):
+    """
+    Lecture publique des avis visibles d'un mécanicien.
+    La création d'avis passe exclusivement par POST /interventions/<id>/review/
+    (authentification driver_token obligatoire).
+    """
+    try:
+        profile = MechanicProfile.objects.get(pk=pk)
+    except MechanicProfile.DoesNotExist:
+        return Response({'error': 'Mécanicien introuvable.'}, status=404)
+
+    reviews = MechanicReview.objects.filter(
+        mechanic=profile, is_visible=True
+    ).order_by('-created_at')
+    return Response(MechanicReviewSerializer(reviews, many=True).data)

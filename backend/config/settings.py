@@ -4,6 +4,7 @@ Clean production-ready configuration
 """
 
 import os
+import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 
@@ -34,6 +35,7 @@ DJANGO_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 ]
 
@@ -53,6 +55,7 @@ LOCAL_APPS = [
     'apps.payments',
     'apps.premium',
     'apps.geolocation',
+    'apps.otp',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -65,6 +68,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
 
@@ -99,30 +103,40 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ─────────────────────────────────────────
-# DATABASE (DEV)
+# DATABASE
 # ─────────────────────────────────────────
 
-DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').lower()
-
-if DB_ENGINE == 'postgresql':
+# DATABASE_URL (Supabase / Render) has priority
+_database_url = os.getenv('DATABASE_URL')
+if _database_url:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'depannage_express'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
-        }
+        'default': dj_database_url.parse(
+            _database_url,
+            conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', '60')),
+            ssl_require=True,
+        )
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.getenv('SQLITE_NAME', BASE_DIR / 'db.sqlite3'),
+    DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').lower()
+    if DB_ENGINE == 'postgresql':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'depannage_express'),
+                'USER': os.getenv('DB_USER', 'postgres'),
+                'PASSWORD': os.getenv('DB_PASSWORD', ''),
+                'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+                'PORT': os.getenv('DB_PORT', '5432'),
+                'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+            }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.getenv('SQLITE_NAME', BASE_DIR / 'db.sqlite3'),
+            }
+        }
 
 # ─────────────────────────────────────────
 # AUTH
@@ -158,6 +172,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
         'user': '1000/hour',
+        'otp_request': '10/hour',
     },
 }
 
@@ -195,6 +210,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -212,6 +228,19 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─────────────────────────────────────────
+# HTTPS / PRODUCTION SECURITY
+# ─────────────────────────────────────────
+
+if not DEBUG:
+    # Render termine le SSL en amont — Django reçoit HTTP en interne
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# ─────────────────────────────────────────
 # EMAIL (DEV)
 # ─────────────────────────────────────────
 
@@ -223,3 +252,17 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MAX_MECHANIC_SEARCH_RADIUS_KM = 50
 DEFAULT_SEARCH_RADIUS_KM = 10
+
+# ─────────────────────────────────────────
+# SMS / OTP
+# ─────────────────────────────────────────
+
+# 'console' (log dans le terminal, code retourné en DEBUG) ou 'twilio'
+SMS_BACKEND = os.getenv('SMS_BACKEND', 'console')
+
+# True → renvoie le code OTP dans la réponse API (démo / soutenance)
+OTP_SHOW_CODE = os.getenv('OTP_SHOW_CODE', 'False') == 'True'
+
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
+TWILIO_FROM_NUMBER = os.getenv('TWILIO_FROM_NUMBER', '')

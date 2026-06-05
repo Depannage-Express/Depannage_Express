@@ -1,46 +1,34 @@
-import { useEffect, useMemo, useState } from 'react'; 
+import { useEffect, useState } from 'react';
 import Utilisateurs from './utilisateurs';
 import Signalements from './signal';
 import GestionPaiements from './paiement_ad';
 import Abonnements from './aboonnements';
 import SupervisionInterventions from './supervisions_interv';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle } from 'lucide-react';
-import { fetchAdminBreakdowns, fetchAdminMechanics, fetchAdminUsers } from '../lib/api';
+import GestionAvis from './gestion_avis';
+import AdminMessages from './admin_messages';
+import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText } from 'lucide-react';
+import { fetchAdminStats } from '../lib/api';
 
 const DashboardAdmin = () => {
   const [view, setView] = useState('menu');
-  const [users, setUsers] = useState([]);
-  const [breakdowns, setBreakdowns] = useState([]);
-  const [mechanics, setMechanics] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [usersData, breakdownsData, mechanicsData] = await Promise.all([
-          fetchAdminUsers(),
-          fetchAdminBreakdowns(),
-          fetchAdminMechanics(),
-        ]);
-        setUsers(Array.isArray(usersData) ? usersData : []);
-        setBreakdowns(Array.isArray(breakdownsData) ? breakdownsData : []);
-        setMechanics(Array.isArray(mechanicsData) ? mechanicsData : []);
+        const data = await fetchAdminStats();
+        setStats(data);
       } catch (requestError) {
         setError(requestError.message);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadDashboard();
   }, []);
-
-  const stats = useMemo(() => ({
-    totalUsers: users.length,
-    totalMechanics: users.filter((user) => user.role === 'mechanic_standard' || user.role === 'mechanic_premium').length,
-    totalAdmins: users.filter((user) => user.role === 'admin').length,
-    pendingMechanics: mechanics.filter((mechanic) => mechanic.status === 'pending').length,
-    assignedBreakdowns: breakdowns.filter((breakdown) => breakdown.status === 'assigned').length,
-    openBreakdowns: breakdowns.length,
-  }), [users, breakdowns, mechanics]);
 
   const menuItems = [
     { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={40} />, color: "bg-[#608C27]" },
@@ -48,6 +36,8 @@ const DashboardAdmin = () => {
     { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={40} />, color: "bg-[#608C27]" },
     { id: 'paieadmin', title: "Paiements", icon: <Activity size={40} />, color: "bg-[#608C27]" },
     { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]" },
+    { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]" },
+    { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]" },
   ];
 
 
@@ -65,6 +55,10 @@ const DashboardAdmin = () => {
                 return <GestionPaiements onBack={()=> setView('menu')}/>;
       case 'signal':
                 return <Signalements onBack={() => setView('menu')} />;
+      case 'avis':
+                return <GestionAvis onBack={() => setView('menu')} />;
+      case 'messages':
+                return <AdminMessages onBack={() => setView('menu')} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
@@ -101,13 +95,32 @@ const DashboardAdmin = () => {
           {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border-b border-slate-200 bg-slate-50 p-6">
-          <StatCard label="Utilisateurs" value={stats.totalUsers} />
-          <StatCard label="Mecaniciens" value={stats.totalMechanics} />
-          <StatCard label="Admins" value={stats.totalAdmins} />
-          <StatCard label="Demandes" value={stats.openBreakdowns} />
-          <StatCard label="Demandes assignees" value={stats.assignedBreakdowns} />
-          <StatCard label="Profils en attente" value={stats.pendingMechanics} />
+        <div className="border-b border-slate-200 bg-slate-50 p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader className="text-[#608C27] animate-spin" size={28} />
+            </div>
+          ) : stats ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <StatCard label="Utilisateurs" value={stats.users.total} />
+                <StatCard label="Mécaniciens" value={(stats.mechanics.by_status.approved || 0) + (stats.mechanics.by_status.pending || 0)} />
+                <StatCard label="Profils en attente" value={stats.mechanics.by_status.pending || 0} />
+                <StatCard label="Demandes totales" value={stats.breakdowns.total} />
+                <StatCard label="Demandes assignées" value={stats.breakdowns.by_status.assigned || 0} />
+                <StatCard label="Terminées" value={stats.breakdowns.by_status.completed || 0} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard
+                  label="Revenus encaissés"
+                  value={`${stats.payments.total_revenue_xof.toLocaleString('fr-FR')} XOF`}
+                  highlight
+                />
+                <StatCard label="Paiements confirmés" value={stats.payments.paid_count} />
+                <StatCard label="Paiements en attente" value={stats.payments.pending_count} />
+              </div>
+            </>
+          ) : null}
         </div>
 
         {/* Grille des fonctionnalités */}
@@ -138,8 +151,18 @@ const DashboardAdmin = () => {
           />
 
           {/* Signalements (Droite Bas) */}
-          <MenuCard item={menuItems[4]} 
+          <MenuCard item={menuItems[4]}
             onClick={() => setView('signal')}
+          />
+
+          {/* Gestion des avis */}
+          <MenuCard item={menuItems[5]}
+            onClick={() => setView('avis')}
+          />
+
+          {/* Messages conducteurs & mécaniciens */}
+          <MenuCard item={menuItems[6]}
+            onClick={() => setView('messages')}
           />
 
         </div>
@@ -148,10 +171,10 @@ const DashboardAdmin = () => {
   );
 };
 
-const StatCard = ({ label, value }) => (
-  <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
-    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-    <p className="mt-2 text-2xl font-black text-[#0D2B0D]">{value}</p>
+const StatCard = ({ label, value, highlight = false }) => (
+  <div className={`rounded-2xl p-4 text-center shadow-sm ${highlight ? 'bg-[#0D2B0D]' : 'bg-white'}`}>
+    <p className={`text-xs font-bold uppercase tracking-wide ${highlight ? 'text-[#608C27]' : 'text-slate-500'}`}>{label}</p>
+    <p className={`mt-2 text-xl font-black ${highlight ? 'text-white' : 'text-[#0D2B0D]'}`}>{value}</p>
   </div>
 );
 

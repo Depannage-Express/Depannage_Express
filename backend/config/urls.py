@@ -22,6 +22,9 @@ urlpatterns = [
 
     # Payments
     path('api/payments/', include('apps.payments.urls')),
+
+    # OTP Conducteur — historique sans compte
+    path('api/otp/', include('apps.otp.urls')),
 ]
 
 # Fichiers uploadés servis localement (démo)

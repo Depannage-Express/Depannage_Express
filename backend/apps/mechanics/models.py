@@ -83,9 +83,10 @@ class MechanicProfile(TimestampedModel):
 
     def update_rating(self, new_rating: float):
         """Recalcule la note moyenne."""
-        total = self.average_rating * self.total_reviews + new_rating
+        from decimal import Decimal
+        total = float(self.average_rating) * self.total_reviews + float(new_rating)
         self.total_reviews += 1
-        self.average_rating = round(total / self.total_reviews, 2)
+        self.average_rating = Decimal(str(round(total / self.total_reviews, 2)))
         self.save(update_fields=['average_rating', 'total_reviews'])
 
 
@@ -117,3 +118,25 @@ class MechanicReview(TimestampedModel):
         super().save(*args, **kwargs)
         if is_new:
             self.mechanic.update_rating(float(self.rating))
+
+
+class MechanicAdminMessage(TimestampedModel):
+    """Canal de messagerie 1-1 entre un mécanicien et l'administration."""
+    SENDER_CHOICES = [
+        ('mechanic', 'Mécanicien'),
+        ('admin', 'Administrateur'),
+    ]
+
+    mechanic = models.ForeignKey(
+        MechanicProfile, on_delete=models.CASCADE, related_name='admin_messages'
+    )
+    sender_type = models.CharField(max_length=10, choices=SENDER_CHOICES)
+    sender_name = models.CharField(max_length=150)
+    content = models.TextField()
+
+    class Meta:
+        db_table = 'mechanics_admin_message'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message {self.sender_type} ↔ admin (mécanicien #{self.mechanic_id})"

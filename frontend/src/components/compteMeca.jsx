@@ -26,17 +26,11 @@ const MonCompte = ({onBack}) => {
   }, []);
 
   const compte = {
-    id: "2568752686",
-    solde: "50.000 FcFa"
+    id: profil?.id || '-',
+    solde: "Non disponible"
   };
 
-  const historique = [
-    { type: "Retrait", montant: "50000", date: "20/02/2025 15:30", frais: "125" },
-    { type: "Retrait", montant: "20000", date: "02/02/2025 20:30", frais: "50" },
-    { type: "Reçu", montant: "50000", date: "20/02/2025 15:30", frais: "0" },
-    { type: "Retrait", montant: "50000", date: "20/02/2025 15:30", frais: "125" },
-    { type: "Retrait", montant: "50000", date: "20/02/2025 15:30", frais: "125" },
-  ];
+  const historique = [];
 
   const handleRetrait = (e) => {
     e.preventDefault();
@@ -70,19 +64,19 @@ const MonCompte = ({onBack}) => {
           <div className="bg-[#D9D9D9] p-6 rounded-3xl shadow-md space-y-3">
             {error ? <p className="text-red-700 font-medium">{error}</p> : null}
             <p className="text-black font-bold">Nom: <span className="font-medium">{profil?.full_name || '-'}</span></p>
-            <p className="text-black font-bold">Id: <span className="font-medium">{profil?.id || '-'}</span></p>
             <p className="text-black font-bold">Tel: <span className="font-medium">{profil?.phone || '-'}</span></p>
             <p className="text-black font-bold">Email: <span className="font-medium">{profil?.email || '-'}</span></p>
-            <p className="text-black font-bold">Spécialité: <span className="font-medium">{profileDetails?.specialties?.map((item) => item.name).join(', ') || 'Profil mecanicien non complete'}</span></p>
+            <p className="text-black font-bold">Rôle: <span className="font-medium">{profil?.role || '-'}</span></p>
+            <p className="text-black font-bold">Spécialité: <span className="font-medium">{profileDetails?.specialties?.map((item) => item.name).join(', ') || 'Non renseigné'}</span></p>
             <p className="text-black font-bold">Ville: <span className="font-medium">{profileDetails?.city || '-'}</span></p>
-            <p className="text-black font-bold">Statut: <span className="font-medium">{profileDetails?.status || 'A creer'}</span></p>
+            <p className="text-black font-bold">Statut profil: <span className="font-medium">{profileDetails?.status || 'En attente de création'}</span></p>
           </div>
         </div>
 
         {/* --- BLOC SOLDE ET RETRAIT --- */}
         <div className="space-y-6 mt-8">
           <div className="bg-[#0D2B0D] p-8 rounded-3xl shadow-xl text-white text-center">
-            <p className="text-lg opacity-80 mb-2">Id compte : {compte.id}</p>
+            <p className="text-sm opacity-60 mb-1 break-all">Id : {compte.id}</p>
             <h3 className="text-3xl font-bold">Solde: {compte.solde}</h3>
           </div>
 
@@ -98,13 +92,13 @@ const MonCompte = ({onBack}) => {
                 <input type="text" placeholder="Exemple" className="bg-transparent outline-none text-right w-24 font-medium" />
               </div>
               <div className="text-center py-2 bg-green-50 rounded-lg">
-                <p className="text-[#608C27] font-bold">Frais (0.25%) : 50 FcFa</p>
+                <p className="text-[#608C27] font-bold">Frais (0,25 %) : 50 FCFA</p>
               </div>
 
               <div className="relative pt-4">
                 {notifSucces && (
-                  <div className="absolute -top-6 left-0 flex items-center gap-1 text-red-600 font-bold animate-bounce">
-                    <CheckCircle size={16} /> Notif de succès
+                  <div className="absolute -top-6 left-0 flex items-center gap-1 text-green-600 font-bold animate-bounce">
+                    <CheckCircle size={16} /> Demande envoyée
                   </div>
                 )}
                 <button type="submit" className="w-full bg-[#0D2B0D] text-white py-4 rounded-2xl font-bold text-xl hover:bg-[#608C27] transition-all flex items-center justify-center gap-2">
@@ -122,7 +116,9 @@ const MonCompte = ({onBack}) => {
             <h3 className="text-xl font-bold">Historique</h3>
           </div>
           <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide">
-            {historique.map((item, index) => (
+            {historique.length === 0 ? (
+              <p className="text-center text-gray-600 italic text-sm py-6">Aucun historique disponible.</p>
+            ) : historique.map((item, index) => (
               <div key={index} className="border-b border-gray-400 pb-3 last:border-0">
                 <div className="flex justify-between text-sm font-bold text-[#0D2B0D]">
                   <span>{item.type}: {item.montant}</span>

@@ -1,6 +1,6 @@
 # apps/mechanics/serializers.py
 from rest_framework import serializers
-from .models import MechanicProfile, Specialty, MechanicReview
+from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage
 from apps.accounts.serializers import UserMiniSerializer
 
 
@@ -65,11 +65,20 @@ class MechanicValidationSerializer(serializers.Serializer):
         return attrs
 
 
+class MechanicAdminMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MechanicAdminMessage
+        fields = ['id', 'sender_type', 'sender_name', 'content', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
 class MechanicReviewSerializer(serializers.ModelSerializer):
+    mechanic_name = serializers.CharField(source='mechanic.user.full_name', read_only=True)
+
     class Meta:
         model = MechanicReview
         fields = [
-            'id', 'mechanic', 'reviewer_name', 'rating',
-            'comment', 'is_visible', 'created_at'
+            'id', 'mechanic', 'mechanic_name', 'intervention',
+            'reviewer_name', 'rating', 'comment', 'is_visible', 'created_at'
         ]
-        read_only_fields = ['id', 'is_visible', 'created_at']
+        read_only_fields = ['id', 'mechanic_name', 'is_visible', 'created_at']

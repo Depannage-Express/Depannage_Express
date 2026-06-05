@@ -1,123 +1,145 @@
 # apps/interventions/views.py
-from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAdmin, IsMechanic
-from apps.notifications.utils import send_notification
-from apps.breakdowns.models import BreakdownRequest
+from apps.core.permissions import IsAdmin, IsApprovedMechanic, IsValidDriverTokenForIntervention
+from apps.core.state_machine import (
+    transition_intervention, get_actor_role,
+    InvalidTransition, UnauthorizedTransition,
+)
 from .models import Intervention
 from .serializers import InterventionSerializer
 
 
-def _get_intervention_for_mechanic(pk, mechanic_profile):
+# ─── Helpers ─────────────────────────────────────────────────────────────────
+
+def _get_own_intervention(pk, mechanic_profile):
+    """Retourne l'Intervention du mécanicien ou None."""
     try:
-        return Intervention.objects.get(pk=pk, mechanic=mechanic_profile)
+        return Intervention.objects.select_related(
+            'breakdown_request', 'mechanic'
+        ).get(pk=pk, mechanic=mechanic_profile)
     except Intervention.DoesNotExist:
         return None
 
 
+def _transition_response(intervention, action, actor_role, **kwargs):
+    """
+    Applique la transition et retourne une Response normalisée.
+    Toutes les erreurs métier remontent proprement.
+    """
+    try:
+        transition_intervention(intervention, action, actor_role, **kwargs)
+    except InvalidTransition as exc:
+        # detail est une liste d'ErrorDetail (sous-classe de str)
+        detail = exc.detail
+        msg = str(detail[0]) if isinstance(detail, list) else str(detail)
+        return Response({'error': msg}, status=400)
+    except UnauthorizedTransition as exc:
+        return Response({'error': str(exc.detail)}, status=403)
+    return Response({'success': True, 'status': intervention.status})
+
+
+# ─── Actions mécanicien ───────────────────────────────────────────────────────
+
 @api_view(['POST'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def accept_intervention(request, pk):
     profile = request.user.mechanic_profile
-    intervention = _get_intervention_for_mechanic(pk, profile)
+    intervention = _get_own_intervention(pk, profile)
     if not intervention:
         return Response({'error': 'Intervention introuvable.'}, status=404)
-    if intervention.status != 'pending_acceptance':
-        return Response({'error': 'Action impossible sur ce statut.'}, status=400)
-
-    intervention.status = 'accepted'
-    intervention.accepted_at = timezone.now()
-    intervention.save(update_fields=['status', 'accepted_at'])
-
-    # Update breakdown
-    intervention.breakdown_request.status = 'in_progress'
-    intervention.breakdown_request.save(update_fields=['status'])
-
-    return Response({'success': True, 'status': intervention.status})
+    return _transition_response(intervention, 'accept', 'mechanic')
 
 
 @api_view(['POST'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def refuse_intervention(request, pk):
     profile = request.user.mechanic_profile
-    intervention = _get_intervention_for_mechanic(pk, profile)
+    intervention = _get_own_intervention(pk, profile)
     if not intervention:
         return Response({'error': 'Intervention introuvable.'}, status=404)
-    if intervention.status != 'pending_acceptance':
-        return Response({'error': 'Action impossible sur ce statut.'}, status=400)
-
-    reason = request.data.get('reason', '')
-    intervention.status = 'refused'
-    intervention.refused_at = timezone.now()
-    intervention.refusal_reason = reason
-    intervention.save(update_fields=['status', 'refused_at', 'refusal_reason'])
-
-    return Response({'success': True, 'status': intervention.status})
+    return _transition_response(
+        intervention, 'refuse', 'mechanic',
+        refusal_reason=request.data.get('reason', ''),
+    )
 
 
 @api_view(['POST'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def start_intervention(request, pk):
     profile = request.user.mechanic_profile
-    intervention = _get_intervention_for_mechanic(pk, profile)
+    intervention = _get_own_intervention(pk, profile)
     if not intervention:
         return Response({'error': 'Intervention introuvable.'}, status=404)
-    if intervention.status != 'accepted':
-        return Response({'error': 'L\'intervention doit être acceptée d\'abord.'}, status=400)
-
-    intervention.status = 'in_progress'
-    intervention.started_at = timezone.now()
-    # Optional before photo
-    if 'before_photo' in request.FILES:
-        intervention.before_photo = request.FILES['before_photo']
-    intervention.save(update_fields=['status', 'started_at', 'before_photo'])
-
-    return Response({'success': True, 'status': intervention.status})
+    return _transition_response(
+        intervention, 'start', 'mechanic',
+        before_photo=request.FILES.get('before_photo'),
+    )
 
 
 @api_view(['POST'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def complete_intervention(request, pk):
     profile = request.user.mechanic_profile
-    intervention = _get_intervention_for_mechanic(pk, profile)
+    intervention = _get_own_intervention(pk, profile)
     if not intervention:
         return Response({'error': 'Intervention introuvable.'}, status=404)
-    if intervention.status != 'in_progress':
-        return Response({'error': 'L\'intervention n\'est pas en cours.'}, status=400)
+    return _transition_response(
+        intervention, 'complete', 'mechanic',
+        final_cost=request.data.get('final_cost'),
+        mechanic_notes=request.data.get('mechanic_notes', ''),
+        after_photo=request.FILES.get('after_photo'),
+    )
 
-    final_cost = request.data.get('final_cost')
-    notes = request.data.get('mechanic_notes', '')
 
-    intervention.status = 'completed'
-    intervention.completed_at = timezone.now()
-    intervention.mechanic_notes = notes
-    if final_cost:
-        try:
-            intervention.final_cost = float(final_cost)
-        except ValueError:
-            pass
-    if 'after_photo' in request.FILES:
-        intervention.after_photo = request.FILES['after_photo']
-    intervention.save(update_fields=[
-        'status', 'completed_at', 'mechanic_notes', 'final_cost', 'after_photo'
-    ])
+# ─── Actions conducteur (authentification par driver_token) ───────────────────
 
-    # Update breakdown + mechanic stats
-    breakdown = intervention.breakdown_request
-    breakdown.status = 'completed'
-    breakdown.save(update_fields=['status'])
+@api_view(['POST'])
+@permission_classes([IsValidDriverTokenForIntervention])
+def driver_confirm_intervention(request, pk):
+    """
+    Confirmation du conducteur : déclenche la transition completed → paid.
+    Requiert driver_token (dans body ou query param).
+    """
+    intervention = request.driver_intervention
 
-    profile.total_interventions += 1
-    profile.save(update_fields=['total_interventions'])
+    # Vérifier qu'un paiement validé existe avant de passer à 'paid'
+    from apps.payments.models import PaymentTransaction
+    has_paid = PaymentTransaction.objects.filter(
+        breakdown_request=intervention.breakdown_request,
+        status='paid',
+    ).exists()
+    if not has_paid:
+        return Response(
+            {'error': "Le paiement n'a pas encore été validé. Veuillez régler avant de confirmer."},
+            status=400,
+        )
 
-    return Response({'success': True, 'status': intervention.status})
+    return _transition_response(intervention, 'pay', 'driver')
 
+
+@api_view(['POST'])
+@permission_classes([IsValidDriverTokenForIntervention])
+def submit_review_for_intervention(request, pk):
+    """
+    Dépôt d'un avis : déclenche la transition paid → reviewed.
+    Requiert driver_token (dans body ou query param).
+    """
+    intervention = request.driver_intervention
+    return _transition_response(
+        intervention, 'review', 'driver',
+        rating=request.data.get('rating'),
+        comment=request.data.get('comment', ''),
+        reviewer_name=request.data.get('reviewer_name', ''),
+    )
+
+
+# ─── Listes ───────────────────────────────────────────────────────────────────
 
 @api_view(['GET'])
-@permission_classes([IsMechanic])
+@permission_classes([IsApprovedMechanic])
 def my_interventions(request):
     profile = request.user.mechanic_profile
     qs = Intervention.objects.filter(mechanic=profile).select_related(
@@ -144,3 +166,15 @@ class InterventionAdminListView(generics.ListAPIView):
         if status_filter:
             qs = qs.filter(status=status_filter)
         return qs
+
+
+# ─── Admin : annulation d'urgence ─────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def admin_cancel_intervention(request, pk):
+    try:
+        intervention = Intervention.objects.select_related('breakdown_request').get(pk=pk)
+    except Intervention.DoesNotExist:
+        return Response({'error': 'Intervention introuvable.'}, status=404)
+    return _transition_response(intervention, 'cancel', 'admin')
