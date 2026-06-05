@@ -113,7 +113,6 @@ if _database_url:
         'default': dj_database_url.parse(
             _database_url,
             conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', '60')),
-            ssl_require=True,
         )
     }
 else:
