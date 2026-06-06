@@ -44,10 +44,11 @@ def create_payment(request):
         return Response({'error': 'Token conducteur invalide ou demande introuvable.'}, status=403)
 
     # L'intervention doit être 'completed' pour pouvoir payer
-    try:
-        intervention = breakdown.intervention
-    except Intervention.DoesNotExist:
-        return Response({'error': 'Aucune intervention trouvée pour cette demande.'}, status=400)
+    intervention = breakdown.interventions.exclude(
+        status__in=['refused', 'cancelled']
+    ).first()
+    if not intervention:
+        return Response({'error': 'Aucune intervention active pour cette demande.'}, status=400)
 
     if intervention.status not in ('completed', 'ending_acceptance'):
         return Response(

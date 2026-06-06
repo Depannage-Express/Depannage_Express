@@ -195,6 +195,7 @@ def breakdown_status_public(request, pk):
             str(req.assignment_distance_km) if req.assignment_distance_km else None
         ),
         'assigned_mechanic': mechanic_data,
+        'refusal_count': req.refusal_count,
     })
 
 
@@ -211,12 +212,12 @@ def get_intervention_by_breakdown(request, pk):
         return Response({'error': 'Demande introuvable.'}, status=404)
 
     from apps.interventions.models import Intervention
-    try:
-        intervention = breakdown.intervention
-    except Intervention.DoesNotExist:
-        return Response({'error': 'Aucune intervention trouvée pour cette demande.'}, status=404)
+    intervention = breakdown.interventions.exclude(
+        status__in=['refused', 'cancelled']
+    ).select_related('mechanic__user').first()
+    if not intervention:
+        return Response({'error': 'Aucune intervention active pour cette demande.'}, status=404)
 
-    # Exposer le numéro du mécanicien dès que le paiement est effectué
     mechanic_phone = None
     if intervention.status in ('paid', 'reviewed') and intervention.mechanic:
         mechanic_phone = intervention.mechanic.user.phone or None

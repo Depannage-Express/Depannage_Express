@@ -16,9 +16,9 @@ class Intervention(TimestampedModel):
         ('cancelled',          'Annulée'),
     ]
 
-    breakdown_request = models.OneToOneField(
+    breakdown_request = models.ForeignKey(
         'breakdowns.BreakdownRequest', on_delete=models.CASCADE,
-        related_name='intervention'
+        related_name='interventions'
     )
     mechanic = models.ForeignKey(
         'mechanics.MechanicProfile', on_delete=models.PROTECT,

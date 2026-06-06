@@ -50,6 +50,11 @@ def accept_intervention(request, pk):
     intervention = _get_own_intervention(pk, profile)
     if not intervention:
         return Response({'error': 'Intervention introuvable.'}, status=404)
+    if intervention.breakdown_request.status == 'in_progress':
+        return Response(
+            {'error': 'Ce dépannage a déjà été accepté par un autre mécanicien.'},
+            status=409,
+        )
     return _transition_response(intervention, 'accept', 'mechanic')
 
 

@@ -87,10 +87,18 @@ def verify_otp(request):
 
 
 def _get_driver_history(phone):
+    from django.db.models import Prefetch
+    from apps.interventions.models import Intervention
+
+    active_ivs = Intervention.objects.exclude(
+        status__in=['refused', 'cancelled']
+    ).select_related('mechanic__user')
+
     breakdowns = (
         BreakdownRequest.objects
         .filter(driver_phone=phone)
-        .select_related('intervention__mechanic__user', 'specialty_requested')
+        .select_related('specialty_requested')
+        .prefetch_related(Prefetch('interventions', queryset=active_ivs, to_attr='active_interventions'))
         .order_by('-created_at')
     )
 
@@ -108,13 +116,12 @@ def _get_driver_history(phone):
             'intervention': None,
         }
 
-        try:
-            iv = bd.intervention
+        iv = bd.active_interventions[0] if bd.active_interventions else None
+        if iv:
             mechanic_name = ''
             if iv.mechanic and iv.mechanic.user:
                 u = iv.mechanic.user
                 mechanic_name = f"{u.first_name} {u.last_name}".strip()
-
             entry['intervention'] = {
                 'id': str(iv.id),
                 'status': iv.status,
@@ -123,8 +130,6 @@ def _get_driver_history(phone):
                 'mechanic_name': mechanic_name,
                 'completed_at': iv.completed_at.isoformat() if iv.completed_at else None,
             }
-        except Exception:
-            pass
 
         history.append(entry)
 

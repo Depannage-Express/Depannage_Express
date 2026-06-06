@@ -54,6 +54,10 @@ class BreakdownRequest(TimestampedModel):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
+    # Refusal tracking
+    refusal_count = models.PositiveIntegerField(default=0)
+    refused_mechanic_ids = models.JSONField(default=list, blank=True)
+
     # Traceability
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)

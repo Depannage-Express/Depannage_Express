@@ -5,10 +5,7 @@ from django.conf import settings
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """
-    Calcule la distance en km entre deux points GPS (formule de Haversine).
-    """
-    R = 6371  # Rayon Terre en km
+    R = 6371
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
@@ -16,23 +13,8 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def find_nearest_mechanic(
-    latitude: float,
-    longitude: float,
-    radius_km: Optional[float] = None,
-    specialty_id: Optional[int] = None,
-):
-    """
-    Retourne le mécanicien approuvé et disponible le plus proche.
-    Priorise les mécaniciens premium.
-    """
+def _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids):
     from apps.mechanics.models import MechanicProfile
-
-    if radius_km is None:
-        radius_km = getattr(settings, 'DEFAULT_SEARCH_RADIUS_KM', 10)
-
-    max_radius = getattr(settings, 'MAX_MECHANIC_SEARCH_RADIUS_KM', 50)
-    radius_km = min(radius_km, max_radius)
 
     qs = MechanicProfile.objects.filter(
         status='approved',
@@ -43,11 +25,11 @@ def find_nearest_mechanic(
 
     if specialty_id:
         qs = qs.filter(specialties__id=specialty_id)
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
 
-    # Filtrage grossier par bounding box avant calcul précis
     lat_delta = radius_km / 111.0
     lon_delta = radius_km / (111.0 * math.cos(math.radians(latitude)))
-
     qs = qs.filter(
         latitude__range=(latitude - lat_delta, latitude + lat_delta),
         longitude__range=(longitude - lon_delta, longitude + lon_delta),
@@ -55,20 +37,51 @@ def find_nearest_mechanic(
 
     candidates = []
     for profile in qs:
-        dist = haversine_distance(
-            latitude, longitude,
-            float(profile.latitude), float(profile.longitude)
-        )
+        dist = haversine_distance(latitude, longitude, float(profile.latitude), float(profile.longitude))
         if dist <= radius_km:
             candidates.append((dist, profile))
 
+    candidates.sort(key=lambda x: (0 if x[1].user.is_premium else 1, x[0]))
+    return candidates
+
+
+def find_nearest_mechanic(
+    latitude: float,
+    longitude: float,
+    radius_km: Optional[float] = None,
+    specialty_id: Optional[int] = None,
+    exclude_ids: Optional[list] = None,
+):
+    """Retourne le mécanicien disponible le plus proche (premium en priorité)."""
+    if radius_km is None:
+        radius_km = getattr(settings, 'DEFAULT_SEARCH_RADIUS_KM', 10)
+    radius_km = min(radius_km, getattr(settings, 'MAX_MECHANIC_SEARCH_RADIUS_KM', 50))
+
+    candidates = _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids)
     if not candidates:
         return None, None
-
-    # Priorité premium, puis distance
-    candidates.sort(key=lambda x: (0 if x[1].user.is_premium else 1, x[0]))
     distance, mechanic = candidates[0]
     return mechanic, round(distance, 2)
+
+
+def find_top_mechanics(
+    latitude: float,
+    longitude: float,
+    n: int = 10,
+    radius_km: Optional[float] = None,
+    specialty_id: Optional[int] = None,
+    exclude_ids: Optional[list] = None,
+):
+    """Retourne les n meilleurs mécaniciens disponibles pour le mode broadcast."""
+    if radius_km is None:
+        radius_km = getattr(settings, 'DEFAULT_SEARCH_RADIUS_KM', 10)
+    radius_km = min(radius_km, getattr(settings, 'MAX_MECHANIC_SEARCH_RADIUS_KM', 50))
+
+    candidates = _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids)
+    return [
+        {'profile': profile, 'distance_km': round(dist, 2)}
+        for dist, profile in candidates[:n]
+    ]
 
 
 def find_mechanics_nearby(
@@ -77,10 +90,7 @@ def find_mechanics_nearby(
     radius_km: float = 10,
     specialty_id: Optional[int] = None,
 ):
-    """
-    Retourne la liste des mécaniciens dans le rayon,
-    triés par premium d'abord puis par distance.
-    """
+    """Retourne la liste des mécaniciens dans le rayon, triés premium puis distance."""
     from apps.mechanics.models import MechanicProfile
 
     qs = MechanicProfile.objects.filter(
@@ -95,7 +105,6 @@ def find_mechanics_nearby(
 
     lat_delta = radius_km / 111.0
     lon_delta = radius_km / (111.0 * math.cos(math.radians(latitude)))
-
     qs = qs.filter(
         latitude__range=(latitude - lat_delta, latitude + lat_delta),
         longitude__range=(longitude - lon_delta, longitude + lon_delta),
@@ -103,10 +112,7 @@ def find_mechanics_nearby(
 
     results = []
     for profile in qs:
-        dist = haversine_distance(
-            latitude, longitude,
-            float(profile.latitude), float(profile.longitude)
-        )
+        dist = haversine_distance(latitude, longitude, float(profile.latitude), float(profile.longitude))
         if dist <= radius_km:
             results.append({'profile': profile, 'distance_km': round(dist, 2)})
 

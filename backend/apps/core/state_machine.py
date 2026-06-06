@@ -43,7 +43,7 @@ ACTION_ROLES = {
     'start':   {'mechanic'},
     'complete': {'mechanic'},
     'cancel':  {'admin'},
-    'pay':     {'driver'},    # déclenché lors de la confirmation de paiement
+    'pay':     {'driver'},
     'review':  {'driver'},
 }
 
@@ -57,20 +57,14 @@ class UnauthorizedTransition(PermissionDenied):
 
 
 def get_actor_role(user) -> str:
-    """
-    Retourne le rôle canonique de l'acteur pour la state machine.
-    Lève une exception si l'utilisateur n'est pas qualifié.
-    """
     if user is None:
-        return 'driver'  # conducteur anonyme
+        return 'driver'
     if user.role == 'admin':
         return 'admin'
     if user.role in ('mechanic_standard', 'mechanic_premium'):
         try:
             if user.mechanic_profile.status != 'approved':
-                raise UnauthorizedTransition(
-                    "Votre profil mécanicien n'est pas approuvé."
-                )
+                raise UnauthorizedTransition("Votre profil mécanicien n'est pas approuvé.")
         except AttributeError:
             raise UnauthorizedTransition("Profil mécanicien introuvable.")
         return 'mechanic'
@@ -78,16 +72,6 @@ def get_actor_role(user) -> str:
 
 
 def transition_intervention(intervention, action: str, actor_role: str, **kwargs):
-    """
-    Applique une transition à une Intervention.
-
-    :param intervention: instance Intervention
-    :param action: clé de transition ('accept', 'refuse', 'start', 'complete', 'pay', 'review', 'cancel')
-    :param actor_role: 'mechanic' | 'driver' | 'admin'
-    :param kwargs: données supplémentaires (refusal_reason, final_cost, mechanic_notes, reviewer_name, rating, comment…)
-    :raises InvalidTransition: si la transition est impossible depuis l'état courant
-    :raises UnauthorizedTransition: si le rôle n'est pas autorisé pour cette action
-    """
     current = intervention.status
     allowed = TRANSITION_GRAPH.get(current, {})
 
@@ -106,7 +90,6 @@ def transition_intervention(intervention, action: str, actor_role: str, **kwargs
     new_status = allowed[action]
     intervention.status = new_status
 
-    # Effets de bord selon l'action
     _apply_side_effects(intervention, action, kwargs)
 
     intervention.save()
@@ -118,13 +101,38 @@ def _apply_side_effects(intervention, action: str, data: dict):
 
     if action == 'accept':
         intervention.accepted_at = now
-        # Synchronise le BreakdownRequest
-        intervention.breakdown_request.status = 'in_progress'
-        intervention.breakdown_request.save(update_fields=['status'])
+        br = intervention.breakdown_request
+
+        # Mode broadcast : annuler les autres interventions en attente pour ce dépannage
+        from apps.interventions.models import Intervention
+        Intervention.objects.filter(
+            breakdown_request=br,
+            status='pending_acceptance',
+        ).exclude(pk=intervention.pk).update(status='cancelled')
+
+        br.status = 'in_progress'
+        br.assigned_mechanic = intervention.mechanic
+        br.save(update_fields=['status', 'assigned_mechanic'])
 
     elif action == 'refuse':
         intervention.refused_at = now
         intervention.refusal_reason = data.get('refusal_reason', '')
+
+        br = intervention.breakdown_request
+        refused_ids = list(br.refused_mechanic_ids or [])
+        refused_ids.append(intervention.mechanic_id)
+        br.refused_mechanic_ids = refused_ids
+        br.refusal_count = (br.refusal_count or 0) + 1
+        br.assigned_mechanic = None
+        br.assigned_at = None
+        br.assignment_distance_km = None
+        br.status = 'pending'
+        br.save(update_fields=[
+            'refused_mechanic_ids', 'refusal_count',
+            'assigned_mechanic', 'assigned_at', 'assignment_distance_km', 'status',
+        ])
+
+        _reassign_after_refusal(br)
 
     elif action == 'start':
         intervention.started_at = now
@@ -146,10 +154,8 @@ def _apply_side_effects(intervention, action: str, data: dict):
         after_photo = data.get('after_photo')
         if after_photo:
             intervention.after_photo = after_photo
-        # Synchronise le BreakdownRequest
         intervention.breakdown_request.status = 'completed'
         intervention.breakdown_request.save(update_fields=['status'])
-        # Incrémente les stats mécanicien
         profile = intervention.mechanic
         profile.total_interventions += 1
         profile.save(update_fields=['total_interventions'])
@@ -192,3 +198,87 @@ def _apply_side_effects(intervention, action: str, data: dict):
         if intervention.status not in ('refused', 'cancelled'):
             intervention.breakdown_request.status = 'cancelled'
             intervention.breakdown_request.save(update_fields=['status'])
+
+
+def _reassign_after_refusal(breakdown_request):
+    """
+    Ré-assigne une demande après refus d'un mécanicien.
+    - Refus 1-2 : prochain mécanicien le plus proche (hors refusants)
+    - Refus 3+  : broadcast simultané aux 10 meilleurs mécaniciens disponibles
+    """
+    from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics
+    from apps.interventions.models import Intervention
+    from apps.notifications.utils import send_notification
+
+    lat = float(breakdown_request.latitude)
+    lon = float(breakdown_request.longitude)
+    specialty_id = breakdown_request.specialty_requested_id
+    excluded = breakdown_request.refused_mechanic_ids or []
+    count = breakdown_request.refusal_count
+
+    if count < 3:
+        # Séquentiel : prochain mécanicien disponible
+        mechanic, distance = find_nearest_mechanic(
+            latitude=lat, longitude=lon,
+            specialty_id=specialty_id,
+            exclude_ids=excluded,
+        )
+
+        if mechanic:
+            breakdown_request.assigned_mechanic = mechanic
+            breakdown_request.assignment_distance_km = distance
+            breakdown_request.assigned_at = timezone.now()
+            breakdown_request.status = 'assigned'
+            breakdown_request.save(update_fields=[
+                'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status',
+            ])
+
+            Intervention.objects.create(
+                breakdown_request=breakdown_request,
+                mechanic=mechanic,
+                status='pending_acceptance',
+            )
+
+            send_notification(
+                mechanic.user,
+                title='Nouvelle demande de dépannage',
+                message=f'Demande de {breakdown_request.driver_name} à {distance} km de vous.',
+                notif_type='NEW_BREAKDOWN',
+                reference_id=str(breakdown_request.id),
+            )
+
+    else:
+        # Broadcast : jusqu'à 10 mécaniciens en simultané
+        top = find_top_mechanics(
+            latitude=lat, longitude=lon,
+            n=10,
+            specialty_id=specialty_id,
+            exclude_ids=excluded,
+        )
+
+        if top:
+            first = top[0]
+            breakdown_request.assigned_mechanic = first['profile']
+            breakdown_request.assignment_distance_km = first['distance_km']
+            breakdown_request.assigned_at = timezone.now()
+            breakdown_request.status = 'assigned'
+            breakdown_request.save(update_fields=[
+                'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status',
+            ])
+
+            for item in top:
+                Intervention.objects.create(
+                    breakdown_request=breakdown_request,
+                    mechanic=item['profile'],
+                    status='pending_acceptance',
+                )
+                send_notification(
+                    item['profile'].user,
+                    title='Dépannage urgent — Répondez vite !',
+                    message=(
+                        f'Demande de {breakdown_request.driver_name} '
+                        f'à {item["distance_km"]} km. Le premier à accepter intervient.'
+                    ),
+                    notif_type='NEW_BREAKDOWN',
+                    reference_id=str(breakdown_request.id),
+                )
