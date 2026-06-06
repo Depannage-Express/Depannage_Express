@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle } from 'lucide-react';
-import { blockAdminUser, fetchAdminUsers, unblockAdminUser, validateAdminMechanic } from '../lib/api';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck } from 'lucide-react';
+import {
+  blockAdminUser,
+  fetchAdminUsers,
+  unblockAdminUser,
+  validateAdminMechanic,
+  fetchSpecialties,
+  adminCompleteAndApproveMechanic,
+} from '../lib/api';
 
 const STATUS_BADGE = {
   approved: 'bg-green-100 text-green-700 border-green-400',
@@ -16,14 +23,34 @@ const STATUS_LABEL = {
   suspended:'Suspendu',
 };
 
+const EMPTY_FORM = {
+  bio: '',
+  years_experience: '',
+  city: '',
+  address: '',
+  latitude: '',
+  longitude: '',
+  specialty_ids: [],
+  profile_photo: null,
+};
+
 const Utilisateurs = ({ onBack }) => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState('');
   const [query, setQuery] = useState('');
+
+  // Modal refus
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Modal compléter le profil
+  const [completeTarget, setCompleteTarget] = useState(null);
+  const [completeForm, setCompleteForm] = useState(EMPTY_FORM);
+  const [specialties, setSpecialties] = useState([]);
+  const [completeError, setCompleteError] = useState('');
+  const photoInputRef = useRef(null);
 
   const loadUsers = async () => {
     setError('');
@@ -86,18 +113,50 @@ const Utilisateurs = ({ onBack }) => {
     }
   };
 
-  const handleApprove = async (user) => {
-    if (!user.mechanic_profile_id) {
-      setError("Ce mécanicien n'a pas encore soumis son profil complet.");
-      return;
+  const openCompleteModal = async (user) => {
+    setCompleteTarget(user);
+    setCompleteForm(EMPTY_FORM);
+    setCompleteError('');
+    if (specialties.length === 0) {
+      try {
+        const data = await fetchSpecialties();
+        setSpecialties(Array.isArray(data) ? data : (data.results || []));
+      } catch {
+        // spécialités non bloquantes
+      }
     }
-    setPendingAction(`approve-${user.id}`);
-    setError('');
+  };
+
+  const toggleSpecialty = (id) => {
+    setCompleteForm(prev => {
+      const ids = prev.specialty_ids.includes(id)
+        ? prev.specialty_ids.filter(s => s !== id)
+        : [...prev.specialty_ids, id];
+      return { ...prev, specialty_ids: ids };
+    });
+  };
+
+  const handleCompleteSubmit = async () => {
+    if (!completeTarget) return;
+    setCompleteError('');
+    setPendingAction(`complete-${completeTarget.id}`);
+
+    const fd = new FormData();
+    if (completeForm.bio)              fd.append('bio', completeForm.bio);
+    if (completeForm.years_experience) fd.append('years_experience', completeForm.years_experience);
+    if (completeForm.city)             fd.append('city', completeForm.city);
+    if (completeForm.address)          fd.append('address', completeForm.address);
+    if (completeForm.latitude)         fd.append('latitude', completeForm.latitude);
+    if (completeForm.longitude)        fd.append('longitude', completeForm.longitude);
+    completeForm.specialty_ids.forEach(id => fd.append('specialty_ids', id));
+    if (completeForm.profile_photo)    fd.append('profile_photo', completeForm.profile_photo);
+
     try {
-      await validateAdminMechanic(user.mechanic_profile_id, 'approve');
+      await adminCompleteAndApproveMechanic(completeTarget.id, fd);
+      setCompleteTarget(null);
       await loadUsers();
-    } catch (actionError) {
-      setError(actionError.message);
+    } catch (err) {
+      setCompleteError(err.message || 'Une erreur est survenue.');
     } finally {
       setPendingAction('');
     }
@@ -161,14 +220,22 @@ const Utilisateurs = ({ onBack }) => {
       {showValidation && (
         <div className="grid grid-cols-2 gap-2 mt-3">
           <button
-            onClick={() => handleApprove(user)}
+            onClick={() => openCompleteModal(user)}
             disabled={!!pendingAction}
-            className="bg-green-600 text-white text-xs py-2 rounded-xl hover:bg-green-700 uppercase font-bold disabled:opacity-60"
+            className="flex items-center justify-center gap-1 bg-green-600 text-white text-xs py-2 rounded-xl hover:bg-green-700 uppercase font-bold disabled:opacity-60"
           >
-            {pendingAction === `approve-${user.id}` ? '...' : '✓ Approuver'}
+            <UserCheck size={13} />
+            Compléter & Valider
           </button>
           <button
-            onClick={() => { setRejectTarget(user); setRejectReason(''); }}
+            onClick={() => {
+              if (!user.mechanic_profile_id) {
+                setError("Aucun profil soumis — utilisez 'Compléter & Valider' pour créer le profil.");
+                return;
+              }
+              setRejectTarget(user);
+              setRejectReason('');
+            }}
             disabled={!!pendingAction}
             className="bg-red-600 text-white text-xs py-2 rounded-xl hover:bg-red-700 uppercase font-bold disabled:opacity-60"
           >
@@ -326,7 +393,166 @@ const Utilisateurs = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Modal de refus */}
+      {/* ── Modal : Compléter le profil mécanicien ── */}
+      {completeTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 px-4 py-6 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg my-auto">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-black text-[#0D2B0D]">Compléter le profil</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {completeTarget.full_name || completeTarget.email}
+                </p>
+              </div>
+              <button onClick={() => setCompleteTarget(null)} className="text-gray-400 hover:text-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#608C27] font-semibold bg-green-50 rounded-xl px-3 py-2 mb-5">
+              Tous les champs sont optionnels. Le compte sera activé dès la validation.
+            </p>
+
+            <div className="space-y-4">
+
+              {/* Photo de profil */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Photo de profil</label>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setCompleteForm(f => ({ ...f, profile_photo: e.target.files[0] || null }))}
+                  className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:bg-[#608C27] file:text-white file:font-bold cursor-pointer"
+                />
+                {completeForm.profile_photo && (
+                  <p className="text-xs text-green-600 mt-1">{completeForm.profile_photo.name}</p>
+                )}
+              </div>
+
+              {/* Spécialités */}
+              {specialties.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Spécialités</label>
+                  <div className="flex flex-wrap gap-2">
+                    {specialties.map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleSpecialty(String(s.id))}
+                        className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
+                          completeForm.specialty_ids.includes(String(s.id))
+                            ? 'bg-[#608C27] text-white border-[#608C27]'
+                            : 'bg-white text-[#0D2B0D] border-gray-300 hover:border-[#608C27]'
+                        }`}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ville + Adresse */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Ville</label>
+                  <input
+                    type="text"
+                    value={completeForm.city}
+                    onChange={e => setCompleteForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Cotonou"
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Années d'exp.</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={completeForm.years_experience}
+                    onChange={e => setCompleteForm(f => ({ ...f, years_experience: e.target.value }))}
+                    placeholder="5"
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                  />
+                </div>
+              </div>
+
+              {/* Géolocalisation */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    value={completeForm.latitude}
+                    onChange={e => setCompleteForm(f => ({ ...f, latitude: e.target.value }))}
+                    placeholder="6.3702"
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    value={completeForm.longitude}
+                    onChange={e => setCompleteForm(f => ({ ...f, longitude: e.target.value }))}
+                    placeholder="2.4183"
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                  />
+                </div>
+              </div>
+
+              {/* Adresse */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adresse de l'atelier</label>
+                <input
+                  type="text"
+                  value={completeForm.address}
+                  onChange={e => setCompleteForm(f => ({ ...f, address: e.target.value }))}
+                  placeholder="Rue des mécanos, Cotonou"
+                  className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                />
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Bio / Description</label>
+                <textarea
+                  value={completeForm.bio}
+                  onChange={e => setCompleteForm(f => ({ ...f, bio: e.target.value }))}
+                  placeholder="Mécanicien spécialisé en moteurs diesel depuis 10 ans…"
+                  rows={3}
+                  className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] resize-none"
+                />
+              </div>
+
+            </div>
+
+            {completeError && (
+              <p className="text-red-600 text-sm mt-4 bg-red-50 rounded-xl px-3 py-2">{completeError}</p>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setCompleteTarget(null)}
+                className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCompleteSubmit}
+                disabled={!!pendingAction}
+                className="flex-1 bg-[#608C27] text-white font-bold py-3 rounded-2xl hover:bg-[#0D2B0D] disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <UserCheck size={16} />
+                {pendingAction ? 'Validation...' : 'Valider & Activer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal : Refus ── */}
       {rejectTarget && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">

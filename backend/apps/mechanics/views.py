@@ -204,6 +204,70 @@ def admin_delete_review(request, pk):
     return Response({'success': True})
 
 
+# ─── Admin : compléter le profil et approuver en une action ──────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def admin_complete_and_approve(request, user_id):
+    """
+    Crée ou met à jour le profil mécanicien d'un utilisateur et l'approuve immédiatement.
+    Utilisé par l'admin après visite de l'atelier.
+    Accepte multipart/form-data (photo incluse).
+    """
+    from apps.accounts.models import User
+
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'Utilisateur introuvable.'}, status=404)
+
+    if user.role not in ('mechanic_standard', 'mechanic_premium'):
+        return Response({'error': "Cet utilisateur n'est pas un mécanicien."}, status=400)
+
+    profile, _ = MechanicProfile.objects.get_or_create(user=user)
+
+    fields = ['bio', 'address', 'city', 'country', 'years_experience']
+    for field in fields:
+        if field in request.data:
+            val = request.data.get(field)
+            if field == 'years_experience':
+                try:
+                    val = int(val)
+                except (TypeError, ValueError):
+                    val = 0
+            setattr(profile, field, val)
+
+    for coord in ('latitude', 'longitude'):
+        raw = request.data.get(coord, '').strip()
+        if raw:
+            profile.__dict__[coord] = raw
+
+    if 'profile_photo' in request.FILES:
+        profile.profile_photo = request.FILES['profile_photo']
+
+    profile.status = 'approved'
+    profile.validated_by = request.user
+    profile.validated_at = timezone.now()
+    profile.save()
+
+    specialty_ids = request.data.getlist('specialty_ids')
+    if not specialty_ids:
+        raw_ids = request.data.get('specialty_ids', '')
+        if raw_ids:
+            specialty_ids = [s.strip() for s in str(raw_ids).split(',') if s.strip()]
+    if specialty_ids:
+        profile.specialties.set(Specialty.objects.filter(pk__in=specialty_ids))
+
+    send_notification(
+        user,
+        title='Profil approuvé',
+        message='Votre profil mécanicien a été validé. Vous pouvez maintenant recevoir des demandes.',
+        notif_type='PROFILE_APPROVED',
+    )
+
+    return Response({'success': True, 'profile_id': str(profile.pk)}, status=200)
+
+
 # ─── Messagerie mécanicien ↔ admin ────────────────────────────────────────────
 
 @api_view(['GET', 'POST'])

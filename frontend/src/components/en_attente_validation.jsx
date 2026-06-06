@@ -5,11 +5,11 @@ import { fetchCurrentUser } from '../lib/api';
 const STATUS_CONFIG = {
   pending: {
     icon: <Clock size={64} className="text-yellow-400" />,
-    title: 'Compte en attente de validation',
+    title: 'Inscription reçue — validation en cours',
     color: 'text-yellow-400',
     bg: 'bg-yellow-900/30 border-yellow-600',
     message:
-      "Votre dossier a bien été reçu. Notre équipe administrateur est en train de vérifier vos informations et justificatifs. Vous recevrez une confirmation dès la validation.",
+      "Votre inscription a bien été enregistrée. Un membre de notre équipe vous contactera prochainement pour organiser une visite de votre atelier. À l'issue de cette visite, votre compte sera activé et vous pourrez commencer à recevoir des demandes.",
   },
   rejected: {
     icon: <XCircle size={64} className="text-red-400" />,
@@ -28,11 +28,11 @@ const STATUS_CONFIG = {
   },
   default: {
     icon: <Clock size={64} className="text-gray-400" />,
-    title: 'Profil en cours de création',
+    title: 'Inscription reçue — en attente de contact',
     color: 'text-gray-300',
     bg: 'bg-gray-700/30 border-gray-500',
     message:
-      "Votre compte a été créé. Votre profil mécanicien sera vérifié par notre équipe. La validation prend généralement 24 à 48 heures.",
+      "Votre compte a été créé avec succès. Notre équipe va vous contacter pour planifier une visite de votre atelier avant d'activer votre profil.",
   },
 };
 
@@ -101,7 +101,7 @@ const EnAttenteValidation = ({ currentUser, onStatusChanged, onLogout }) => {
         {/* Délai estimé */}
         {(!profileStatus || profileStatus === 'pending') && (
           <p className="text-white/40 text-xs mb-6 italic">
-            Délai estimé : 24 à 48 heures ouvrables
+            Notre équipe vous contactera sous 24 à 48 h ouvrables.
           </p>
         )}
 

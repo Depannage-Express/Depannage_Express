@@ -222,6 +222,17 @@ export function validateAdminMechanic(profileId, action, rejectionReason = '') {
   });
 }
 
+export function fetchSpecialties() {
+  return apiRequest('/mechanics/specialties/');
+}
+
+export function adminCompleteAndApproveMechanic(userId, formData) {
+  return apiRequest(`/mechanics/admin/complete-approve/${userId}/`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export async function fetchBreakdownStatus(id) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/`);
   return parseResponse(response);
