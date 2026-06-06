@@ -138,6 +138,18 @@ const Utilisateurs = ({ onBack }) => {
 
   const handleCompleteSubmit = async () => {
     if (!completeTarget) return;
+
+    // Validation des champs obligatoires
+    const missingFields = [];
+    if (!completeForm.city.trim())             missingFields.push('Ville');
+    if (!completeForm.latitude.trim())         missingFields.push('Latitude');
+    if (!completeForm.longitude.trim())        missingFields.push('Longitude');
+    if (completeForm.specialty_ids.length === 0) missingFields.push('au moins une Spécialité');
+    if (missingFields.length > 0) {
+      setCompleteError(`Champs obligatoires manquants : ${missingFields.join(', ')}.`);
+      return;
+    }
+
     setCompleteError('');
     setPendingAction(`complete-${completeTarget.id}`);
 
@@ -409,8 +421,8 @@ const Utilisateurs = ({ onBack }) => {
               </button>
             </div>
 
-            <p className="text-xs text-[#608C27] font-semibold bg-green-50 rounded-xl px-3 py-2 mb-5">
-              Tous les champs sont optionnels. Le compte sera activé dès la validation.
+            <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2 mb-5">
+              Les champs marqués <span className="text-red-500 font-bold">*</span> sont obligatoires pour que le mécanicien soit trouvable par le système.
             </p>
 
             <div className="space-y-4">
@@ -433,7 +445,7 @@ const Utilisateurs = ({ onBack }) => {
               {/* Spécialités */}
               {specialties.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Spécialités</label>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Spécialités <span className="text-red-500">*</span></label>
                   <div className="flex flex-wrap gap-2">
                     {specialties.map(s => (
                       <button
@@ -456,7 +468,7 @@ const Utilisateurs = ({ onBack }) => {
               {/* Ville + Adresse */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Ville</label>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Ville <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={completeForm.city}
@@ -481,7 +493,7 @@ const Utilisateurs = ({ onBack }) => {
               {/* Géolocalisation */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Latitude</label>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Latitude <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={completeForm.latitude}
@@ -491,7 +503,7 @@ const Utilisateurs = ({ onBack }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Longitude</label>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Longitude <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={completeForm.longitude}

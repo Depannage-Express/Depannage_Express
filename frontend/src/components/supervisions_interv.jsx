@@ -1,14 +1,71 @@
-import { Search, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone } from 'lucide-react';
+import { fetchAdminBreakdowns } from '../lib/api';
+
+const STATUS_LABEL = {
+  pending:     { text: 'En attente',         color: 'bg-yellow-100 text-yellow-700 border-yellow-400' },
+  assigned:    { text: 'Mécanicien assigné',  color: 'bg-blue-100 text-blue-700 border-blue-400' },
+  in_progress: { text: 'En cours',            color: 'bg-orange-100 text-orange-700 border-orange-400' },
+  completed:   { text: 'Terminée',            color: 'bg-green-100 text-green-700 border-green-400' },
+  cancelled:   { text: 'Annulée',             color: 'bg-red-100 text-red-700 border-red-400' },
+};
+
+const ALL_STATUSES = ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'];
+
+const StatusBadge = ({ status }) => {
+  const cfg = STATUS_LABEL[status] || { text: status, color: 'bg-gray-100 text-gray-600 border-gray-300' };
+  return (
+    <span className={`inline-block text-xs font-bold uppercase border rounded-full px-2 py-0.5 ${cfg.color}`}>
+      {cfg.text}
+    </span>
+  );
+};
 
 const SupervisionInterventions = ({ onBack }) => {
-  const interventions = [
-    { id: 45, titre: "Panne de moteur (Conducteur)", client: "Moussa A.", meca: "Sara T.", montant: "150.000", heure: "11/05/2026, 12:15", statut: "Intervenant affecté", sIcon: "✅" },
-    { id: 45, titre: "Panne de moteur (Conducteur)", client: "Moussa A.", montant: "Montant/Crédit FCFA", heure: "11/05/2026, 12:15", statut: "En route", sIcon: "🟡" },
-    { id: 47, titre: "Panne de moteur (Conducteur)", client: "Moussa A.", montant: "Montant/Crédit FCFA", heure: "11/05/2026, 12:15", statut: "Intervention lancée", sIcon: "🔴" },
-  ];
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [openId, setOpenId] = useState(null);
+
+  const load = async (status = statusFilter) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await fetchAdminBreakdowns(status || undefined);
+      setRequests(data.results || (Array.isArray(data) ? data : []));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleStatusFilter = (s) => {
+    const next = s === statusFilter ? '' : s;
+    setStatusFilter(next);
+    load(next);
+  };
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? requests.filter(r =>
+        (r.driver_name || '').toLowerCase().includes(q) ||
+        (r.driver_phone || '').toLowerCase().includes(q) ||
+        (r.breakdown_type || '').toLowerCase().includes(q) ||
+        (r.breakdown_description || '').toLowerCase().includes(q) ||
+        (r.address_description || '').toLowerCase().includes(q) ||
+        (r.vehicle_description || '').toLowerCase().includes(q)
+      )
+    : requests;
 
   return (
     <div className="min-h-screen bg-gray-200 font-sans">
+
+      {/* En-tête */}
       <div className="bg-[#0D2B0D] rounded-t-[1.5rem] p-4 flex items-center gap-3">
         {onBack && (
           <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
@@ -16,117 +73,201 @@ const SupervisionInterventions = ({ onBack }) => {
           </button>
         )}
         <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight italic text-center flex-1">
-          Supervision des Interventions
+          Supervision des Demandes
         </h2>
+        <button
+          onClick={() => load()}
+          className="text-white hover:text-[#608C27] transition-colors shrink-0"
+          title="Actualiser"
+        >
+          <RefreshCcw size={18} />
+        </button>
       </div>
 
-      <div className="bg-white rounded-b-[1.5rem] p-4 sm:p-6 lg:p-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="bg-white rounded-b-[1.5rem] p-4 sm:p-6">
 
-          {/* COLONNE GAUCHE : FILTRAGE */}
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-3xl shadow-lg border border-gray-100">
-              <h3 className="font-black uppercase text-xs mb-4">Filtrage & Recherche</h3>
-              <div className="flex gap-2 mb-4 flex-wrap">
-                <button className="flex-1 min-w-[70px] border p-2 rounded-xl text-xs font-bold flex justify-between items-center bg-gray-50">
-                  Type <ChevronDown size={14} />
-                </button>
-                <button className="flex-1 min-w-[70px] border p-2 rounded-xl text-xs font-bold bg-gray-50">Gravité</button>
-                <button className="flex-1 min-w-[70px] border p-2 rounded-xl text-xs font-bold bg-gray-50">Statut</button>
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Rechercher une intervention"
-                  className="w-full bg-gray-50 border rounded-xl p-2 text-xs outline-none pr-7"
-                />
-                <Search className="absolute right-2 top-2.5 text-gray-400" size={14} />
-              </div>
-            </div>
+        {/* Filtres + Recherche */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          {/* Barre de recherche */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Rechercher par client, type de panne, adresse…"
+              className="w-full border-2 border-[#0D2B0D] rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+            />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#0D2B0D]" />
+            {query && (
+              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                <X size={15} />
+              </button>
+            )}
           </div>
 
-          {/* COLONNE CENTRE : FILE D'ATTENTE */}
-          <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-black text-xs text-gray-800 uppercase px-1 tracking-widest">
-              Interventions Actives — File d'attente
-            </h3>
-            {interventions.map((item, idx) => (
-              <div key={idx} className="bg-white p-4 sm:p-6 rounded-[2rem] shadow-xl border border-gray-100 flex flex-col gap-3">
-                {/* Info intervention */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                  <div className="flex gap-3">
-                    <Star className="text-green-500 fill-current shrink-0 mt-0.5" size={20} />
+          {/* Filtres statut */}
+          <div className="flex flex-wrap gap-2">
+            {ALL_STATUSES.map(s => (
+              <button
+                key={s}
+                onClick={() => handleStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-colors ${
+                  statusFilter === s
+                    ? 'bg-[#0D2B0D] text-white border-[#0D2B0D]'
+                    : 'bg-white text-[#0D2B0D] border-gray-300 hover:border-[#0D2B0D]'
+                }`}
+              >
+                {STATUS_LABEL[s]?.text || s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Compteur */}
+        <p className="text-sm text-gray-500 mb-4 font-medium">
+          {isLoading ? 'Chargement…' : `${filtered.length} demande${filtered.length !== 1 ? 's' : ''}`}
+          {statusFilter ? ` — filtre : ${STATUS_LABEL[statusFilter]?.text}` : ''}
+          {q ? ` — recherche : "${query}"` : ''}
+        </p>
+
+        {error && (
+          <div className="mb-4 rounded-2xl bg-red-50 p-4 text-center text-red-700 text-sm">{error}</div>
+        )}
+
+        {!isLoading && !error && filtered.length === 0 && (
+          <div className="text-center py-16 text-gray-400 font-semibold">
+            Aucune demande trouvée.
+          </div>
+        )}
+
+        {/* Liste des demandes */}
+        <div className="space-y-4">
+          {filtered.map(req => {
+            const isOpen = openId === req.id;
+            const cfg = STATUS_LABEL[req.status] || { text: req.status, color: 'bg-gray-100 text-gray-600 border-gray-300' };
+
+            return (
+              <div
+                key={req.id}
+                className={`rounded-2xl border-2 overflow-hidden transition-all ${
+                  isOpen ? 'border-[#608C27]' : 'border-gray-200'
+                } bg-white shadow-md`}
+              >
+                {/* En-tête cliquable */}
+                <div
+                  className="p-4 sm:p-5 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  onClick={() => setOpenId(isOpen ? null : req.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-full shrink-0 ${isOpen ? 'bg-[#608C27] text-white' : 'bg-gray-100 text-[#0D2B0D]'}`}>
+                      <Wrench size={18} />
+                    </div>
                     <div>
-                      <h4 className="font-black text-xs sm:text-sm uppercase italic leading-tight">
-                        ID #{item.id} | {item.titre}
-                      </h4>
-                      <div className="text-xs mt-2 space-y-1 text-gray-700">
-                        <p>👤 <span className="font-bold text-blue-600">Client:</span> {item.client}</p>
-                        {item.meca && (
-                          <p>👷 <span className="font-bold text-yellow-600">Mécanicien:</span> {item.meca}{' '}
-                            <span className="font-black text-black ml-1">{item.montant}</span>
-                          </p>
+                      <p className="font-bold text-[#0D2B0D] leading-tight">
+                        {req.breakdown_type || 'Demande de dépannage'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                        <User size={11} /> {req.driver_name || '—'}
+                        {req.driver_phone && (
+                          <span className="ml-2 flex items-center gap-1">
+                            <Phone size={11} /> {req.driver_phone}
+                          </span>
                         )}
-                        {!item.meca && <p className="font-black text-black uppercase text-xs">{item.montant}</p>}
-                      </div>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                        <Clock size={11} /> {new Date(req.created_at).toLocaleString('fr-FR')}
+                      </p>
                     </div>
                   </div>
-                  <div className="sm:text-right shrink-0">
-                    <p className="text-xs font-bold">{item.statut} {item.sIcon}</p>
-                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase italic">
-                      {item.heure}
-                    </p>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <StatusBadge status={req.status} />
+                    {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                   </div>
                 </div>
 
-                {/* Boutons */}
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button className="bg-[#1a301a] text-white text-xs px-4 py-2 rounded-xl font-bold uppercase shadow-sm hover:scale-105 transition-transform">
-                    Contrôler
-                  </button>
-                  <button className="bg-[#608C27] text-white text-xs px-4 py-2 rounded-xl font-bold uppercase shadow-sm hover:scale-105 transition-transform">
-                    Valider
-                  </button>
-                  <button className="bg-black text-white text-xs px-4 py-2 rounded-xl font-bold uppercase shadow-sm hover:scale-105 transition-transform">
-                    Signaler
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                {/* Détails dépliables */}
+                {isOpen && (
+                  <div className="bg-[#0D2B0D] p-5 sm:p-6 text-white space-y-4 border-t-2 border-[#608C27]">
 
-          {/* COLONNE DROITE : HISTORIQUE */}
-          <div className="space-y-4">
-            <h3 className="font-black text-xs text-gray-800 uppercase tracking-widest">
-              Historique & Rapports
-            </h3>
-            <div className="bg-white p-4 rounded-[2rem] shadow-lg border border-gray-100 flex justify-between items-center">
-              <div>
-                <p className="font-black text-xs uppercase">Détails Intervention</p>
-                <p className="font-black text-xs">#45</p>
-              </div>
-              <ChevronUp size={20} />
-            </div>
-            {[44, 43].map((num) => (
-              <div key={num} className="bg-white p-4 rounded-[1.8rem] shadow-sm flex justify-between items-center opacity-80 border border-gray-100">
-                <p className="font-black text-xs">#{num}</p>
-                <ChevronDown size={18} className="text-gray-400" />
-              </div>
-            ))}
-            <div className="space-y-3 pt-4">
-              <button className="w-full text-left text-xs font-bold p-1 hover:underline text-gray-600">
-                Rapport hebdomadaire PDF
-              </button>
-              <button className="w-full text-left text-xs font-bold p-1 hover:underline text-gray-600">
-                Rapport mensuel PDF
-              </button>
-            </div>
-          </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
+                      {/* Infos conducteur */}
+                      <Section title="Conducteur">
+                        <Row label="Nom" value={req.driver_name} />
+                        <Row label="Téléphone" value={req.driver_phone} />
+                        <Row label="Véhicule" value={req.vehicle_description} />
+                      </Section>
+
+                      {/* Infos panne */}
+                      <Section title="Panne">
+                        <Row label="Type" value={req.breakdown_type} />
+                        <Row label="Description" value={req.breakdown_description} />
+                        <Row label="Spécialité demandée" value={req.specialty_requested?.name} />
+                      </Section>
+
+                      {/* Localisation */}
+                      <Section title="Localisation">
+                        <Row label="Adresse" value={req.address_description} icon={<MapPin size={12} />} />
+                        <Row label="GPS" value={
+                          req.latitude && req.longitude
+                            ? `${parseFloat(req.latitude).toFixed(5)}, ${parseFloat(req.longitude).toFixed(5)}`
+                            : null
+                        } />
+                      </Section>
+
+                      {/* Mécanicien assigné */}
+                      <Section title="Mécanicien assigné">
+                        {req.assigned_mechanic ? (
+                          <>
+                            <Row label="Nom" value={
+                              req.assigned_mechanic.user_name ||
+                              `${req.assigned_mechanic.first_name || ''} ${req.assigned_mechanic.last_name || ''}`.trim()
+                            } />
+                            <Row label="Ville" value={req.assigned_mechanic.city} />
+                            <Row label="Distance" value={req.assignment_distance_km ? `${req.assignment_distance_km} km` : null} />
+                            <Row label="Assigné le" value={req.assigned_at ? new Date(req.assigned_at).toLocaleString('fr-FR') : null} />
+                          </>
+                        ) : (
+                          <p className="text-white/50 text-xs italic">Aucun mécanicien assigné</p>
+                        )}
+                      </Section>
+
+                    </div>
+
+                    {/* Identifiants techniques */}
+                    <div className="border-t border-white/10 pt-3 mt-2">
+                      <p className="text-white/40 text-xs font-mono">ID demande : {req.id}</p>
+                      {req.refusal_count > 0 && (
+                        <p className="text-orange-400 text-xs mt-1">
+                          {req.refusal_count} refus enregistré{req.refusal_count > 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 };
+
+const Section = ({ title, children }) => (
+  <div>
+    <p className="text-[#608C27] text-xs font-black uppercase tracking-wider mb-2">{title}</p>
+    <div className="space-y-1">{children}</div>
+  </div>
+);
+
+const Row = ({ label, value, icon }) => (
+  <div className="flex items-start gap-1.5 text-xs">
+    {icon && <span className="text-[#608C27] mt-0.5 shrink-0">{icon}</span>}
+    <span className="text-white/50 shrink-0">{label} :</span>
+    <span className="text-white font-medium">{value || '—'}</span>
+  </div>
+);
 
 export default SupervisionInterventions;
