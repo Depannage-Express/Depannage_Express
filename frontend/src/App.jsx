@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { clearAuthTokens, fetchCurrentUser, getAccessToken, logoutMechanic } from './lib/api';
+import { clearAuthTokens, fetchCurrentUser, getAccessToken, logoutMechanic, pingBackend } from './lib/api';
 import Header from './components/header';
 import Hero from './components/hero';
 import Demande from './components/demande_depannage';
@@ -95,6 +95,10 @@ function App() {
   const [currentPayment, setCurrentPayment] = useState(null);
   const [currentIntervention, setCurrentIntervention] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    pingBackend();
+  }, []);
 
   useEffect(() => {
     const hydrateUser = async () => {

@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const ACCESS_TOKEN_KEY = 'depannage_express_access';
 const REFRESH_TOKEN_KEY = 'depannage_express_refresh';
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 65000;
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -19,6 +19,10 @@ export function setAuthTokens({ access, refresh }) {
 export function clearAuthTokens() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export function pingBackend() {
+  fetch(`${API_BASE_URL}/health/`).catch(() => {});
 }
 
 async function parseResponse(response) {
@@ -64,9 +68,9 @@ async function fetchWithTimeout(url, options = {}) {
     });
   } catch (error) {
     if (error.name === 'AbortError') {
-      throw new Error("Le serveur met trop de temps a repondre. Verifie que le backend est bien lance.");
+      throw new Error("Le serveur est en cours de démarrage. Patientez 30 secondes puis réessayez.");
     }
-    throw new Error("Impossible de joindre le serveur. Verifie l'URL API et le backend.");
+    throw new Error("Impossible de joindre le serveur. Vérifiez votre connexion internet.");
   } finally {
     window.clearTimeout(timeoutId);
   }
