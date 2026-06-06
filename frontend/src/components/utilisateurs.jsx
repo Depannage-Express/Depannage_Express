@@ -49,6 +49,7 @@ const Utilisateurs = ({ onBack }) => {
   const [completeTarget, setCompleteTarget] = useState(null);
   const [completeForm, setCompleteForm] = useState(EMPTY_FORM);
   const [specialties, setSpecialties] = useState([]);
+  const [specialtiesLoaded, setSpecialtiesLoaded] = useState(false);
   const [completeError, setCompleteError] = useState('');
   const photoInputRef = useRef(null);
 
@@ -117,13 +118,14 @@ const Utilisateurs = ({ onBack }) => {
     setCompleteTarget(user);
     setCompleteForm(EMPTY_FORM);
     setCompleteError('');
-    if (specialties.length === 0) {
-      try {
-        const data = await fetchSpecialties();
-        setSpecialties(Array.isArray(data) ? data : (data.results || []));
-      } catch {
-        // spécialités non bloquantes
-      }
+    try {
+      const data = await fetchSpecialties();
+      const list = Array.isArray(data) ? data : (data.results || []);
+      setSpecialties(list);
+      setSpecialtiesLoaded(true);
+    } catch {
+      setSpecialties([]);
+      setSpecialtiesLoaded(true);
     }
   };
 
@@ -141,10 +143,13 @@ const Utilisateurs = ({ onBack }) => {
 
     // Validation des champs obligatoires
     const missingFields = [];
-    if (!completeForm.city.trim())             missingFields.push('Ville');
-    if (!completeForm.latitude.trim())         missingFields.push('Latitude');
-    if (!completeForm.longitude.trim())        missingFields.push('Longitude');
-    if (completeForm.specialty_ids.length === 0) missingFields.push('au moins une Spécialité');
+    if (!completeForm.city.trim())    missingFields.push('Ville');
+    if (!completeForm.latitude.trim())  missingFields.push('Latitude');
+    if (!completeForm.longitude.trim()) missingFields.push('Longitude');
+    // Spécialité obligatoire uniquement si la liste a été chargée et contient des entrées
+    if (specialties.length > 0 && completeForm.specialty_ids.length === 0) {
+      missingFields.push('au moins une Spécialité');
+    }
     if (missingFields.length > 0) {
       setCompleteError(`Champs obligatoires manquants : ${missingFields.join(', ')}.`);
       return;
@@ -443,9 +448,18 @@ const Utilisateurs = ({ onBack }) => {
               </div>
 
               {/* Spécialités */}
-              {specialties.length > 0 && (
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Spécialités <span className="text-red-500">*</span></label>
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">
+                  Spécialités {specialties.length > 0 && <span className="text-red-500">*</span>}
+                </label>
+                {!specialtiesLoaded ? (
+                  <p className="text-xs text-gray-400 italic">Chargement des spécialités…</p>
+                ) : specialties.length === 0 ? (
+                  <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
+                    Aucune spécialité disponible dans la base — vous pouvez valider sans en sélectionner.
+                    Ajoutez des spécialités via l'interface Django admin si nécessaire.
+                  </p>
+                ) : (
                   <div className="flex flex-wrap gap-2">
                     {specialties.map(s => (
                       <button
@@ -462,8 +476,8 @@ const Utilisateurs = ({ onBack }) => {
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Ville + Adresse */}
               <div className="grid grid-cols-2 gap-3">
