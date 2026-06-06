@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed } from 'lucide-react';
 import {
   blockAdminUser,
   fetchAdminUsers,
@@ -8,6 +8,7 @@ import {
   fetchSpecialties,
   adminCompleteAndApproveMechanic,
 } from '../lib/api';
+import { DEPARTMENTS, getCitiesForDept, getCoordsForCity } from '../lib/benin_locations';
 
 const STATUS_BADGE = {
   approved: 'bg-green-100 text-green-700 border-green-400',
@@ -48,6 +49,10 @@ const Utilisateurs = ({ onBack }) => {
   // Modal compléter le profil
   const [completeTarget, setCompleteTarget] = useState(null);
   const [completeForm, setCompleteForm] = useState(EMPTY_FORM);
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsSource, setGpsSource] = useState(''); // 'photo' | 'city' | 'gps'
   const [specialties, setSpecialties] = useState([]);
   const [specialtiesLoaded, setSpecialtiesLoaded] = useState(false);
   const [completeError, setCompleteError] = useState('');
@@ -116,7 +121,10 @@ const Utilisateurs = ({ onBack }) => {
 
   const openCompleteModal = async (user) => {
     setCompleteTarget(user);
-    setCompleteForm(EMPTY_FORM);
+    setCompleteForm({ ...EMPTY_FORM, specialty_ids: [] });
+    setSelectedDept('');
+    setSelectedCity('');
+    setGpsSource('');
     setCompleteError('');
     try {
       const data = await fetchSpecialties();
@@ -126,6 +134,66 @@ const Utilisateurs = ({ onBack }) => {
     } catch {
       setSpecialties([]);
       setSpecialtiesLoaded(true);
+    }
+  };
+
+  const handleDeptChange = (dept) => {
+    setSelectedDept(dept);
+    setSelectedCity('');
+    setCompleteForm(f => ({ ...f, city: '', latitude: '', longitude: '' }));
+    setGpsSource('');
+  };
+
+  const handleCityChange = (city) => {
+    setSelectedCity(city);
+    const coords = getCoordsForCity(selectedDept, city);
+    setCompleteForm(f => ({
+      ...f,
+      city: city,
+      latitude:  coords ? String(coords.lat) : '',
+      longitude: coords ? String(coords.lng) : '',
+    }));
+    if (coords) setGpsSource('city');
+  };
+
+  const requestGPS = () => {
+    if (!navigator.geolocation) return;
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCompleteForm(f => ({
+          ...f,
+          latitude:  pos.coords.latitude.toFixed(6),
+          longitude: pos.coords.longitude.toFixed(6),
+        }));
+        setGpsSource('gps');
+        setGpsLoading(false);
+      },
+      () => { setGpsLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCompleteForm(f => ({ ...f, profile_photo: file }));
+    // Géolocalisation automatique à la prise de photo
+    if (navigator.geolocation) {
+      setGpsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCompleteForm(f => ({
+            ...f,
+            latitude:  pos.coords.latitude.toFixed(6),
+            longitude: pos.coords.longitude.toFixed(6),
+          }));
+          setGpsSource('photo');
+          setGpsLoading(false);
+        },
+        () => { setGpsLoading(false); },
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
     }
   };
 
@@ -143,10 +211,9 @@ const Utilisateurs = ({ onBack }) => {
 
     // Validation des champs obligatoires
     const missingFields = [];
-    if (!completeForm.city.trim())    missingFields.push('Ville');
+    if (!selectedCity)                  missingFields.push('Commune / Ville');
     if (!completeForm.latitude.trim())  missingFields.push('Latitude');
     if (!completeForm.longitude.trim()) missingFields.push('Longitude');
-    // Spécialité obligatoire uniquement si la liste a été chargée et contient des entrées
     if (specialties.length > 0 && completeForm.specialty_ids.length === 0) {
       missingFields.push('au moins une Spécialité');
     }
@@ -432,18 +499,42 @@ const Utilisateurs = ({ onBack }) => {
 
             <div className="space-y-4">
 
-              {/* Photo de profil */}
+              {/* Photo de profil + géolocalisation automatique */}
               <div>
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Photo de profil</label>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">
+                  Photo de profil
+                  <span className="ml-2 text-[#608C27] font-normal normal-case">— déclenche le GPS automatiquement</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="flex items-center gap-2 bg-[#0D2B0D] text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[#608C27] transition-colors"
+                  >
+                    <Camera size={15} />
+                    {completeForm.profile_photo ? 'Changer la photo' : 'Prendre / Choisir une photo'}
+                  </button>
+                  {gpsLoading && (
+                    <span className="text-xs text-[#608C27] animate-pulse flex items-center gap-1">
+                      <LocateFixed size={13} /> GPS en cours…
+                    </span>
+                  )}
+                  {gpsSource === 'photo' && !gpsLoading && (
+                    <span className="text-xs text-green-600 flex items-center gap-1">
+                      <LocateFixed size={13} /> GPS capturé
+                    </span>
+                  )}
+                </div>
                 <input
                   ref={photoInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={e => setCompleteForm(f => ({ ...f, profile_photo: e.target.files[0] || null }))}
-                  className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:bg-[#608C27] file:text-white file:font-bold cursor-pointer"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className="hidden"
                 />
                 {completeForm.profile_photo && (
-                  <p className="text-xs text-green-600 mt-1">{completeForm.profile_photo.name}</p>
+                  <p className="text-xs text-green-700 mt-1.5 font-medium">✓ {completeForm.profile_photo.name}</p>
                 )}
               </div>
 
@@ -456,8 +547,7 @@ const Utilisateurs = ({ onBack }) => {
                   <p className="text-xs text-gray-400 italic">Chargement des spécialités…</p>
                 ) : specialties.length === 0 ? (
                   <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
-                    Aucune spécialité disponible dans la base — vous pouvez valider sans en sélectionner.
-                    Ajoutez des spécialités via l'interface Django admin si nécessaire.
+                    Aucune spécialité disponible — validation permise sans sélection.
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
@@ -479,18 +569,98 @@ const Utilisateurs = ({ onBack }) => {
                 )}
               </div>
 
-              {/* Ville + Adresse */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Localisation — cascade Département → Commune */}
+              <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-black uppercase text-gray-500 flex items-center gap-1">
+                  <MapPin size={13} /> Localisation <span className="text-red-500 ml-0.5">*</span>
+                </p>
+
+                {/* Ligne 1 : Département + Commune */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Département</label>
+                    <select
+                      value={selectedDept}
+                      onChange={e => handleDeptChange(e.target.value)}
+                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white"
+                    >
+                      <option value="">— Choisir —</option>
+                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Commune / Ville <span className="text-red-500">*</span></label>
+                    <select
+                      value={selectedCity}
+                      onChange={e => handleCityChange(e.target.value)}
+                      disabled={!selectedDept}
+                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white disabled:opacity-50"
+                    >
+                      <option value="">— Choisir —</option>
+                      {getCitiesForDept(selectedDept).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Ligne 2 : Quartier (texte libre) */}
                 <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Ville <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Quartier / Zone (optionnel)</label>
                   <input
                     type="text"
-                    value={completeForm.city}
-                    onChange={e => setCompleteForm(f => ({ ...f, city: e.target.value }))}
-                    placeholder="Cotonou"
+                    value={completeForm.address}
+                    onChange={e => setCompleteForm(f => ({ ...f, address: e.target.value }))}
+                    placeholder="Ex : Cadjehoun, Agla, Zongo…"
                     className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
                   />
                 </div>
+
+                {/* Coordonnées — auto-remplies, modifiables manuellement */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">
+                      Latitude <span className="text-red-500">*</span>
+                      {gpsSource === 'city' && <span className="text-[#608C27] ml-1">(ville)</span>}
+                      {gpsSource === 'gps' && <span className="text-green-600 ml-1">(GPS précis)</span>}
+                      {gpsSource === 'photo' && <span className="text-green-600 ml-1">(GPS photo)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={completeForm.latitude}
+                      onChange={e => setCompleteForm(f => ({ ...f, latitude: e.target.value }))}
+                      placeholder="6.3702"
+                      className={`w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] ${
+                        completeForm.latitude ? 'border-green-400 bg-green-50' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Longitude <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={completeForm.longitude}
+                      onChange={e => setCompleteForm(f => ({ ...f, longitude: e.target.value }))}
+                      placeholder="2.4183"
+                      className={`w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] ${
+                        completeForm.longitude ? 'border-green-400 bg-green-50' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Bouton GPS précis */}
+                <button
+                  type="button"
+                  onClick={requestGPS}
+                  disabled={gpsLoading}
+                  className="flex items-center gap-2 text-xs font-bold text-[#608C27] hover:text-[#0D2B0D] transition-colors disabled:opacity-60"
+                >
+                  <LocateFixed size={13} />
+                  {gpsLoading ? 'Localisation en cours…' : 'Utiliser ma position GPS actuelle (plus précis)'}
+                </button>
+              </div>
+
+              {/* Années d'expérience + Bio */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Années d'exp.</label>
                   <input
@@ -502,54 +672,16 @@ const Utilisateurs = ({ onBack }) => {
                     className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
                   />
                 </div>
-              </div>
-
-              {/* Géolocalisation */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Latitude <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={completeForm.latitude}
-                    onChange={e => setCompleteForm(f => ({ ...f, latitude: e.target.value }))}
-                    placeholder="6.3702"
-                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Bio / Description</label>
+                  <textarea
+                    value={completeForm.bio}
+                    onChange={e => setCompleteForm(f => ({ ...f, bio: e.target.value }))}
+                    placeholder="Mécanicien spécialisé en moteurs diesel depuis 10 ans…"
+                    rows={2}
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] resize-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Longitude <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={completeForm.longitude}
-                    onChange={e => setCompleteForm(f => ({ ...f, longitude: e.target.value }))}
-                    placeholder="2.4183"
-                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
-                  />
-                </div>
-              </div>
-
-              {/* Adresse */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adresse de l'atelier</label>
-                <input
-                  type="text"
-                  value={completeForm.address}
-                  onChange={e => setCompleteForm(f => ({ ...f, address: e.target.value }))}
-                  placeholder="Rue des mécanos, Cotonou"
-                  className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
-                />
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Bio / Description</label>
-                <textarea
-                  value={completeForm.bio}
-                  onChange={e => setCompleteForm(f => ({ ...f, bio: e.target.value }))}
-                  placeholder="Mécanicien spécialisé en moteurs diesel depuis 10 ans…"
-                  rows={3}
-                  className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] resize-none"
-                />
               </div>
 
             </div>
