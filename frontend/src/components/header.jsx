@@ -77,38 +77,15 @@ const Header = ({
 
         {/* Mobile */}
         <div className="md:hidden flex items-center justify-center w-full">
-          {isSearchOpen ? (
-            <div className="absolute left-1/2 -translate-x-1/2 top-[-14px] flex items-center bg-white border border-[#0D2B0D] rounded-lg px-2 py-1 shadow-lg z-50 w-[200px]">
-              <input
-                autoFocus
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Mécanicien, ville..."
-                className="text-[#0D2B0D] w-full bg-transparent outline-none p-1 text-xs"
-              />
-              <button
-                onClick={() => { triggerSearch(inputValue); setIsSearchOpen(false); }}
-                className="mr-1 text-[#608C27]"
-              >
-                <Search size={14} />
-              </button>
-              <button onClick={() => setIsSearchOpen(false)}>
-                <X size={16} className="text-[#0D2B0D] shrink-0" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className="p-2 text-[#0D2B0D] hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center relative"
-            >
-              <Search size={22} />
-              {searchQuery && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#608C27] rounded-full" />
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="p-2 text-[#0D2B0D] hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center relative"
+          >
+            <Search size={22} />
+            {searchQuery && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#608C27] rounded-full" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -154,6 +131,37 @@ const Header = ({
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
+
+      {/* Barre de recherche mobile — sous le header */}
+      {isSearchOpen && (
+        <div className="absolute top-full left-0 w-full bg-white border-t-2 border-[#608C27] px-4 py-3 shadow-xl z-50 md:hidden">
+          <div className="flex items-center gap-2 border border-[#0D2B0D] rounded-xl px-3 py-2 bg-gray-50">
+            <input
+              autoFocus
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Rechercher un mécanicien, une ville..."
+              className="flex-1 bg-transparent outline-none text-sm text-[#0D2B0D] placeholder:text-gray-400"
+            />
+            <button
+              onClick={() => { triggerSearch(inputValue); setIsSearchOpen(false); }}
+              className="text-[#608C27] hover:text-[#0D2B0D] transition-colors"
+              aria-label="Lancer la recherche"
+            >
+              <Search size={18} />
+            </button>
+            <button
+              onClick={() => { setInputValue(''); triggerSearch(''); setIsSearchOpen(false); }}
+              className="text-gray-400 hover:text-[#0D2B0D] transition-colors"
+              aria-label="Fermer la recherche"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Menu Dropdown Mobile */}
       {isMenuOpen && (

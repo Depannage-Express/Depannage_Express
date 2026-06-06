@@ -11,11 +11,12 @@ const STATUS_LABELS = {
 
 const NO_MECHANIC_TIMEOUT_MS = 25000;
 
-const Suivre = ({ requestId, onBack }) => {
+const Suivre = ({ requestId, onBack, onMechanicAssigned }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [noMechanicAvailable, setNoMechanicAvailable] = useState(false);
   const noMechanicTimerRef = useRef(null);
+  const assignedCalledRef = useRef(false);
 
   useEffect(() => {
     if (!requestId) return;
@@ -25,8 +26,14 @@ const Suivre = ({ requestId, onBack }) => {
         const result = await fetchBreakdownStatus(requestId);
         setData(result);
         setError('');
+
         if (result.status !== 'pending') {
           clearTimeout(noMechanicTimerRef.current);
+        }
+
+        if (result.status === 'assigned' && !assignedCalledRef.current && onMechanicAssigned) {
+          assignedCalledRef.current = true;
+          window.setTimeout(() => onMechanicAssigned(result), 1500);
         }
       } catch (e) {
         setError(e.message);
@@ -44,7 +51,7 @@ const Suivre = ({ requestId, onBack }) => {
       window.clearInterval(interval);
       window.clearTimeout(noMechanicTimerRef.current);
     };
-  }, [requestId]);
+  }, [requestId, onMechanicAssigned]);
 
   const statusInfo = data ? (STATUS_LABELS[data.status] || { text: data.status, color: 'text-gray-600' }) : null;
 
@@ -108,6 +115,7 @@ const Suivre = ({ requestId, onBack }) => {
                 Spécialité : {data.assigned_mechanic.specialties.map(s => s.name).join(', ')}
               </p>
             ) : null}
+            <p className="text-xs text-[#608C27] mt-3 animate-pulse">Redirection vers la facturation...</p>
           </div>
         ) : (
           <p className="text-center text-sm text-gray-500 mt-4">

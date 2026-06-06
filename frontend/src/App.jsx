@@ -119,17 +119,6 @@ function App() {
     hydrateUser();
   }, []);
 
-  useEffect(() => {
-    if (screen !== SCREENS.BREAKDOWN_TRACKING || currentBreakdown?.status !== 'assigned') {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setScreen(SCREENS.BILLING);
-    }, 4000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [screen, currentBreakdown]);
 
   const resetBreakdownFlow = () => {
     setCurrentBreakdown(null);
@@ -144,6 +133,7 @@ function App() {
       // ignore logout errors
     } finally {
       clearAuthTokens();
+      localStorage.removeItem('meca_dashboard_view');
       setCurrentUser(null);
       setSearchQuery('');
       setScreen(SCREENS.HOME);
@@ -280,7 +270,20 @@ function App() {
       case SCREENS.ADMIN_DASHBOARD:
         return <DashboardAdmin />;
       case SCREENS.MECHANIC_INFO:
-        return <InfoMecanicien onBack={() => { setSearchQuery(''); goHome(); }} searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')} />;
+        return (
+          <InfoMecanicien
+            onBack={() => {
+              setSearchQuery('');
+              if (currentUser) {
+                setScreen(getScreenForUser(currentUser));
+              } else {
+                goHome();
+              }
+            }}
+            searchQuery={searchQuery}
+            onClearSearch={() => setSearchQuery('')}
+          />
+        );
       case SCREENS.ABOUT:
         return <APropos />;
       case SCREENS.THANK_YOU:
@@ -334,7 +337,13 @@ function App() {
           />
         );
       case SCREENS.BREAKDOWN_TRACKING:
-        return <Suivre requestId={currentBreakdown?.id} onBack={goHome} />;
+        return (
+          <Suivre
+            requestId={currentBreakdown?.id}
+            onBack={goHome}
+            onMechanicAssigned={() => setScreen(SCREENS.BILLING)}
+          />
+        );
       case SCREENS.BREAKDOWN_CONFIRMATION:
         return (
           <Confirmation

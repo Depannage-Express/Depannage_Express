@@ -9,8 +9,18 @@ import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown } from 
 
 const DashboardMecanicien = ({ currentUser }) => {
 
-  // 1. Créer l'état pour savoir quelle "sous-page" afficher
-  const [view, setView] = useState('menu');
+  const [view, setView] = useState(() => {
+    return localStorage.getItem('meca_dashboard_view') || 'menu';
+  });
+
+  const handleSetView = (newView) => {
+    setView(newView);
+    if (newView === 'menu') {
+      localStorage.removeItem('meca_dashboard_view');
+    } else {
+      localStorage.setItem('meca_dashboard_view', newView);
+    }
+  };
   // Données pour les cartes du menu
   const isPremium = currentUser?.role === 'mechanic_premium';
 
@@ -32,24 +42,24 @@ const DashboardMecanicien = ({ currentUser }) => {
   const renderContent = () => {
     switch (view) {
       case 'liste-commandes':
-        return <ListesCommandes onBack={() => setView('menu')} />;
+        return <ListesCommandes onBack={() => handleSetView('menu')} />;
       
       // On peut ajouter les autres ici plus tard
       case 'notif':
-        return <Notifications onBack={() => setView('menu')} />;
+        return <Notifications onBack={() => handleSetView('menu')} />;
       case 'compte':
-                return <MonCompte onBack={() => setView('menu')} />;
+                return <MonCompte onBack={() => handleSetView('menu')} />;
       case 'statut':
-                return <StatutMissions onBack={()=> setView('menu')}/>;
+                return <StatutMissions onBack={()=> handleSetView('menu')}/>;
       case 'discuter':
-                return <DiscussionMeca onBack={() => setView('menu')} currentUser={currentUser} />;
+                return <DiscussionMeca onBack={() => handleSetView('menu')} currentUser={currentUser} />;
       case 'abonnement':
-                return <Abonnement onBack={() => setView('menu')} currentUser={currentUser} />;
+                return <Abonnement onBack={() => handleSetView('menu')} currentUser={currentUser} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
             <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
-            <button onClick={() => setView('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
+            <button onClick={() => handleSetView('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
               ← Retour au menu
             </button>
           </div>
@@ -87,7 +97,7 @@ const DashboardMecanicien = ({ currentUser }) => {
             ) : null}
           </div>
           <button
-            onClick={() => setView('abonnement')}
+            onClick={() => handleSetView('abonnement')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all shrink-0 ${
               isPremium
                 ? 'bg-yellow-400 text-[#0D2B0D] border-yellow-300 hover:bg-yellow-300'
@@ -105,30 +115,30 @@ const DashboardMecanicien = ({ currentUser }) => {
           {/* Listes des Demandes (Gauche Haut) */}
           <MenuCard 
             item={menuItems[0]} 
-            onClick={() => setView('liste-commandes')}
+            onClick={() => handleSetView('liste-commandes')}
           />
 
           {/* Mon Compte (Centre) - On le place au milieu dans la grille */}
           <div className="lg:row-span-2 flex items-center">
              <MenuCard item={menuItems[2]} isLarge={true} 
-                  onClick={() => setView('compte')}
+                  onClick={() => handleSetView('compte')}
              />
           </div>
 
           {/* Notification (Droite Haut) */}
           <MenuCard 
             item={menuItems[1]} 
-            onClick={() => setView('notif')}
+            onClick={() => handleSetView('notif')}
           />
 
           {/* Statut des missions (Gauche Bas) */}
           <MenuCard item={menuItems[3]} 
-            onClick={() => setView('statut')}
+            onClick={() => handleSetView('statut')}
           />
 
           {/* Discuter (Droite Bas) */}
           <MenuCard item={menuItems[4]}
-            onClick={() => setView('discuter')}
+            onClick={() => handleSetView('discuter')}
           />
 
         </div>
