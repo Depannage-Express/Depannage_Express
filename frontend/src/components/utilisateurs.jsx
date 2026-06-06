@@ -122,7 +122,7 @@ const Utilisateurs = ({ onBack }) => {
   const ProfileStatusBadge = ({ status }) => {
     const cls = STATUS_BADGE[status] || 'bg-gray-100 text-gray-600 border-gray-300';
     return (
-      <span className={`inline-block text-[9px] font-bold uppercase border rounded-full px-2 py-0.5 ${cls}`}>
+      <span className={`inline-block text-xs font-bold uppercase border rounded-full px-2 py-0.5 ${cls}`}>
         {STATUS_LABEL[status] || 'Inconnu'}
       </span>
     );
@@ -137,7 +137,7 @@ const Utilisateurs = ({ onBack }) => {
           <h4 className="font-bold text-[#0D2B0D] uppercase text-sm truncate">
             {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
           </h4>
-          <p className="text-[10px] text-gray-500 font-mono truncate">ID: {user.id}</p>
+          <p className="text-xs text-gray-500 font-mono truncate">ID: {user.id}</p>
           <p className="text-xs text-gray-700 truncate">Email: {user.email}</p>
           <p className="text-xs text-gray-700">📞 {user.phone || '-'}</p>
           {user.mechanic_profile_status && (
@@ -152,7 +152,7 @@ const Utilisateurs = ({ onBack }) => {
       </div>
 
       {user.is_blocked && user.block_reason ? (
-        <p className="text-[9px] font-bold text-red-600 mt-2 bg-white/50 p-1 rounded">
+        <p className="text-xs font-bold text-red-600 mt-2 bg-white/50 p-1 rounded">
           Motif: {user.block_reason}
         </p>
       ) : null}
@@ -163,14 +163,14 @@ const Utilisateurs = ({ onBack }) => {
           <button
             onClick={() => handleApprove(user)}
             disabled={!!pendingAction}
-            className="bg-green-600 text-white text-[10px] py-2 rounded-xl hover:bg-green-700 uppercase font-bold disabled:opacity-60"
+            className="bg-green-600 text-white text-xs py-2 rounded-xl hover:bg-green-700 uppercase font-bold disabled:opacity-60"
           >
             {pendingAction === `approve-${user.id}` ? '...' : '✓ Approuver'}
           </button>
           <button
             onClick={() => { setRejectTarget(user); setRejectReason(''); }}
             disabled={!!pendingAction}
-            className="bg-red-600 text-white text-[10px] py-2 rounded-xl hover:bg-red-700 uppercase font-bold disabled:opacity-60"
+            className="bg-red-600 text-white text-xs py-2 rounded-xl hover:bg-red-700 uppercase font-bold disabled:opacity-60"
           >
             ✕ Refuser
           </button>
@@ -182,14 +182,14 @@ const Utilisateurs = ({ onBack }) => {
         <button
           onClick={() => handleBlockAction(user)}
           disabled={pendingAction === `bloquer-${user.id}` || pendingAction === `debloquer-${user.id}`}
-          className="bg-gray-800 text-white text-[9px] py-2 rounded-lg hover:bg-black uppercase font-bold disabled:opacity-60"
+          className="bg-gray-800 text-white text-xs py-2 rounded-lg hover:bg-black uppercase font-bold disabled:opacity-60"
         >
           {user.is_blocked ? 'Débloquer' : 'Bloquer'}
         </button>
-        <button className="bg-orange-500 text-white text-[9px] py-2 rounded-lg hover:bg-orange-600 uppercase font-bold opacity-50 cursor-not-allowed">
+        <button className="bg-orange-500 text-white text-xs py-2 rounded-lg hover:bg-orange-600 uppercase font-bold opacity-50 cursor-not-allowed">
           Suspendre
         </button>
-        <button className="bg-red-600 text-white text-[9px] py-2 rounded-lg hover:bg-red-800 uppercase font-bold opacity-50 cursor-not-allowed">
+        <button className="bg-red-600 text-white text-xs py-2 rounded-lg hover:bg-red-800 uppercase font-bold opacity-50 cursor-not-allowed">
           Supprimer
         </button>
       </div>
@@ -275,11 +275,11 @@ const Utilisateurs = ({ onBack }) => {
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-center shadow-sm">
               <p className="text-xs font-bold text-blue-700 uppercase mb-2">Service anonyme</p>
-              <p className="text-[11px] text-blue-600 leading-relaxed">
+              <p className="text-xs text-blue-600 leading-relaxed">
                 Les conducteurs utilisent l'application <strong>sans créer de compte</strong>.
                 Chaque demande est identifiée par un UUID unique et le numéro de téléphone fourni.
               </p>
-              <p className="text-[10px] text-blue-400 mt-3 italic">MVP — V2</p>
+              <p className="text-xs text-blue-400 mt-3 italic">MVP — V2</p>
             </div>
           </section>
 

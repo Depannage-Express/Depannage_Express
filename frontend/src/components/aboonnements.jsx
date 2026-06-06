@@ -14,30 +14,30 @@ const Abonnements = ({ onBack }) => {
   ];
 
   return (
-  
-      <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden p-6 md:p-10">
-        
-        <div className="bg-[#0D2B0D] text-white -mt-10 -ml-10 -mr-10 p-4 flex justify-center">
-            {onBack && (
-              <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
-                ← Retour
-              </button>
-            )}
-            <h2 className="text-3xl font-bold mb-6  flex ">Liste Abonnés Premium </h2>
-            </div>
+    <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
 
-            <div className="p-6"></div>
+      {/* Header — pas de marges négatives */}
+      <div className="bg-[#0D2B0D] text-white p-4 flex items-center gap-3">
+        {onBack && (
+          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
+            ← Retour
+          </button>
+        )}
+        <h2 className="text-xl sm:text-3xl font-bold flex-1 text-center">Liste Abonnés Premium</h2>
+      </div>
 
-        {/* --- SECTION 1: LISTE ABONNÉS --- */}
-        <div className="bg-gray-50 rounded-2xl p-6 shadow-md mb-8">
+      <div className="p-4 sm:p-6 md:p-10">
+
+        {/* SECTION 1: LISTE ABONNÉS */}
+        <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 shadow-md mb-6">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[500px]">
               <thead>
                 <tr className="text-sm font-bold border-b border-white">
                   <th className="pb-4 px-2">Nom</th>
                   <th className="pb-4 px-2">ID</th>
                   <th className="pb-4 px-2">Téléphone</th>
-                  <th className="pb-4 px-2">Email</th>
+                  <th className="pb-4 px-2 hidden sm:table-cell">Email</th>
                   <th className="pb-4 px-2 text-center">Actif</th>
                   <th className="pb-4 px-2"></th>
                 </tr>
@@ -45,20 +45,24 @@ const Abonnements = ({ onBack }) => {
               <tbody className="text-xs">
                 {abonnes.map((user, idx) => (
                   <tr key={idx} className="border-b border-white hover:bg-white transition-colors">
-                    <td className="py-4 px-2 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white rounded-full overflow-hidden">
-                        <img src={`https://i.pravatar.cc/150?u=${user.id}`} alt="avatar" />
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-white rounded-full overflow-hidden shrink-0">
+                          <img src={`https://i.pravatar.cc/150?u=${user.id}`} alt="avatar" />
+                        </div>
+                        <span className="font-bold">{user.name}</span>
                       </div>
-                      <span className="font-bold">{user.name}</span>
                     </td>
-                    <td className="py-4 px-2">{user.id}</td>
-                    <td className="py-4 px-2">{user.tel}</td>
-                    <td className="py-4 px-2">{user.email}</td>
-                    <td className="py-4 px-2 text-center text-green-600">
-                      {user.active && <Check size={18} className="mx-auto" />}
+                    <td className="py-3 px-2">{user.id}</td>
+                    <td className="py-3 px-2 whitespace-nowrap">{user.tel}</td>
+                    <td className="py-3 px-2 hidden sm:table-cell">{user.email}</td>
+                    <td className="py-3 px-2 text-center text-green-600">
+                      {user.active && <Check size={16} className="mx-auto" />}
                     </td>
-                    <td className="py-4 px-2">
-                      <button className="bg-white px-4 py-1 rounded shadow-sm text-[10px] font-bold hover:bg-gray-300">Détails</button>
+                    <td className="py-3 px-2">
+                      <button className="bg-white px-3 py-1.5 rounded shadow-sm text-xs font-bold hover:bg-gray-300 transition-colors whitespace-nowrap">
+                        Détails
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -67,65 +71,80 @@ const Abonnements = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* --- SECTION 2: PAIEMENTS --- */}
-          <div className="lg:col-span-2 bg-gray-50 rounded-2xl p-6 shadow-md">
-            <h2 className="text-xl font-black uppercase mb-6 tracking-tighter">Paiements & Renouvellements</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* SECTION 2: PAIEMENTS */}
+          <div className="lg:col-span-2 bg-gray-50 rounded-2xl p-4 sm:p-6 shadow-md">
+            <h2 className="text-lg font-black uppercase mb-4 tracking-tighter">Paiements & Renouvellements</h2>
             <div className="bg-gray-50 rounded-xl p-4 border border-white">
               <h3 className="text-xs font-bold mb-4 uppercase border-b pb-2">Paiements récents</h3>
               <div className="space-y-4">
                 {paiements.map((p, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-[11px] border-b border-white pb-3 last:border-0">
-                    <div>
-                      <p className="font-black uppercase">PAIEMENT #{p.id} | {p.type}</p>
-                      <p className="text-gray-400 italic">Abonnée: {p.abonne} | Montant: {p.montant} | Date: {p.date} {p.star && '⭐'}</p>
+                  <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-white pb-3 last:border-0">
+                    <div className="min-w-0">
+                      <p className="font-black uppercase text-xs leading-tight">PAIEMENT #{p.id} | {p.type}</p>
+                      <p className="text-gray-400 italic text-xs mt-1">
+                        Abonnée: {p.abonne} | {p.montant} | {p.date} {p.star && '⭐'}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <span className="bg-green-600 text-white px-3 py-1 rounded text-[10px] font-bold italic">Statut: [{p.statut}]</span>
+                    <div className="shrink-0">
+                      <span className="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold italic whitespace-nowrap">
+                        [{p.statut}]
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button className="bg-gray-200 px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-gray-300 uppercase">Générer reçu</button>
-              <button className="bg-gray-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm hover:bg-gray-500 uppercase">Rapport PDF mensuel</button>
+            <div className="flex flex-wrap justify-end gap-2 mt-4">
+              <button className="bg-gray-200 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-300 uppercase transition-colors">
+                Générer reçu
+              </button>
+              <button className="bg-gray-400 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-500 uppercase transition-colors">
+                Rapport PDF mensuel
+              </button>
             </div>
           </div>
 
-          {/* --- SECTION 3: SUIVI & EXPIRATIONS --- */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-black uppercase tracking-tighter">Suivi & Expirations</h2>
-            
-            <div className="bg-white rounded-2xl p-5 shadow-md">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-[10px] uppercase">Détails abonnement #P025</h4>
+          {/* SECTION 3: SUIVI & EXPIRATIONS */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-black uppercase tracking-tighter">Suivi & Expirations</h2>
+
+            <div className="bg-white rounded-2xl p-4 shadow-md">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-bold text-xs uppercase">Détails abonnement #P025</h4>
                 <ChevronUp size={16} />
               </div>
-              <div className="text-[10px] leading-relaxed space-y-3">
-                <p><span className="font-bold underline">Description:</span> L'abonnement de Sara TCHAKOR arrive bientôt à expiration. Cotonou, Benin.</p>
-                <p><span className="font-bold underline">Date Expiration:</span> 12/06/2026 (Dans 1 Mois)</p>
-                <p><span className="font-bold underline">Plan:</span> Annuel</p>
-                <div className="flex gap-2">
-                  <button className="bg-blue-50 text-blue-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-blue-100">Avertir</button>
-                  <button className="bg-green-50 text-green-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-green-100">Renouveler</button>
+              <div className="text-xs leading-relaxed space-y-3">
+                <p>
+                  <span className="font-bold underline">Description:</span> L'abonnement de Sara TCHAKOR arrive bientôt à expiration. Cotonou, Benin.
+                </p>
+                <p>
+                  <span className="font-bold underline">Date Expiration:</span> 12/06/2026 (Dans 1 Mois)
+                </p>
+                <p>
+                  <span className="font-bold underline">Plan:</span> Annuel
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-100 transition-colors">
+                    Avertir
+                  </button>
+                  <button className="bg-green-50 text-green-700 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-green-100 transition-colors">
+                    Renouveler
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 shadow-md flex justify-between items-center opacity-80">
-              <h4 className="font-bold text-[10px] uppercase">Détails abonnement #P024</h4>
+            <div className="bg-white rounded-2xl p-4 shadow-md flex justify-between items-center opacity-80">
+              <h4 className="font-bold text-xs uppercase">Détails abonnement #P024</h4>
               <ChevronDown size={16} />
             </div>
-
-            
           </div>
 
         </div>
       </div>
-      
-    
+    </div>
   );
 };
 

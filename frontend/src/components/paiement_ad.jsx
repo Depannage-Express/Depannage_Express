@@ -36,57 +36,66 @@ const GestionPaiements = ({ onBack }) => {
   }, []);
 
   return (
-    /* FOND GLOBAL AVEC LA BANDE VERTE COMME IMAGE 1 */
-    <div className="min-h-screen bg-gray-200 relative font-sans">
-      
-      {/* ENTETE INTERNE (Copie conforme Image 1) */}
-      <div className="flex justify-center items-center bg-[#0D2B0D] rounded-t-[1.5rem] p-6 border-b border-gray-200 max-w-[95%] mx-auto mt-10">
+    <div className="min-h-screen bg-gray-200 font-sans">
+      {/* Header */}
+      <div className="flex items-center gap-3 bg-[#0D2B0D] rounded-t-[1.5rem] p-4">
         {onBack && (
-          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors mr-4">
+          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
             ← Retour
           </button>
         )}
-        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Gestion des Paiements</h2>
+        <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight italic flex-1 text-center">
+          Gestion des Paiements
+        </h2>
       </div>
 
-      <div className="bg-white rounded-b-[1.5rem] p-8 max-w-[95%] mx-auto shadow-2xl border-x-8 border-b-8 border-white">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
+      <div className="bg-white rounded-b-[1.5rem] p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
           {/* COLONNE GAUCHE */}
-          <div className="space-y-6">
-            <div className="bg-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100">
-              <h3 className="font-black uppercase text-xs mb-4">Filtrage & Recherche</h3>
-              <div className="flex gap-2 mb-4">
-                <button className="flex-1 bg-gray-50 border p-2 rounded-xl text-[10px] font-bold flex justify-between items-center">Tous <ChevronDown size={12}/></button>
-                <button className="flex-1 bg-gray-50 border p-2 rounded-xl text-[10px] font-bold flex justify-between items-center"><Filter size={12}/> Gravité</button>
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-2xl shadow border border-gray-100">
+              <h3 className="font-black uppercase text-xs mb-3">Filtrage & Recherche</h3>
+              <div className="flex gap-2 mb-3 flex-wrap">
+                <button className="flex-1 min-w-[60px] bg-gray-50 border p-2 rounded-xl text-xs font-bold flex justify-between items-center">
+                  Tous <ChevronDown size={12} />
+                </button>
+                <button className="flex-1 min-w-[60px] bg-gray-50 border p-2 rounded-xl text-xs font-bold flex items-center gap-1">
+                  <Filter size={12} /> Gravité
+                </button>
               </div>
               <div className="relative">
-                <input type="text" placeholder="Rechercher..." className="w-full bg-gray-50 border rounded-xl p-2 text-[10px] outline-none" />
-                <Search className="absolute right-3 top-2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  className="w-full bg-gray-50 border rounded-xl p-2 text-xs outline-none pr-7"
+                />
+                <Search className="absolute right-2 top-2.5 text-gray-400" size={13} />
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100">
-              <h3 className="font-black uppercase text-[10px] mb-4">Transactions Récentes</h3>
+            <div className="bg-white p-4 rounded-2xl shadow border border-gray-100">
+              <h3 className="font-black uppercase text-xs mb-3">Transactions Récentes</h3>
               <div className="space-y-3">
                 {transactions.slice(0, 3).map((t) => (
-                  <div key={t.id} className="bg-gray-50 border border-gray-100 rounded-2xl p-3 text-[10px]">
-                    <p className="font-black truncate">{t.client.toUpperCase()}</p>
-                    <p className="text-gray-400 text-[8px] truncate">ID: {String(t.id).slice(0, 12)}…</p>
-                    <p className="mt-1">👤 {t.client}</p>
-                    <p>💰 {t.date}</p>
+                  <div key={t.id} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                    <p className="font-black text-xs truncate">{t.client.toUpperCase()}</p>
+                    <p className="text-gray-400 text-[10px] truncate">ID: {String(t.id).slice(0, 12)}…</p>
+                    <p className="text-xs mt-1">💰 {t.date}</p>
                   </div>
                 ))}
                 {!loading && transactions.length === 0 && (
-                  <p className="text-gray-400 text-[10px] text-center py-2">Aucune transaction</p>
+                  <p className="text-gray-400 text-xs text-center py-2">Aucune transaction</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* COLONNE CENTRE (FILE D'ATTENTE) */}
+          {/* COLONNE CENTRE */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-bold text-sm text-gray-700 uppercase px-2 tracking-widest">Transactions (File d'attente)</h3>
+            <h3 className="font-bold text-xs text-gray-700 uppercase px-1 tracking-widest">
+              Transactions — File d'attente
+            </h3>
             {loading && (
               <p className="text-center text-gray-400 text-sm py-8 animate-pulse">Chargement des transactions…</p>
             )}
@@ -94,36 +103,41 @@ const GestionPaiements = ({ onBack }) => {
               <p className="text-center text-gray-400 text-sm py-8">Aucune transaction pour le moment.</p>
             )}
             {transactions.map((t) => (
-              <div key={t.id} className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-50 relative group min-h-[180px]">
-                <div className="flex justify-between items-stretch h-full">
-                  {/* Partie Gauche : Détails et Montant */}
-                  <div className="flex gap-4">
-                    <Star className={`${t.color} fill-current`} size={28} />
-                    <div className="flex flex-col justify-between">
-                      <div>
-                        <h4 className="font-black text-[13px] uppercase italic">ID #{t.id} | {t.titre}</h4>
-                        <div className="text-[12px] mt-3 space-y-1 text-gray-600">
-                          <p>👤 <span className="font-bold text-blue-600">Client:</span> {t.client}</p>
-                          <p>👷 <span className="font-bold text-yellow-600">Mécanicien:</span> {t.meca}</p>
-                        </div>
+              <div key={t.id} className="bg-white p-4 sm:p-5 rounded-[2rem] shadow-lg border border-gray-100 flex flex-col gap-3">
+                {/* Info transaction */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                  <div className="flex gap-3">
+                    <Star className={`${t.color} fill-current shrink-0 mt-0.5`} size={22} />
+                    <div>
+                      <h4 className="font-black text-xs sm:text-sm uppercase italic leading-tight">
+                        ID #{t.id} | {t.titre}
+                      </h4>
+                      <div className="text-xs mt-2 space-y-1 text-gray-600">
+                        <p>👤 <span className="font-bold text-blue-600">Client:</span> {t.client}</p>
+                        <p>👷 <span className="font-bold text-yellow-600">Mécanicien:</span> {t.meca}</p>
                       </div>
-                      <p className="text-xl flex font-black text-black mt-4">Montant: {t.montant}</p>
+                      <p className="font-black text-base text-black mt-2">Montant: {t.montant}</p>
                     </div>
                   </div>
-                  
-                  {/* Partie Droite : Statut et Boutons alignés en bas */}
-                  <div className="flex flex-col justify-between items-end">
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold">Payé ● {t.statut} <span className="text-red-500">●</span></p>
-                      <p className="text-[9px] text-gray-400 font-bold">Date: {t.date}</p>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-4">
-                      <button className="bg-[#1a301a] text-white text-[10px] px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">Contrôler</button>
-                      <button className="bg-[#608C27] text-white text-[10px] px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">Valider</button>
-                      <button className="bg-red-600 text-white text-[10px] px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">Rejeter</button>
-                    </div>
+                  <div className="sm:text-right shrink-0">
+                    <p className="text-xs font-bold">
+                      <span className={t.color}>{t.statut}</span>
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">{t.date}</p>
                   </div>
+                </div>
+
+                {/* Boutons */}
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button className="bg-[#1a301a] text-white text-xs px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">
+                    Contrôler
+                  </button>
+                  <button className="bg-[#608C27] text-white text-xs px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">
+                    Valider
+                  </button>
+                  <button className="bg-red-600 text-white text-xs px-4 py-2 rounded-xl font-bold hover:scale-105 transition-transform">
+                    Rejeter
+                  </button>
                 </div>
               </div>
             ))}
@@ -131,27 +145,39 @@ const GestionPaiements = ({ onBack }) => {
 
           {/* COLONNE DROITE */}
           <div className="space-y-4">
-            <h3 className="font-bold text-sm text-gray-700 uppercase tracking-widest">Historique & Rapports</h3>
-            <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100">
-              <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
-                <h4 className="font-black text-[11px] uppercase">Détails Transaction #34</h4>
-                <ChevronUp size={18} />
+            <h3 className="font-bold text-xs text-gray-700 uppercase tracking-widest">Historique & Rapports</h3>
+            <div className="bg-white p-4 rounded-[2rem] shadow-lg border border-gray-100">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-3">
+                <h4 className="font-black text-xs uppercase">Détails Transaction #34</h4>
+                <ChevronUp size={16} />
               </div>
-              <div className="text-[11px] space-y-4 leading-relaxed text-gray-600">
+              <div className="text-xs space-y-3 leading-relaxed text-gray-600">
                 <p><span className="font-black">Description:</span> Intervention mécanique complète pour moteur diesel...</p>
-                <p><span className="font-black">Preuves :</span> <span className="text-blue-500 underline">Photo facture · Photo paiement</span></p>
-                <div className="pt-4 space-y-2">
-                  <p className="font-bold uppercase text-[9px] text-gray-400">Actions rapides</p>
-                  <div className="flex flex-wrap gap-1">
-                     <button className="bg-gray-100 text-gray-700 text-[9px] px-2 py-1 rounded font-bold hover:bg-gray-200">Contacter</button>
-                     <button className="bg-red-50 text-red-500 text-[9px] px-2 py-1 rounded font-bold hover:bg-red-100">Signaler</button>
+                <p>
+                  <span className="font-black">Preuves :</span>{' '}
+                  <span className="text-blue-500 underline cursor-pointer">Photo facture · Photo paiement</span>
+                </p>
+                <div className="pt-2 space-y-2">
+                  <p className="font-bold uppercase text-[10px] text-gray-400">Actions rapides</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button className="bg-gray-100 text-gray-700 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-gray-200 transition-colors">
+                      Contacter
+                    </button>
+                    <button className="bg-red-50 text-red-500 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors">
+                      Signaler
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">Rapport mensuel PDF</button>
-            <button className="w-full py-4 border-2 border-gray-300 rounded-full text-[11px] font-black uppercase hover:bg-gray-50 transition-all shadow-sm">Rapport hebdomadaire PDF</button>
+            <button className="w-full py-3 border-2 border-gray-300 rounded-full text-xs font-black uppercase hover:bg-gray-50 transition-all shadow-sm">
+              Rapport mensuel PDF
+            </button>
+            <button className="w-full py-3 border-2 border-gray-300 rounded-full text-xs font-black uppercase hover:bg-gray-50 transition-all shadow-sm">
+              Rapport hebdomadaire PDF
+            </button>
           </div>
+
         </div>
       </div>
     </div>
