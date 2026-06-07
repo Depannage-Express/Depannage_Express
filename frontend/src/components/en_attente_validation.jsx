@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Clock, XCircle, RefreshCw, LogOut } from 'lucide-react';
 import { fetchCurrentUser } from '../lib/api';
+
+const POLL_INTERVAL_MS = 30_000;
 
 const STATUS_CONFIG = {
   pending: {
@@ -39,29 +41,41 @@ const STATUS_CONFIG = {
 const EnAttenteValidation = ({ currentUser, onStatusChanged, onLogout }) => {
   const [isChecking, setIsChecking] = useState(false);
   const [checkMessage, setCheckMessage] = useState('');
+  const intervalRef = useRef(null);
 
   const profileStatus = currentUser?.mechanic_profile_status;
   const config = STATUS_CONFIG[profileStatus] || STATUS_CONFIG.default;
 
-  const handleCheckStatus = async () => {
-    setIsChecking(true);
-    setCheckMessage('');
+  const checkStatus = async ({ silent = false } = {}) => {
+    if (!silent) setIsChecking(true);
+    if (!silent) setCheckMessage('');
     try {
       const freshUser = await fetchCurrentUser();
       if (freshUser.mechanic_profile_status === 'approved') {
+        clearInterval(intervalRef.current);
         setCheckMessage('Votre profil a été approuvé ! Redirection...');
         setTimeout(() => {
           if (onStatusChanged) onStatusChanged(freshUser);
         }, 1000);
-      } else {
+      } else if (!silent) {
         setCheckMessage("Statut inchangé — votre dossier est toujours en cours d'examen.");
       }
     } catch {
-      setCheckMessage('Impossible de vérifier le statut. Réessayez plus tard.');
+      if (!silent) setCheckMessage('Impossible de vérifier le statut. Réessayez plus tard.');
     } finally {
-      setIsChecking(false);
+      if (!silent) setIsChecking(false);
     }
   };
+
+  // Polling automatique toutes les 30 secondes
+  useEffect(() => {
+    if (profileStatus === 'pending' || !profileStatus) {
+      intervalRef.current = setInterval(() => checkStatus({ silent: true }), POLL_INTERVAL_MS);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [profileStatus]);
+
+  const handleCheckStatus = () => checkStatus({ silent: false });
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
