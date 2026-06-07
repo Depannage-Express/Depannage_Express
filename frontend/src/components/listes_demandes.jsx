@@ -1,22 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Clock, Wrench, Search, X } from 'lucide-react';
-import { fetchMechanicRequests } from '../lib/api';
+import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone } from 'lucide-react';
+import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention } from '../lib/api';
 
 const POLL_INTERVAL_MS = 15_000;
 
 const ListesCommandes = ({ onBack }) => {
   const [allCommands, setAllCommands] = useState([]);
+  const [interventionMap, setInterventionMap] = useState({});
   const [openCommandId, setOpenCommandId] = useState(-1);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
+  const [actionError, setActionError] = useState('');
   const intervalRef = useRef(null);
 
-  const loadRequests = async ({ silent = false } = {}) => {
+  const loadAll = async ({ silent = false } = {}) => {
     if (!silent) setIsLoading(true);
     try {
-      const data = await fetchMechanicRequests();
-      setAllCommands(data.results || []);
+      const [reqData, intervData] = await Promise.all([
+        fetchMechanicRequests(),
+        fetchMyInterventions(),
+      ]);
+      setAllCommands(reqData.results || []);
+      const map = {};
+      (intervData.results || []).forEach((iv) => {
+        map[iv.breakdown_request] = iv;
+      });
+      setInterventionMap(map);
     } catch (requestError) {
       if (!silent) setError(requestError.message);
     } finally {
@@ -25,10 +36,36 @@ const ListesCommandes = ({ onBack }) => {
   };
 
   useEffect(() => {
-    loadRequests();
-    intervalRef.current = setInterval(() => loadRequests({ silent: true }), POLL_INTERVAL_MS);
+    loadAll();
+    intervalRef.current = setInterval(() => loadAll({ silent: true }), POLL_INTERVAL_MS);
     return () => clearInterval(intervalRef.current);
   }, []);
+
+  const handleAccept = async (interventionId) => {
+    setActionLoading(interventionId + '_accept');
+    setActionError('');
+    try {
+      await acceptIntervention(interventionId);
+      await loadAll({ silent: true });
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRefuse = async (interventionId) => {
+    setActionLoading(interventionId + '_refuse');
+    setActionError('');
+    try {
+      await refuseIntervention(interventionId);
+      await loadAll({ silent: true });
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const toggleCommand = (id) => {
     setOpenCommandId(openCommandId === id ? -1 : id);
@@ -91,6 +128,10 @@ const ListesCommandes = ({ onBack }) => {
           <div className="mb-6 rounded-2xl bg-red-50 p-4 text-center text-red-700">{error}</div>
         )}
 
+        {actionError && (
+          <div className="mb-4 rounded-2xl bg-red-50 p-3 text-center text-red-700 text-sm">{actionError}</div>
+        )}
+
         {!isLoading && !error && filtered.length === 0 && (
           <div className="text-center py-16">
             <p className="text-slate-600 font-semibold text-lg mb-2">
@@ -107,7 +148,6 @@ const ListesCommandes = ({ onBack }) => {
           </div>
         )}
 
-        {/* Compteur si filtré */}
         {q && filtered.length > 0 && (
           <p className="text-sm text-gray-500 text-center mb-4">
             {filtered.length} résultat{filtered.length !== 1 ? 's' : ''} pour "{query}"
@@ -115,43 +155,76 @@ const ListesCommandes = ({ onBack }) => {
         )}
 
         <div className="space-y-6">
-          {filtered.map((command) => (
-            <div key={command.id} className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+          {filtered.map((command) => {
+            const intervention = interventionMap[command.id];
+            const isPending = intervention?.status === 'pending_acceptance';
 
-              <div
-                className="p-6 cursor-pointer hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                onClick={() => toggleCommand(command.id)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-full ${openCommandId === command.id ? 'bg-[#608C27] text-white' : 'bg-slate-100 text-[#0D2B0D]'}`}>
-                    <Wrench size={24} />
+            return (
+              <div key={command.id} className={`bg-white rounded-2xl shadow-lg border overflow-hidden ${isPending ? 'border-[#608C27] border-2' : 'border-slate-200'}`}>
+
+                {isPending && (
+                  <div className="bg-[#608C27] px-6 py-2 text-white text-xs font-bold uppercase tracking-wider text-center">
+                    Nouvelle demande — en attente de votre réponse
                   </div>
-                  <div>
-                    <p className="font-bold text-lg text-slate-900 leading-tight">
-                      {command.breakdown_type || 'Demande de dépannage'}
-                    </p>
-                    <p className="text-sm text-slate-500 font-medium">{command.driver_name}</p>
-                    <p className="text-sm text-slate-600 flex items-center gap-1">
-                      <Clock size={14} /> {new Date(command.created_at).toLocaleString('fr-FR')}
-                    </p>
+                )}
+
+                <div
+                  className="p-6 cursor-pointer hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                  onClick={() => toggleCommand(command.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-full ${openCommandId === command.id ? 'bg-[#608C27] text-white' : isPending ? 'bg-[#608C27]/20 text-[#608C27]' : 'bg-slate-100 text-[#0D2B0D]'}`}>
+                      <Wrench size={24} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg text-slate-900 leading-tight">
+                        {command.breakdown_type || 'Demande de dépannage'}
+                      </p>
+                      <p className="text-sm text-slate-500 font-medium">{command.driver_name}</p>
+                      <p className="text-sm text-slate-600 flex items-center gap-1">
+                        <Clock size={14} /> {new Date(command.created_at).toLocaleString('fr-FR')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-slate-400 text-lg">
+                    {openCommandId === command.id ? '▲' : '▼'}
                   </div>
                 </div>
-                <div className="text-slate-400 text-lg">
-                  {openCommandId === command.id ? '▲' : '▼'}
-                </div>
-              </div>
 
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openCommandId === command.id ? 'max-h-[800px] border-t border-[#608C27]' : 'max-h-0'}`}>
-                <div className="bg-[#0D2B0D] p-8 space-y-6 text-white rounded-b-2xl">
-                  <DetailItem title="Client" value={command.driver_name} icon={<Wrench size={20} />} />
-                  <DetailItem title="Description détaillée" value={command.breakdown_description} icon={<Wrench size={20} />} />
-                  <DetailItem title="Localisation" value={command.address_description || 'Position GPS reçue'} icon={<MapPin size={20} />} />
-                  <DetailItem title="Distance estimée" value={command.assignment_distance_km ? `${command.assignment_distance_km} km` : 'Non calculée'} icon={<MapPin size={20} />} />
-                </div>
-              </div>
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openCommandId === command.id ? 'max-h-[900px] border-t border-[#608C27]' : 'max-h-0'}`}>
+                  <div className="bg-[#0D2B0D] p-8 space-y-6 text-white rounded-b-2xl">
+                    <DetailItem title="Client" value={command.driver_name} icon={<Wrench size={20} />} />
+                    <DetailItem title="Téléphone" value={command.driver_phone} icon={<Phone size={20} />} />
+                    <DetailItem title="Description détaillée" value={command.breakdown_description} icon={<Wrench size={20} />} />
+                    <DetailItem title="Localisation" value={command.address_description || 'Position GPS reçue'} icon={<MapPin size={20} />} />
+                    <DetailItem title="Distance estimée" value={command.assignment_distance_km ? `${command.assignment_distance_km} km` : 'Non calculée'} icon={<MapPin size={20} />} />
 
-            </div>
-          ))}
+                    {isPending && (
+                      <div className="pt-4 border-t border-white/20 flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleAccept(intervention.id)}
+                          disabled={!!actionLoading}
+                          className="flex-1 flex items-center justify-center gap-2 bg-[#608C27] hover:bg-[#4a6e1e] text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-60"
+                        >
+                          <CheckCircle size={20} />
+                          {actionLoading === intervention.id + '_accept' ? 'Acceptation…' : 'Accepter la mission'}
+                        </button>
+                        <button
+                          onClick={() => handleRefuse(intervention.id)}
+                          disabled={!!actionLoading}
+                          className="flex-1 flex items-center justify-center gap-2 bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-60"
+                        >
+                          <XCircle size={20} />
+                          {actionLoading === intervention.id + '_refuse' ? 'Refus…' : 'Refuser'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
         </div>
       </main>
     </div>

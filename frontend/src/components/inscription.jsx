@@ -21,6 +21,14 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
+  const handlePhoneChange = (val) => {
+    let digits = val.replace(/\D/g, '').slice(0, 10);
+    if (digits.length > 0 && !digits.startsWith('01')) {
+      digits = '01' + digits.slice(2);
+    }
+    setForm((f) => ({ ...f, phone: digits }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -38,7 +46,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const authPayload = await registerMechanic({ ...form, role: 'mechanic_standard' });
+      const authPayload = await registerMechanic({ ...form, phone: '+229' + form.phone, role: 'mechanic_standard' });
       setAuthTokens(authPayload);
       setSuccess('Compte créé. Complétez ensuite le profil mécanicien et les justificatifs.');
       if (onRegisterSuccess) {
@@ -98,14 +106,19 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
 
             <div>
               <label className={labelClass}>Téléphone</label>
-              <input
-                type="tel"
-                placeholder="+229 01 00 00 00 00"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-[#608C27] transition-all">
+                <span className="flex items-center bg-gray-100 px-3 text-gray-600 font-bold text-sm select-none shrink-0 border-r border-gray-200">
+                  +229
+                </span>
+                <input
+                  type="tel"
+                  placeholder="0197654321"
+                  value={form.phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  maxLength={10}
+                  className={inputClass + ' rounded-l-none border-0'}
+                />
+              </div>
             </div>
 
             <div>

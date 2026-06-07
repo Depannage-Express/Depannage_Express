@@ -15,7 +15,7 @@ class BreakdownRequest(TimestampedModel):
 
     # Driver info (no account needed)
     driver_name = models.CharField(max_length=150)
-    driver_phone = models.CharField(max_length=20)
+    driver_phone = models.CharField(max_length=15)
     # Jeton opaque remis au conducteur à la création — requis pour toute action driver
     driver_token = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     driver_id_card = models.FileField(upload_to='breakdowns/id_cards/')

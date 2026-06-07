@@ -233,6 +233,23 @@ export function adminCompleteAndApproveMechanic(userId, formData) {
   });
 }
 
+export function fetchMyInterventions(statusFilter) {
+  const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+  return apiRequest(`/interventions/my/${qs}`);
+}
+
+export function acceptIntervention(id) {
+  return apiRequest(`/interventions/${id}/accept/`, { method: 'POST' });
+}
+
+export function refuseIntervention(id, reason = '') {
+  return apiRequest(`/interventions/${id}/refuse/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function fetchBreakdownStatus(id) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/`);
   return parseResponse(response);

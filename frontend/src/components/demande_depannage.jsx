@@ -7,7 +7,15 @@ const Demande = ({ onConfirm }) => {
     const [locationEnabled, setLocationEnabled] = useState(false);
     const [position, setPosition] = useState(null);
     const [driverName, setDriverName] = useState('');
-    const [phone, setPhone] = useState('');
+    const [phone, setPhone] = useState('01');
+
+    const handlePhoneChange = (val) => {
+      let digits = val.replace(/\D/g, '').slice(0, 10);
+      if (digits.length > 0 && !digits.startsWith('01')) {
+        digits = '01' + digits.slice(2);
+      }
+      setPhone(digits);
+    };
     const [breakdownDescription, setBreakdownDescription] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,8 +74,8 @@ const Demande = ({ onConfirm }) => {
         return;
     }
 
-    if (!driverName || !phone || !breakdownDescription) {
-        setError('Renseignez votre nom, votre numéro et la description de la panne.');
+    if (!driverName || phone.length !== 10 || !breakdownDescription) {
+        setError('Renseignez votre nom, votre numéro (10 chiffres commençant par 01) et la description.');
         return;
     }
 
@@ -78,7 +86,7 @@ const Demande = ({ onConfirm }) => {
 
     const formData = new FormData();
     formData.append('driver_name', driverName);
-    formData.append('driver_phone', phone);
+    formData.append('driver_phone', '+229' + phone);
     formData.append('driver_id_card', idCardFile);
     formData.append('driver_selfie', selfieFile);
     formData.append('vehicle_description', 'Véhicule en panne');
@@ -133,14 +141,17 @@ const Demande = ({ onConfirm }) => {
                         </div>
                         <div>
                             <label className={labelClass}>Téléphone</label>
-                            <div className="relative">
-                                <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-[#608C27] transition-all">
+                                <span className="flex items-center gap-1 bg-gray-300 px-3 text-gray-700 font-bold text-sm select-none shrink-0">
+                                    <Phone size={13} /> +229
+                                </span>
                                 <input
                                     type="tel"
-                                    placeholder="+229 01 00 00 00"
+                                    placeholder="0197654321"
                                     value={phone}
-                                    onChange={(event) => setPhone(event.target.value)}
-                                    className="w-full bg-gray-200 rounded-xl pl-8 pr-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm focus:ring-2 focus:ring-[#608C27] transition-all"
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
+                                    maxLength={10}
+                                    className="flex-1 bg-gray-200 px-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm"
                                 />
                             </div>
                         </div>
