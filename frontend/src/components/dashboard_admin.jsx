@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Utilisateurs from './utilisateurs';
 import Signalements from './signal';
 import GestionPaiements from './paiement_ad';
@@ -9,25 +9,31 @@ import AdminMessages from './admin_messages';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText } from 'lucide-react';
 import { fetchAdminStats } from '../lib/api';
 
+const POLL_INTERVAL_MS = 60_000;
+
 const DashboardAdmin = () => {
   const [view, setView] = useState('menu');
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const intervalRef = useRef(null);
+
+  const loadDashboard = async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await fetchAdminStats();
+      setStats(data);
+    } catch (requestError) {
+      if (!silent) setError(requestError.message);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const data = await fetchAdminStats();
-        setStats(data);
-      } catch (requestError) {
-        setError(requestError.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadDashboard();
+    intervalRef.current = setInterval(() => loadDashboard({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   const menuItems = [

@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapPin, Clock, Wrench, Search, X } from 'lucide-react';
 import { fetchMechanicRequests } from '../lib/api';
+
+const POLL_INTERVAL_MS = 15_000;
 
 const ListesCommandes = ({ onBack }) => {
   const [allCommands, setAllCommands] = useState([]);
@@ -8,19 +10,24 @@ const ListesCommandes = ({ onBack }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const intervalRef = useRef(null);
+
+  const loadRequests = async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await fetchMechanicRequests();
+      setAllCommands(data.results || []);
+    } catch (requestError) {
+      if (!silent) setError(requestError.message);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadRequests = async () => {
-      try {
-        const data = await fetchMechanicRequests();
-        setAllCommands(data.results || []);
-      } catch (requestError) {
-        setError(requestError.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadRequests();
+    intervalRef.current = setInterval(() => loadRequests({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   const toggleCommand = (id) => {

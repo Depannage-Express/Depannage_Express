@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone } from 'lucide-react';
 import { fetchAdminBreakdowns } from '../lib/api';
 
@@ -21,6 +21,8 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const POLL_INTERVAL_MS = 30_000;
+
 const SupervisionInterventions = ({ onBack }) => {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,25 +30,32 @@ const SupervisionInterventions = ({ onBack }) => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [openId, setOpenId] = useState(null);
+  const intervalRef = useRef(null);
+  const statusFilterRef = useRef('');
 
-  const load = async (status = statusFilter) => {
-    setIsLoading(true);
-    setError('');
+  const load = async (status = statusFilterRef.current, { silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+    if (!silent) setError('');
     try {
       const data = await fetchAdminBreakdowns(status || undefined);
       setRequests(data.results || (Array.isArray(data) ? data : []));
     } catch (err) {
-      setError(err.message);
+      if (!silent) setError(err.message);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    intervalRef.current = setInterval(() => load(statusFilterRef.current, { silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
+  }, []);
 
   const handleStatusFilter = (s) => {
     const next = s === statusFilter ? '' : s;
     setStatusFilter(next);
+    statusFilterRef.current = next;
     load(next);
   };
 

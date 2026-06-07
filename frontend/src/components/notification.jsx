@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Wrench, ChevronRight } from 'lucide-react';
 import { fetchMechanicRequests } from '../lib/api';
+
+const POLL_INTERVAL_MS = 15_000;
 
 const STATUS_LABELS = {
   pending: 'En attente',
@@ -15,19 +17,24 @@ const Notifications = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeId, setActiveId] = useState(null);
+  const intervalRef = useRef(null);
+
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await fetchMechanicRequests();
+      setRequests(data.results || []);
+    } catch (e) {
+      if (!silent) setError(e.message);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchMechanicRequests();
-        setRequests(data.results || []);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     load();
+    intervalRef.current = setInterval(() => load({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   const isNew = (req) => req.status === 'assigned' || req.status === 'pending';

@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchMechanicRequests } from '../lib/api';
+
+const POLL_INTERVAL_MS = 20_000;
 
 const STATUS_LABELS = {
   pending: 'En attente',
@@ -13,19 +15,24 @@ const StatutMissions = ({ onBack }) => {
   const [missions, setMissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const intervalRef = useRef(null);
+
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await fetchMechanicRequests();
+      setMissions(data.results || []);
+    } catch (e) {
+      if (!silent) setError(e.message);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchMechanicRequests();
-        setMissions(data.results || []);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     load();
+    intervalRef.current = setInterval(() => load({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   return (
