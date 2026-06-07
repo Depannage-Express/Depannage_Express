@@ -111,3 +111,140 @@ export function getCitiesForDept(dept) {
 export function getCoordsForCity(dept, city) {
   return BENIN_LOCATIONS[dept]?.[city] || null;
 }
+
+export const BENIN_QUARTIERS = {
+  'Cotonou': {
+    'Agla':         { lat: 6.3505, lng: 2.3663 },
+    'Cadjehoun':    { lat: 6.3581, lng: 2.3808 },
+    'Zongo':        { lat: 6.3820, lng: 2.3951 },
+    'Fidjrossè':    { lat: 6.3453, lng: 2.3605 },
+    'Akpakpa':      { lat: 6.3640, lng: 2.4218 },
+    'Dantokpa':     { lat: 6.3718, lng: 2.4097 },
+    'Gbégamey':     { lat: 6.3732, lng: 2.3826 },
+    'Vèdoko':       { lat: 6.3782, lng: 2.3812 },
+    'Aidjèdo':      { lat: 6.3790, lng: 2.3855 },
+    'Menontin':     { lat: 6.3755, lng: 2.3861 },
+    'Sainte-Rita':  { lat: 6.3730, lng: 2.3785 },
+    'Jéricho':      { lat: 6.3684, lng: 2.3964 },
+    'Kouhounou':    { lat: 6.3651, lng: 2.3782 },
+    'Xwlacodji':    { lat: 6.3700, lng: 2.4030 },
+    'Kpankpan':     { lat: 6.3798, lng: 2.4022 },
+    'Tokpa':        { lat: 6.3682, lng: 2.4054 },
+    'Wologuèdè':    { lat: 6.3563, lng: 2.3872 },
+    'Houéyiho':     { lat: 6.3535, lng: 2.3901 },
+    'Midombo':      { lat: 6.3602, lng: 2.4098 },
+    'Sikècodji':    { lat: 6.3751, lng: 2.4202 },
+    'Haie Vive':    { lat: 6.3601, lng: 2.3902 },
+    'Millenium':    { lat: 6.3529, lng: 2.3810 },
+  },
+  'Abomey-Calavi': {
+    'Godomey':       { lat: 6.3994, lng: 2.3502 },
+    'Togba':         { lat: 6.4207, lng: 2.3302 },
+    'Kènonhounsa':   { lat: 6.4501, lng: 2.3590 },
+    'Akassato':      { lat: 6.4996, lng: 2.3398 },
+    'Ouèdo':         { lat: 6.4352, lng: 2.3453 },
+    'Centre Calavi': { lat: 6.4504, lng: 2.3556 },
+    'Hèvié':         { lat: 6.4800, lng: 2.3695 },
+    'Sô-Ava':        { lat: 6.4200, lng: 2.4100 },
+  },
+  'Porto-Novo': {
+    'Djassin':      { lat: 6.4906, lng: 2.6195 },
+    'Tokpa':        { lat: 6.4982, lng: 2.6298 },
+    'Ouando':       { lat: 6.4820, lng: 2.6348 },
+    'Atrokpodji':   { lat: 6.5097, lng: 2.6151 },
+    'Zounhouè':     { lat: 6.5050, lng: 2.6201 },
+    'Houinmè':      { lat: 6.4849, lng: 2.6250 },
+    'Kpêvi':        { lat: 6.4750, lng: 2.6400 },
+    'Ladji':        { lat: 6.4702, lng: 2.6303 },
+    'Centre-ville': { lat: 6.4969, lng: 2.6289 },
+  },
+  'Parakou': {
+    'Banikanni':    { lat: 9.3398, lng: 2.6197 },
+    'Titirou':      { lat: 9.3499, lng: 2.6351 },
+    'Albarika':     { lat: 9.3301, lng: 2.6251 },
+    'Wansirou':     { lat: 9.3252, lng: 2.6302 },
+    'Madina':       { lat: 9.3453, lng: 2.6151 },
+    'Tourou':       { lat: 9.3599, lng: 2.6398 },
+    'Zongo':        { lat: 9.3348, lng: 2.6401 },
+    'Centre-ville': { lat: 9.3370, lng: 2.6290 },
+    'Baka':         { lat: 9.3201, lng: 2.6149 },
+  },
+  'Ouidah': {
+    'Centre-ville': { lat: 6.3596, lng: 2.0852 },
+    'Maro':         { lat: 6.3650, lng: 2.0901 },
+    'Kpodji':       { lat: 6.3501, lng: 2.0750 },
+    'Sogbadji':     { lat: 6.3700, lng: 2.0801 },
+    'Djègbadji':    { lat: 6.3451, lng: 2.0950 },
+    'Gléxwé':       { lat: 6.3600, lng: 2.0900 },
+  },
+  'Bohicon': {
+    'Centre-ville': { lat: 7.1773, lng: 2.0667 },
+    'Lissèzoun':    { lat: 7.1850, lng: 2.0600 },
+    'Kpojèhossou':  { lat: 7.1700, lng: 2.0700 },
+    'Sègbohouè':    { lat: 7.1900, lng: 2.0750 },
+    'Glo-Djigbé':   { lat: 7.1650, lng: 2.0550 },
+  },
+  'Sèmè-Podji': {
+    'Centre-ville': { lat: 6.3667, lng: 2.5833 },
+    'Ekpè':         { lat: 6.3800, lng: 2.5501 },
+    'Agblangandan': { lat: 6.3700, lng: 2.5302 },
+    'Djeffa':       { lat: 6.3502, lng: 2.6001 },
+    'Tohouè':       { lat: 6.3901, lng: 2.5698 },
+  },
+  'Lokossa': {
+    'Centre-ville': { lat: 6.6386, lng: 1.7167 },
+    'Houin':        { lat: 6.6450, lng: 1.7100 },
+    'Ouèdèmè':      { lat: 6.6300, lng: 1.7250 },
+    'Ouatchimè':    { lat: 6.6500, lng: 1.7200 },
+  },
+  'Natitingou': {
+    'Centre-ville': { lat: 10.3037, lng: 1.3747 },
+    'Kpèrè':        { lat: 10.3100, lng: 1.3800 },
+    'Tchoumi':      { lat: 10.2950, lng: 1.3700 },
+    'Kossou':       { lat: 10.3200, lng: 1.3650 },
+  },
+  'Kandi': {
+    'Centre-ville': { lat: 11.1337, lng: 2.9386 },
+    'Angaradébou':  { lat: 11.1400, lng: 2.9300 },
+    'Kassakou':     { lat: 11.1250, lng: 2.9450 },
+    'Sékin':        { lat: 11.1450, lng: 2.9500 },
+  },
+  'Djougou': {
+    'Centre-ville': { lat: 9.7088, lng: 1.6652 },
+    'Kolokondé':    { lat: 9.7150, lng: 1.6700 },
+    'Fombawi':      { lat: 9.7000, lng: 1.6600 },
+    'Barei':        { lat: 9.7200, lng: 1.6550 },
+  },
+  'Abomey': {
+    'Centre-ville': { lat: 7.1833, lng: 1.9833 },
+    'Hountondji':   { lat: 7.1900, lng: 1.9900 },
+    'Agblomè':      { lat: 7.1750, lng: 1.9750 },
+    'Goho':         { lat: 7.1850, lng: 1.9800 },
+  },
+  'Dassa-Zoumè': {
+    'Centre-ville':  { lat: 7.7500, lng: 2.1833 },
+    'Paouignan':     { lat: 7.7600, lng: 2.1900 },
+    'Glazoué-Route': { lat: 7.7400, lng: 2.1750 },
+  },
+};
+
+// Pour les communes sans données spécifiques, génère 5 zones génériques
+export function getQuartiersForCity(dept, city) {
+  if (!city) return {};
+  if (BENIN_QUARTIERS[city]) return BENIN_QUARTIERS[city];
+  const coords = getCoordsForCity(dept, city);
+  if (!coords) return {};
+  const { lat, lng } = coords;
+  return {
+    'Centre-ville': { lat, lng },
+    'Zone Nord':    { lat: +(lat + 0.015).toFixed(4), lng },
+    'Zone Sud':     { lat: +(lat - 0.015).toFixed(4), lng },
+    'Zone Est':     { lat, lng: +(lng + 0.015).toFixed(4) },
+    'Zone Ouest':   { lat, lng: +(lng - 0.015).toFixed(4) },
+  };
+}
+
+export function getCoordsForQuartier(dept, city, quartier) {
+  const quartiers = getQuartiersForCity(dept, city);
+  return quartiers[quartier] || null;
+}

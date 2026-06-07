@@ -8,7 +8,7 @@ import {
   fetchSpecialties,
   adminCompleteAndApproveMechanic,
 } from '../lib/api';
-import { DEPARTMENTS, getCitiesForDept, getCoordsForCity } from '../lib/benin_locations';
+import { DEPARTMENTS, getCitiesForDept, getQuartiersForCity, getCoordsForQuartier } from '../lib/benin_locations';
 
 const STATUS_BADGE = {
   approved: 'bg-green-100 text-green-700 border-green-400',
@@ -51,6 +51,7 @@ const Utilisateurs = ({ onBack }) => {
   const [completeForm, setCompleteForm] = useState(EMPTY_FORM);
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedQuartier, setSelectedQuartier] = useState('');
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsSource, setGpsSource] = useState(''); // 'photo' | 'city' | 'gps'
   const [specialties, setSpecialties] = useState([]);
@@ -124,6 +125,7 @@ const Utilisateurs = ({ onBack }) => {
     setCompleteForm({ ...EMPTY_FORM, specialty_ids: [] });
     setSelectedDept('');
     setSelectedCity('');
+    setSelectedQuartier('');
     setGpsSource('');
     setCompleteError('');
     try {
@@ -140,20 +142,27 @@ const Utilisateurs = ({ onBack }) => {
   const handleDeptChange = (dept) => {
     setSelectedDept(dept);
     setSelectedCity('');
+    setSelectedQuartier('');
     setCompleteForm(f => ({ ...f, city: '', latitude: '', longitude: '' }));
     setGpsSource('');
   };
 
   const handleCityChange = (city) => {
     setSelectedCity(city);
-    const coords = getCoordsForCity(selectedDept, city);
+    setSelectedQuartier('');
+    setCompleteForm(f => ({ ...f, city, latitude: '', longitude: '' }));
+    setGpsSource('');
+  };
+
+  const handleQuartierChange = (quartier) => {
+    setSelectedQuartier(quartier);
+    const coords = getCoordsForQuartier(selectedDept, selectedCity, quartier);
     setCompleteForm(f => ({
       ...f,
-      city: city,
       latitude:  coords ? String(coords.lat) : '',
       longitude: coords ? String(coords.lng) : '',
     }));
-    if (coords) setGpsSource('city');
+    if (coords) setGpsSource('quartier');
   };
 
   const requestGPS = () => {
@@ -211,9 +220,10 @@ const Utilisateurs = ({ onBack }) => {
 
     // Validation des champs obligatoires
     const missingFields = [];
-    if (!selectedCity)                  missingFields.push('Commune / Ville');
-    if (!completeForm.latitude.trim())  missingFields.push('Latitude');
-    if (!completeForm.longitude.trim()) missingFields.push('Longitude');
+    if (!selectedCity)                    missingFields.push('Commune / Ville');
+    if (!selectedQuartier)                missingFields.push('Quartier / Zone');
+    if (!completeForm.latitude.trim())    missingFields.push('Latitude');
+    if (!completeForm.longitude.trim())   missingFields.push('Longitude');
     if (specialties.length > 0 && completeForm.specialty_ids.length === 0) {
       missingFields.push('au moins une Spécialité');
     }
@@ -229,7 +239,7 @@ const Utilisateurs = ({ onBack }) => {
     if (completeForm.bio)              fd.append('bio', completeForm.bio);
     if (completeForm.years_experience) fd.append('years_experience', completeForm.years_experience);
     if (completeForm.city)             fd.append('city', completeForm.city);
-    if (completeForm.address)          fd.append('address', completeForm.address);
+    if (selectedQuartier)              fd.append('address', selectedQuartier);
     if (completeForm.latitude)         fd.append('latitude', completeForm.latitude);
     if (completeForm.longitude)        fd.append('longitude', completeForm.longitude);
     completeForm.specialty_ids.forEach(id => fd.append('specialty_ids', id));
@@ -602,16 +612,22 @@ const Utilisateurs = ({ onBack }) => {
                   </div>
                 </div>
 
-                {/* Ligne 2 : Quartier (texte libre) */}
+                {/* Ligne 2 : Quartier / Zone */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Quartier / Zone (optionnel)</label>
-                  <input
-                    type="text"
-                    value={completeForm.address}
-                    onChange={e => setCompleteForm(f => ({ ...f, address: e.target.value }))}
-                    placeholder="Ex : Cadjehoun, Agla, Zongo…"
-                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27]"
-                  />
+                  <label className="block text-xs font-bold text-gray-500 mb-1">
+                    Quartier / Zone <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedQuartier}
+                    onChange={e => handleQuartierChange(e.target.value)}
+                    disabled={!selectedCity}
+                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white disabled:opacity-50"
+                  >
+                    <option value="">— Choisir un quartier —</option>
+                    {Object.keys(getQuartiersForCity(selectedDept, selectedCity)).map(q => (
+                      <option key={q} value={q}>{q}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Coordonnées — auto-remplies, modifiables manuellement */}
@@ -619,7 +635,7 @@ const Utilisateurs = ({ onBack }) => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1">
                       Latitude <span className="text-red-500">*</span>
-                      {gpsSource === 'city' && <span className="text-[#608C27] ml-1">(ville)</span>}
+                      {gpsSource === 'quartier' && <span className="text-[#608C27] ml-1">(quartier)</span>}
                       {gpsSource === 'gps' && <span className="text-green-600 ml-1">(GPS précis)</span>}
                       {gpsSource === 'photo' && <span className="text-green-600 ml-1">(GPS photo)</span>}
                     </label>
