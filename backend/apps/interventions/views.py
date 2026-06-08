@@ -110,18 +110,25 @@ def driver_confirm_intervention(request, pk):
     """
     intervention = request.driver_intervention
 
-    # Vérifier qu'un paiement validé existe avant de passer à 'paid'
     from apps.payments.models import PaymentTransaction
     from django.db.models import F as DbF
     payment = PaymentTransaction.objects.filter(
         breakdown_request=intervention.breakdown_request,
-        status='paid',
-    ).first()
+        status__in=['paid', 'authorized'],
+        payment_for='intervention',
+    ).order_by('-created_at').first()
     if not payment:
         return Response(
-            {'error': "Le paiement n'a pas encore été validé. Veuillez régler avant de confirmer."},
+            {'error': "Aucun paiement trouvé pour cette intervention."},
             status=400,
         )
+
+    # S'assurer que le paiement est marqué paid avant la transition
+    if payment.status == 'authorized':
+        from django.utils import timezone
+        payment.status = 'paid'
+        payment.paid_at = timezone.now()
+        payment.save(update_fields=['status', 'paid_at'])
 
     response = _transition_response(intervention, 'pay', 'driver')
 
