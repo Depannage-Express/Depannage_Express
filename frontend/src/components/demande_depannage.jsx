@@ -33,8 +33,14 @@ const Demande = ({ onConfirm }) => {
     const [position, setPosition] = useState(null);
     const [driverName, setDriverName] = useState('');
     const [phone, setPhone] = useState('01');
-    const [breakdownType, setBreakdownType] = useState('');
+    const [breakdownTypes, setBreakdownTypes] = useState([]);
     const [typeQuery, setTypeQuery] = useState('');
+
+    const toggleType = (label) => {
+      setBreakdownTypes(prev =>
+        prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+      );
+    };
 
     const handlePhoneChange = (val) => {
       let digits = val.replace(/\D/g, '').slice(0, 10);
@@ -105,8 +111,8 @@ const Demande = ({ onConfirm }) => {
         return;
     }
 
-    if (!driverName || phone.length !== 10 || !breakdownType) {
-        setError('Renseignez votre nom, votre numéro et sélectionnez le type de panne.');
+    if (!driverName || phone.length !== 10 || breakdownTypes.length === 0) {
+        setError('Renseignez votre nom, votre numéro et sélectionnez au moins un type de panne.');
         return;
     }
 
@@ -122,8 +128,9 @@ const Demande = ({ onConfirm }) => {
     formData.append('driver_selfie', selfieFile);
     formData.append('vehicle_description', 'Véhicule en panne');
     formData.append('vehicle_photo', vehicleFile);
-    formData.append('breakdown_description', breakdownDescription || breakdownType);
-    formData.append('breakdown_type', breakdownType);
+    const typeLabel = breakdownTypes.join(', ');
+    formData.append('breakdown_description', breakdownDescription || typeLabel);
+    formData.append('breakdown_type', typeLabel);
     formData.append('latitude', String(position.latitude));
     formData.append('longitude', String(position.longitude));
     formData.append('address_description', 'Position transmise depuis le navigateur');
@@ -190,7 +197,10 @@ const Demande = ({ onConfirm }) => {
 
                     {/* Type de panne */}
                     <div>
-                        <label className={labelClass}>Type de panne <span className="text-red-400">*</span></label>
+                        <label className={labelClass}>
+                            Type de panne <span className="text-red-400">*</span>
+                            <span className="ml-2 text-white/30 normal-case font-normal">Plusieurs choix possibles</span>
+                        </label>
 
                         {/* Barre de recherche */}
                         <div className="relative mb-2">
@@ -214,31 +224,38 @@ const Demande = ({ onConfirm }) => {
                             {filteredTypes.length === 0 && (
                                 <p className="col-span-2 text-center text-gray-400 text-xs py-4">Aucun résultat</p>
                             )}
-                            {filteredTypes.map((t) => (
-                                <button
-                                    key={t.label}
-                                    type="button"
-                                    onClick={() => { setBreakdownType(t.label); setTypeQuery(''); }}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border-2 text-left ${
-                                        breakdownType === t.label
-                                            ? 'bg-[#608C27] text-white border-[#608C27]'
-                                            : 'bg-gray-200 text-gray-700 border-transparent hover:border-[#608C27] hover:bg-gray-300'
-                                    }`}
-                                >
-                                    <span className="text-base shrink-0">{t.emoji}</span>
-                                    <span className="leading-tight">{t.label}</span>
-                                </button>
-                            ))}
+                            {filteredTypes.map((t) => {
+                                const selected = breakdownTypes.includes(t.label);
+                                return (
+                                    <button
+                                        key={t.label}
+                                        type="button"
+                                        onClick={() => toggleType(t.label)}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border-2 text-left ${
+                                            selected
+                                                ? 'bg-[#608C27] text-white border-[#608C27]'
+                                                : 'bg-gray-200 text-gray-700 border-transparent hover:border-[#608C27] hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        <span className="text-base shrink-0">{t.emoji}</span>
+                                        <span className="leading-tight flex-1">{t.label}</span>
+                                        {selected && <span className="text-xs shrink-0">✓</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
 
-                        {/* Sélection affichée */}
-                        {breakdownType && (
-                            <div className="mt-2 flex items-center gap-2 bg-[#608C27]/10 border border-[#608C27] rounded-xl px-3 py-2 text-sm text-[#608C27] font-bold">
-                                <span>✓</span>
-                                <span>{breakdownType}</span>
-                                <button type="button" onClick={() => setBreakdownType('')} className="ml-auto text-[#608C27] hover:text-red-600">
-                                    <X size={13} />
-                                </button>
+                        {/* Chips des sélections */}
+                        {breakdownTypes.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                {breakdownTypes.map(label => (
+                                    <span key={label} className="flex items-center gap-1 bg-[#608C27] text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                                        {label}
+                                        <button type="button" onClick={() => toggleType(label)} className="hover:text-red-200 ml-0.5">
+                                            <X size={11} />
+                                        </button>
+                                    </span>
+                                ))}
                             </div>
                         )}
                     </div>
