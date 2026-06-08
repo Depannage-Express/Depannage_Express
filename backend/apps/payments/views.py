@@ -1,14 +1,18 @@
 # apps/payments/views.py
+from decimal import Decimal, ROUND_DOWN
+
+from django.db.models import F
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAdmin, IsMechanic
+from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
+from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
-from .models import PaymentTransaction
-from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer
+from .models import PaymentTransaction, WithdrawalRequest
+from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer
 
 
 @api_view(['POST'])
@@ -130,6 +134,13 @@ def confirm_payment(request, pk):
     payment.paid_at = timezone.now()
     payment.save(update_fields=['status', 'paid_at'])
 
+    # Créditer le solde du mécanicien
+    if payment.mechanic_id and payment.payment_for == 'intervention':
+        from apps.mechanics.models import MechanicProfile
+        MechanicProfile.objects.filter(pk=payment.mechanic_id).update(
+            balance=F('balance') + payment.amount
+        )
+
     # NE PAS déclencher la transition ici.
     # C'est driver_confirm_intervention (POST /interventions/<id>/driver-confirm/)
     # qui fait la transition completed → paid de façon explicite.
@@ -245,3 +256,163 @@ def confirm_subscription_payment(request, pk):
     )
 
     return Response({'success': True, 'message': 'Félicitations ! Vous êtes maintenant Mécanicien Premium.'})
+
+
+# ─── Portefeuille mécanicien ──────────────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsApprovedMechanic])
+def mechanic_wallet(request):
+    profile = request.user.mechanic_profile
+
+    payments = (
+        PaymentTransaction.objects
+        .filter(mechanic=profile, payment_for='intervention', status='paid')
+        .order_by('-paid_at')
+    )
+    withdrawals = WithdrawalRequest.objects.filter(mechanic=profile).order_by('-created_at')
+
+    history = []
+    for p in payments:
+        ref = str(p.breakdown_request_id)[:8].upper() if p.breakdown_request_id else '—'
+        history.append({
+            'type': 'credit',
+            'amount': str(p.amount),
+            'label': f'Intervention #{ref}',
+            'date': p.paid_at,
+            'status': 'paid',
+        })
+    for w in withdrawals:
+        history.append({
+            'type': 'debit',
+            'amount': str(w.amount),
+            'fee': str(w.fee),
+            'net_amount': str(w.net_amount),
+            'label': f'Retrait {w.get_momo_provider_display()} — {w.momo_number}',
+            'date': w.created_at,
+            'status': w.status,
+            'id': str(w.id),
+        })
+    history.sort(key=lambda x: x['date'] or timezone.now(), reverse=True)
+
+    return Response({
+        'balance': str(profile.balance),
+        'history': history,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsApprovedMechanic])
+def mechanic_withdraw(request):
+    profile = request.user.mechanic_profile
+
+    try:
+        amount = Decimal(str(request.data.get('amount', '0'))).quantize(Decimal('1'))
+    except Exception:
+        return Response({'error': 'Montant invalide.'}, status=400)
+
+    if amount <= 0:
+        return Response({'error': 'Le montant doit être positif.'}, status=400)
+
+    profile.refresh_from_db(fields=['balance'])
+    if amount > profile.balance:
+        return Response({'error': 'Solde insuffisant.'}, status=400)
+
+    momo_number = (request.data.get('momo_number') or '').strip()
+    if not momo_number:
+        return Response({'error': 'Numéro MoMo obligatoire.'}, status=400)
+
+    fee = (amount * Decimal('0.0025')).quantize(Decimal('1'), rounding=ROUND_DOWN)
+    net_amount = amount - fee
+
+    profile.balance -= amount
+    profile.save(update_fields=['balance'])
+
+    withdrawal = WithdrawalRequest.objects.create(
+        mechanic=profile,
+        amount=amount,
+        fee=fee,
+        net_amount=net_amount,
+        momo_number=momo_number,
+        momo_provider=request.data.get('momo_provider', 'mtn'),
+        reason=(request.data.get('reason') or '').strip(),
+    )
+
+    from apps.accounts.models import User
+    for admin in User.objects.filter(role='admin'):
+        send_notification(
+            admin,
+            title='Demande de retrait',
+            message=(
+                f'{profile.user.full_name} demande un retrait de '
+                f'{amount} FCFA vers {momo_number} '
+                f'({withdrawal.get_momo_provider_display()}).'
+            ),
+            notif_type='WITHDRAWAL_REQUEST',
+            reference_id=str(withdrawal.id),
+        )
+
+    return Response(WithdrawalRequestSerializer(withdrawal).data, status=201)
+
+
+# ─── Admin : gestion des retraits ─────────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_withdrawal_list(request):
+    status_filter = request.query_params.get('status', '')
+    qs = WithdrawalRequest.objects.select_related('mechanic__user', 'processed_by')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    return Response(WithdrawalRequestSerializer(qs, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def admin_withdrawal_process(request, pk):
+    try:
+        withdrawal = WithdrawalRequest.objects.select_related('mechanic__user').get(pk=pk)
+    except WithdrawalRequest.DoesNotExist:
+        return Response({'error': 'Demande introuvable.'}, status=404)
+
+    if withdrawal.status != 'pending':
+        return Response({'error': 'Cette demande a déjà été traitée.'}, status=400)
+
+    action = request.data.get('action')
+    if action not in ('approve', 'reject'):
+        return Response({'error': "action doit être 'approve' ou 'reject'."}, status=400)
+
+    withdrawal.processed_by = request.user
+    withdrawal.processed_at = timezone.now()
+    withdrawal.admin_note = (request.data.get('admin_note') or '').strip()
+
+    if action == 'approve':
+        withdrawal.status = 'approved'
+        send_notification(
+            withdrawal.mechanic.user,
+            title='Retrait approuvé ✓',
+            message=(
+                f'Votre retrait de {withdrawal.net_amount} FCFA a été approuvé '
+                f'et envoyé sur le {withdrawal.momo_number}.'
+            ),
+            notif_type='WITHDRAWAL_APPROVED',
+            reference_id=str(withdrawal.id),
+        )
+    else:
+        withdrawal.status = 'rejected'
+        from django.db.models import F
+        withdrawal.mechanic.balance = F('balance') + withdrawal.amount
+        withdrawal.mechanic.save(update_fields=['balance'])
+        send_notification(
+            withdrawal.mechanic.user,
+            title='Retrait refusé',
+            message=(
+                f'Votre retrait de {withdrawal.amount} FCFA a été refusé. '
+                f'{withdrawal.admin_note or "Contactez l\'administration."}'
+            ),
+            notif_type='WITHDRAWAL_REJECTED',
+            reference_id=str(withdrawal.id),
+        )
+
+    withdrawal.save()
+    return Response(WithdrawalRequestSerializer(withdrawal).data)

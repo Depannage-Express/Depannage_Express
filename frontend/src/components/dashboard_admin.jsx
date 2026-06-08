@@ -6,7 +6,8 @@ import Abonnements from './aboonnements';
 import SupervisionInterventions from './supervisions_interv';
 import GestionAvis from './gestion_avis';
 import AdminMessages from './admin_messages';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText } from 'lucide-react';
+import RetraitsAdmin from './retraits_admin';
+import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText, ArrowDownCircle } from 'lucide-react';
 import { fetchAdminStats } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
@@ -51,6 +52,7 @@ const DashboardAdmin = () => {
     { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]" },
     { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]" },
     { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]" },
+    { id: 'retraits', title: "Retraits", icon: <ArrowDownCircle size={40} />, color: "bg-[#608C27]" },
   ];
 
 
@@ -72,6 +74,8 @@ const DashboardAdmin = () => {
                 return <GestionAvis onBack={() => setViewSafe('menu')} />;
       case 'messages':
                 return <AdminMessages onBack={() => setViewSafe('menu')} />;
+      case 'retraits':
+                return <RetraitsAdmin onBack={() => setViewSafe('menu')} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
@@ -176,6 +180,11 @@ const DashboardAdmin = () => {
           {/* Messages conducteurs & mécaniciens */}
           <MenuCard item={menuItems[6]}
             onClick={() => setViewSafe('messages')}
+          />
+
+          {/* Retraits mécaniciens */}
+          <MenuCard item={menuItems[7]}
+            onClick={() => setViewSafe('retraits')}
           />
 
         </div>

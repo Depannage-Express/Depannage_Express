@@ -69,6 +69,9 @@ class MechanicProfile(TimestampedModel):
     )
     total_reviews = models.PositiveIntegerField(default=0)
 
+    # Portefeuille virtuel
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
     class Meta:
         db_table = 'mechanics_profile'
         indexes = [

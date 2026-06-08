@@ -462,6 +462,31 @@ export function adminCancelBreakdown(id) {
   return apiRequest(`/breakdowns/admin/${id}/cancel/`, { method: 'POST' });
 }
 
+export function fetchMechanicWallet() {
+  return apiRequest('/payments/wallet/');
+}
+
+export function createWithdrawalRequest(payload) {
+  return apiRequest('/payments/withdraw/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function fetchAdminWithdrawals(status = '') {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  return apiRequest(`/payments/admin/withdrawals/${qs}`);
+}
+
+export function processWithdrawal(id, action, adminNote = '') {
+  return apiRequest(`/payments/admin/withdrawals/${id}/process/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, admin_note: adminNote }),
+  });
+}
+
 export function adminFixMechanicLocation(profileId, latitude, longitude) {
   return apiRequest(`/mechanics/admin/${profileId}/fix-location/`, {
     method: 'PATCH',

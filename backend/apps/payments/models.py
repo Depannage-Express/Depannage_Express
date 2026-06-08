@@ -64,3 +64,43 @@ class PaymentTransaction(TimestampedModel):
 
     def __str__(self):
         return f"Paiement {self.id} - {self.payment_for} - {self.status}"
+
+
+class WithdrawalRequest(TimestampedModel):
+    STATUS_CHOICES = [
+        ('pending',  'En attente'),
+        ('approved', 'Approuvé'),
+        ('rejected', 'Rejeté'),
+    ]
+    PROVIDER_CHOICES = [
+        ('mtn',  'MTN Mobile Money'),
+        ('moov', 'Moov Money'),
+    ]
+
+    mechanic = models.ForeignKey(
+        'mechanics.MechanicProfile',
+        on_delete=models.CASCADE,
+        related_name='withdrawals',
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    fee = models.DecimalField(max_digits=10, decimal_places=2)
+    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    momo_number = models.CharField(max_length=20)
+    momo_provider = models.CharField(max_length=10, choices=PROVIDER_CHOICES, default='mtn')
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_note = models.TextField(blank=True)
+    processed_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='processed_withdrawals',
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'payments_withdrawal'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Retrait {self.id} — {self.mechanic} — {self.amount} XOF — {self.status}"
