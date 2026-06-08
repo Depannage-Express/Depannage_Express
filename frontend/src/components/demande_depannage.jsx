@@ -1,13 +1,40 @@
 import { useState } from "react";
-import { Camera, FileText, MapPin, User, Phone, AlignLeft } from 'lucide-react';
+import { Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X } from 'lucide-react';
 import '../index.css';
 import { createBreakdownRequest } from '../lib/api';
 
-const Demande = ({ onConfirm }) => { 
+const BREAKDOWN_TYPES = [
+  { emoji: '🔧', label: 'Panne moteur' },
+  { emoji: '🔋', label: 'Batterie déchargée' },
+  { emoji: '🛞', label: 'Pneu crevé' },
+  { emoji: '⛽', label: 'Panne de carburant' },
+  { emoji: '🌡️', label: 'Surchauffe moteur' },
+  { emoji: '🚗', label: 'Problème de démarrage' },
+  { emoji: '⚡', label: 'Panne électrique' },
+  { emoji: '💨', label: 'Courroie cassée' },
+  { emoji: '🛑', label: 'Frein défaillant' },
+  { emoji: '🔩', label: 'Embrayage' },
+  { emoji: '💧', label: 'Fuite de liquide' },
+  { emoji: '🌫️', label: 'Moteur fumant' },
+  { emoji: '🔦', label: 'Éclairage en panne' },
+  { emoji: '🏎️', label: 'Boîte de vitesses' },
+  { emoji: '🔄', label: 'Alternateur' },
+  { emoji: '❄️', label: 'Climatisation' },
+  { emoji: '🪟', label: 'Vitre / Serrure' },
+  { emoji: '📟', label: 'Tableau de bord' },
+  { emoji: '💥', label: 'Accident / Collision' },
+  { emoji: '🔧', label: 'Suspension / Amortisseurs' },
+  { emoji: '🌊', label: 'Radiateur' },
+  { emoji: '❓', label: 'Autre panne' },
+];
+
+const Demande = ({ onConfirm }) => {
     const [locationEnabled, setLocationEnabled] = useState(false);
     const [position, setPosition] = useState(null);
     const [driverName, setDriverName] = useState('');
     const [phone, setPhone] = useState('01');
+    const [breakdownType, setBreakdownType] = useState('');
+    const [typeQuery, setTypeQuery] = useState('');
 
     const handlePhoneChange = (val) => {
       let digits = val.replace(/\D/g, '').slice(0, 10);
@@ -19,6 +46,10 @@ const Demande = ({ onConfirm }) => {
     const [breakdownDescription, setBreakdownDescription] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const filteredTypes = typeQuery.trim()
+      ? BREAKDOWN_TYPES.filter(t => t.label.toLowerCase().includes(typeQuery.trim().toLowerCase()))
+      : BREAKDOWN_TYPES;
 
     const [photoVehicule, setPhotoVehicule] = useState(null);
     const [photoSelfie, setPhotoSelfie] = useState(null);
@@ -74,8 +105,8 @@ const Demande = ({ onConfirm }) => {
         return;
     }
 
-    if (!driverName || phone.length !== 10 || !breakdownDescription) {
-        setError('Renseignez votre nom, votre numéro (10 chiffres commençant par 01) et la description.');
+    if (!driverName || phone.length !== 10 || !breakdownType) {
+        setError('Renseignez votre nom, votre numéro et sélectionnez le type de panne.');
         return;
     }
 
@@ -91,8 +122,8 @@ const Demande = ({ onConfirm }) => {
     formData.append('driver_selfie', selfieFile);
     formData.append('vehicle_description', 'Véhicule en panne');
     formData.append('vehicle_photo', vehicleFile);
-    formData.append('breakdown_description', breakdownDescription);
-    formData.append('breakdown_type', 'Panne générale');
+    formData.append('breakdown_description', breakdownDescription || breakdownType);
+    formData.append('breakdown_type', breakdownType);
     formData.append('latitude', String(position.latitude));
     formData.append('longitude', String(position.longitude));
     formData.append('address_description', 'Position transmise depuis le navigateur');
@@ -157,16 +188,71 @@ const Demande = ({ onConfirm }) => {
                         </div>
                     </div>
 
-                    {/* Description */}
+                    {/* Type de panne */}
                     <div>
-                        <label className={labelClass}>Description de la panne</label>
+                        <label className={labelClass}>Type de panne <span className="text-red-400">*</span></label>
+
+                        {/* Barre de recherche */}
+                        <div className="relative mb-2">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher une panne…"
+                                value={typeQuery}
+                                onChange={(e) => setTypeQuery(e.target.value)}
+                                className="w-full bg-gray-200 rounded-xl pl-8 pr-8 py-2.5 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm focus:ring-2 focus:ring-[#608C27] transition-all"
+                            />
+                            {typeQuery && (
+                                <button type="button" onClick={() => setTypeQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Grille de sélection */}
+                        <div className="max-h-44 overflow-y-auto rounded-xl grid grid-cols-2 gap-1.5 pr-0.5">
+                            {filteredTypes.length === 0 && (
+                                <p className="col-span-2 text-center text-gray-400 text-xs py-4">Aucun résultat</p>
+                            )}
+                            {filteredTypes.map((t) => (
+                                <button
+                                    key={t.label}
+                                    type="button"
+                                    onClick={() => { setBreakdownType(t.label); setTypeQuery(''); }}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border-2 text-left ${
+                                        breakdownType === t.label
+                                            ? 'bg-[#608C27] text-white border-[#608C27]'
+                                            : 'bg-gray-200 text-gray-700 border-transparent hover:border-[#608C27] hover:bg-gray-300'
+                                    }`}
+                                >
+                                    <span className="text-base shrink-0">{t.emoji}</span>
+                                    <span className="leading-tight">{t.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Sélection affichée */}
+                        {breakdownType && (
+                            <div className="mt-2 flex items-center gap-2 bg-[#608C27]/10 border border-[#608C27] rounded-xl px-3 py-2 text-sm text-[#608C27] font-bold">
+                                <span>✓</span>
+                                <span>{breakdownType}</span>
+                                <button type="button" onClick={() => setBreakdownType('')} className="ml-auto text-[#608C27] hover:text-red-600">
+                                    <X size={13} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Détails supplémentaires (optionnel) */}
+                    <div>
+                        <label className={labelClass}>Détails supplémentaires <span className="text-white/30">(optionnel)</span></label>
                         <div className="relative">
                             <AlignLeft size={14} className="absolute left-3 top-3 text-gray-500" />
                             <textarea
-                                placeholder="Ex : moteur qui chauffe, pneu crevé, batterie..."
+                                placeholder="Précisions supplémentaires…"
                                 value={breakdownDescription}
                                 onChange={(event) => setBreakdownDescription(event.target.value)}
-                                rows={3}
+                                rows={2}
                                 className="w-full bg-gray-200 rounded-xl pl-8 pr-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm focus:ring-2 focus:ring-[#608C27] transition-all resize-none"
                             />
                         </div>
