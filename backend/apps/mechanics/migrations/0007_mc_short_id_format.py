@@ -1,22 +1,6 @@
 from django.db import migrations, models
 
 
-def alter_short_id_postgres(apps, schema_editor):
-    # SQLite ne supporte pas ALTER COLUMN TYPE ni varchar_pattern_ops
-    if schema_editor.connection.vendor != 'postgresql':
-        return
-    schema_editor.execute(
-        "DROP INDEX IF EXISTS mechanics_profile_short_id_1cfb3b51_like"
-    )
-    schema_editor.execute(
-        "ALTER TABLE mechanics_profile ALTER COLUMN short_id TYPE varchar(10)"
-    )
-    schema_editor.execute(
-        "CREATE INDEX IF NOT EXISTS mechanics_profile_short_id_1cfb3b51_like"
-        " ON mechanics_profile (short_id varchar_pattern_ops)"
-    )
-
-
 def reassign_mc_ids(apps, schema_editor):
     MechanicProfile = apps.get_model('mechanics', 'MechanicProfile')
     profiles = list(MechanicProfile.objects.all().order_by('created_at'))
@@ -32,15 +16,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Gestion manuelle de l'AlterField pour éviter le double CREATE INDEX _like
-        # que Django génère quand db_index=True + unique=True sont tous les deux présents.
+        # Pas d'opération DB : l'AlterField (varchar 8→10) déclenchait un double
+        # CREATE INDEX _like sur PostgreSQL. MC00001 = 7 chars, ça tient dans varchar(8).
+        # On met à jour uniquement l'état Django interne.
         migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunPython(
-                    alter_short_id_postgres,
-                    migrations.RunPython.noop,
-                ),
-            ],
+            database_operations=[],
             state_operations=[
                 migrations.AlterField(
                     model_name='mechanicprofile',
