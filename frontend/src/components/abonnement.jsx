@@ -16,7 +16,7 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState(currentUser?.phone || '');
+  const [payerPhone, setPayerPhone] = useState(currentUser?.phone || '01');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [step, setStep] = useState('form'); // 'form' | 'confirm' | 'success'
   const [pendingPaymentId, setPendingPaymentId] = useState(null);

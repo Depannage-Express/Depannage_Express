@@ -149,7 +149,7 @@ function HistoryList({ data, onBack }) {
 
 export default function HistoriqueOTP({ onBack }) {
   const [step, setStep] = useState('phone');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('01');
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState('');
   const [loading, setLoading] = useState(false);

@@ -6,7 +6,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
-    phone: '',
+    phone: '01',
     email: '',
     password: '',
     password_confirm: '',

@@ -16,7 +16,7 @@ const MonCompte = ({onBack}) => {
 
   // Withdrawal form
   const [wAmount, setWAmount] = useState('');
-  const [wMomoNumber, setWMomoNumber] = useState('');
+  const [wMomoNumber, setWMomoNumber] = useState('01');
   const [wMomoProvider, setWMomoProvider] = useState('mtn');
   const [wReason, setWReason] = useState('');
   const [wLoading, setWLoading] = useState(false);
