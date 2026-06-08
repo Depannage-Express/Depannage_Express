@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X } from 'lucide-react';
 import '../index.css';
 import { createBreakdownRequest } from '../lib/api';
@@ -37,6 +37,21 @@ const Demande = ({ onConfirm }) => {
     const [vehicleBrand, setVehicleBrand] = useState('');
     const [breakdownTypes, setBreakdownTypes] = useState([]);
     const [typeQuery, setTypeQuery] = useState('');
+    const [breakdownDescription, setBreakdownDescription] = useState('');
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [photoVehicule, setPhotoVehicule] = useState(null);
+    const [photoSelfie, setPhotoSelfie] = useState(null);
+    const [photoIdentite, setPhotoIdentite] = useState(null);
+    const [vehicleFile, setVehicleFile] = useState(null);
+    const [selfieFile, setSelfieFile] = useState(null);
+    const [idCardFile, setIdCardFile] = useState(null);
+
+    // Refs vers les inputs cachés — toujours dans le DOM, compatibles tous navigateurs
+    const vehicleInputRef = useRef(null);
+    const selfieInputRef = useRef(null);
+    const idCardInputRef = useRef(null);
 
     const toggleType = (label) => {
       setBreakdownTypes(prev =>
@@ -49,62 +64,40 @@ const Demande = ({ onConfirm }) => {
       setPhone(digits);
     };
 
-    const [breakdownDescription, setBreakdownDescription] = useState('');
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
     const filteredTypes = typeQuery.trim()
       ? BREAKDOWN_TYPES.filter(t => t.label.toLowerCase().includes(typeQuery.trim().toLowerCase()))
       : BREAKDOWN_TYPES;
 
-    const [photoVehicule, setPhotoVehicule] = useState(null);
-    const [photoSelfie, setPhotoSelfie] = useState(null);
-    const [photoIdentite, setPhotoIdentite] = useState(null);
-    const [vehicleFile, setVehicleFile] = useState(null);
-    const [selfieFile, setSelfieFile] = useState(null);
-    const [idCardFile, setIdCardFile] = useState(null);
-
-    const handleCapture = (event, setter, fileSetter) => {
-        const file = event.target.files[0];
-        if (file) {
-            fileSetter(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setter(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
+    const handleFileChange = (e, setter, fileSetter) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        fileSetter(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setter(reader.result);
+        reader.readAsDataURL(file);
+        // Réinitialiser la valeur pour permettre de resélectionner le même fichier
+        e.target.value = '';
     };
 
-    const triggerCamera = (captureMode, setter, fileSetter) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        if (captureMode) input.capture = captureMode;
-        input.style.display = 'none';
-        document.body.appendChild(input);
-        input.onchange = (e) => {
-            handleCapture(e, setter, fileSetter);
-            document.body.removeChild(input);
-        };
-        input.click();
-    };
-
-    const handleLocationAndSelfie = () => {
-        if ("geolocation" in navigator) {
+    // Pour le selfie : on demande d'abord la localisation, puis le clic sur l'input
+    // se fait directement depuis le bouton (geste utilisateur) une fois la position obtenue
+    const handleSelfieClick = () => {
+        if (!locationEnabled) {
+            if (!("geolocation" in navigator)) {
+                setError("La géolocalisation n'est pas supportée par votre navigateur.");
+                return;
+            }
             navigator.geolocation.getCurrentPosition(
-                (position) => {
+                (pos) => {
                     setLocationEnabled(true);
-                    setPosition(position.coords);
-                    triggerCamera('user', setPhotoSelfie, setSelfieFile);
+                    setPosition(pos.coords);
                 },
-                () => {
-                    alert("Désolé, tu dois activer la localisation pour faire le selfie.");
-                }
+                () => setError("Activez la géolocalisation pour continuer.")
             );
+        } else {
+            selfieInputRef.current.click();
         }
     };
-
 
    const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,7 +107,6 @@ const Demande = ({ onConfirm }) => {
         setError("Activez la géolocalisation avant d'envoyer la demande.");
         return;
     }
-
     if (!driverName || phone.length < 8 || breakdownTypes.length === 0 || !vehicleType) {
         setError('Renseignez votre nom, votre numéro, le type de véhicule et au moins un type de panne.');
         return;
@@ -157,6 +149,31 @@ const Demande = ({ onConfirm }) => {
     return (
         <div className="flex justify-center items-center min-h-screen p-4 bg-[#608C27]">
             <div className="bg-[#0D2B0D] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white/10">
+
+                {/* Inputs fichiers cachés — toujours dans le DOM pour compatibilité Firefox */}
+                <input
+                    ref={vehicleInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, setPhotoVehicule, setVehicleFile)}
+                />
+                <input
+                    ref={selfieInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, setPhotoSelfie, setSelfieFile)}
+                />
+                <input
+                    ref={idCardInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, setPhotoIdentite, setIdCardFile)}
+                />
 
                 {/* Titre */}
                 <div className="flex justify-center mb-8">
@@ -238,7 +255,6 @@ const Demande = ({ onConfirm }) => {
                             <span className="ml-2 text-white/30 normal-case font-normal">Plusieurs choix possibles</span>
                         </label>
 
-                        {/* Barre de recherche */}
                         <div className="relative mb-2">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                             <input
@@ -255,7 +271,6 @@ const Demande = ({ onConfirm }) => {
                             )}
                         </div>
 
-                        {/* Grille de sélection */}
                         <div className="max-h-44 overflow-y-auto rounded-xl grid grid-cols-2 gap-1.5 pr-0.5">
                             {filteredTypes.length === 0 && (
                                 <p className="col-span-2 text-center text-gray-400 text-xs py-4">Aucun résultat</p>
@@ -281,7 +296,6 @@ const Demande = ({ onConfirm }) => {
                             })}
                         </div>
 
-                        {/* Chips des sélections */}
                         {breakdownTypes.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1.5">
                                 {breakdownTypes.map(label => (
@@ -296,7 +310,7 @@ const Demande = ({ onConfirm }) => {
                         )}
                     </div>
 
-                    {/* Détails supplémentaires (optionnel) */}
+                    {/* Détails supplémentaires */}
                     <div>
                         <label className={labelClass}>Détails supplémentaires <span className="text-white/30">(optionnel)</span></label>
                         <div className="relative">
@@ -318,7 +332,7 @@ const Demande = ({ onConfirm }) => {
                         {/* Photo Véhicule */}
                         <button
                             type="button"
-                            onClick={() => triggerCamera('environment', setPhotoVehicule, setVehicleFile)}
+                            onClick={() => vehicleInputRef.current.click()}
                             className="w-full bg-gray-200 hover:bg-gray-300 rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between"
                         >
                             <div className="flex items-center gap-3">
@@ -330,16 +344,20 @@ const Demande = ({ onConfirm }) => {
                             {photoVehicule && <img src={photoVehicule} alt="Aperçu" className="w-10 h-10 rounded-lg object-cover" />}
                         </button>
 
-                        {/* Selfie + Géolocalisation */}
+                        {/* Selfie + Géolocalisation — deux étapes séparées */}
                         <button
                             type="button"
-                            onClick={handleLocationAndSelfie}
+                            onClick={handleSelfieClick}
                             className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between ${locationEnabled ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
                             <div className="flex items-center gap-3">
                                 <MapPin size={16} className={locationEnabled ? 'text-green-600' : 'text-gray-500'} />
                                 <span className={locationEnabled ? 'text-green-700' : 'text-gray-700'}>
-                                    {photoSelfie ? '✓ Selfie + localisation' : 'Selfie + géolocalisation'}
+                                    {photoSelfie
+                                        ? '✓ Selfie + localisation'
+                                        : locationEnabled
+                                            ? 'Prendre le selfie'
+                                            : 'Selfie + géolocalisation'}
                                 </span>
                             </div>
                             {photoSelfie && <img src={photoSelfie} alt="Aperçu" className="w-10 h-10 rounded-full object-cover" />}
@@ -348,7 +366,7 @@ const Demande = ({ onConfirm }) => {
                         {/* Pièce d'identité */}
                         <button
                             type="button"
-                            onClick={() => triggerCamera(null, setPhotoIdentite, setIdCardFile)}
+                            onClick={() => idCardInputRef.current.click()}
                             className="w-full bg-gray-200 hover:bg-gray-300 rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between"
                         >
                             <div className="flex items-center gap-3">
