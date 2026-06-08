@@ -81,8 +81,12 @@ const Demande = ({ onConfirm }) => {
         input.type = 'file';
         input.accept = 'image/*';
         if (captureMode) input.capture = captureMode;
-        
-        input.onchange = (e) => handleCapture(e, setter, fileSetter);
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.onchange = (e) => {
+            handleCapture(e, setter, fileSetter);
+            document.body.removeChild(input);
+        };
         input.click();
     };
 
