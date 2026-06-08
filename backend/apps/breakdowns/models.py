@@ -31,7 +31,7 @@ class BreakdownRequest(TimestampedModel):
     vehicle_description = models.CharField(max_length=200)
     vehicle_photo = models.FileField(upload_to='breakdowns/vehicles/')
     breakdown_description = models.TextField()
-    breakdown_type = models.CharField(max_length=100, blank=True)
+    breakdown_type = models.CharField(max_length=500, blank=True)
     specialty_requested = models.ForeignKey(
         'mechanics.Specialty', on_delete=models.SET_NULL,
         null=True, blank=True
