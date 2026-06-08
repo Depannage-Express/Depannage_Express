@@ -22,4 +22,9 @@ urlpatterns = [
     # Messagerie mécanicien ↔ admin
     path('messages/admin/', views.mechanic_admin_messages, name='mechanic-admin-messages'),
     path('messages/admin/conversations/', views.mechanic_admin_conversations, name='mechanic-admin-conversations'),
+
+    # Changement numéro MoMo
+    path('momo-change/', views.mechanic_momo_change, name='mechanic-momo-change'),
+    path('admin/momo-changes/', views.admin_momo_change_list, name='admin-momo-change-list'),
+    path('admin/momo-changes/<uuid:pk>/process/', views.admin_momo_change_process, name='admin-momo-change-process'),
 ]

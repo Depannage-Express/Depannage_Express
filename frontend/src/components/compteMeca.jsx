@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { User, History, ArrowDownCircle, ArrowLeft, CheckCircle, MapPin, LocateFixed, TrendingUp, TrendingDown, Clock, AlertCircle } from 'lucide-react';
-import { fetchCurrentUser, fetchMechanicProfile, updateMyMechanicLocation, fetchMechanicWallet, createWithdrawalRequest } from '../lib/api';
+import { User, History, ArrowDownCircle, ArrowLeft, CheckCircle, MapPin, LocateFixed, TrendingUp, TrendingDown, Clock, AlertCircle, Phone, Edit2 } from 'lucide-react';
+import { fetchCurrentUser, fetchMechanicProfile, updateMyMechanicLocation, fetchMechanicWallet, createWithdrawalRequest, fetchMyMomoChangeRequests, createMomoChangeRequest } from '../lib/api';
 
 const MonCompte = ({onBack}) => {
   const [notifSucces, setNotifSucces] = useState(false);
@@ -16,11 +16,18 @@ const MonCompte = ({onBack}) => {
 
   // Withdrawal form
   const [wAmount, setWAmount] = useState('');
-  const [wMomoNumber, setWMomoNumber] = useState('01');
   const [wMomoProvider, setWMomoProvider] = useState('mtn');
   const [wReason, setWReason] = useState('');
   const [wLoading, setWLoading] = useState(false);
   const [wError, setWError] = useState('');
+
+  // MoMo change request
+  const [momoRequests, setMomoRequests] = useState([]);
+  const [showChangeForm, setShowChangeForm] = useState(false);
+  const [newMomoNumber, setNewMomoNumber] = useState('01');
+  const [momoChangeLoading, setMomoChangeLoading] = useState(false);
+  const [momoChangeError, setMomoChangeError] = useState('');
+  const [momoChangeSent, setMomoChangeSent] = useState(false);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -47,18 +54,26 @@ const MonCompte = ({onBack}) => {
       .then(data => setWallet(data))
       .catch(() => {})
       .finally(() => setWalletLoading(false));
+    fetchMyMomoChangeRequests()
+      .then(data => setMomoRequests(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, [profileDetails]);
 
   const balance = wallet ? parseFloat(wallet.balance) : 0;
+  const withdrawalNumber = wallet?.withdrawal_number || profil?.phone || '';
+  const lockoutUntil = wallet?.lockout_until ? new Date(wallet.lockout_until) : null;
+  const isLocked = lockoutUntil && lockoutUntil > new Date();
   const fee = wAmount ? Math.floor(parseFloat(wAmount) * 0.0075) : 0;
   const net = wAmount ? parseFloat(wAmount) : 0;
   const totalDeducted = net + fee;
+  const hasPendingMomoChange = momoRequests.some(r => r.status === 'pending');
 
   const handleRetrait = async (e) => {
     e.preventDefault();
     setWError('');
     const amount = parseFloat(wAmount);
     if (!amount || amount < 2000) { setWError('Montant minimum : 2 000 FCFA.'); return; }
+    if (isLocked) { setWError('Retrait bloqué 72h après changement de numéro.'); return; }
     const feeCalc = Math.floor(amount * 0.0075);
     if (amount + feeCalc > balance) { setWError('Solde insuffisant (montant + frais).'); return; }
     if (!wMomoNumber.trim()) { setWError('Numéro MoMo obligatoire.'); return; }
@@ -66,7 +81,6 @@ const MonCompte = ({onBack}) => {
     try {
       await createWithdrawalRequest({
         amount: Math.round(amount),
-        momo_number: wMomoNumber.trim(),
         momo_provider: wMomoProvider,
         reason: wReason.trim(),
       });
@@ -81,6 +95,27 @@ const MonCompte = ({onBack}) => {
       setWError(err.message);
     } finally {
       setWLoading(false);
+    }
+  };
+
+  const handleMomoChangeRequest = async (e) => {
+    e.preventDefault();
+    setMomoChangeError('');
+    if (!newMomoNumber.trim() || newMomoNumber.trim().length < 4) {
+      setMomoChangeError('Numéro invalide.'); return;
+    }
+    setMomoChangeLoading(true);
+    try {
+      await createMomoChangeRequest(newMomoNumber.trim());
+      setMomoChangeSent(true);
+      setShowChangeForm(false);
+      setNewMomoNumber('01');
+      const updated = await fetchMyMomoChangeRequests();
+      setMomoRequests(Array.isArray(updated) ? updated : []);
+    } catch (err) {
+      setMomoChangeError(err.message);
+    } finally {
+      setMomoChangeLoading(false);
     }
   };
 
@@ -195,87 +230,147 @@ const MonCompte = ({onBack}) => {
           </div>
 
           {profileDetails?.status === 'approved' && (
-            <form onSubmit={handleRetrait} className="bg-white p-6 rounded-3xl shadow-lg border-2 border-gray-100">
-              <h4 className="text-[#0D2B0D] font-bold text-center mb-6 text-xl">Formulaire de retrait</h4>
-              <div className="space-y-4">
-
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
-                  <span className="font-bold text-[#0D2B0D]">Montant :</span>
-                  <input
-                    type="number"
-                    placeholder="20000"
-                    value={wAmount}
-                    onChange={e => setWAmount(e.target.value)}
-                    className="bg-transparent outline-none text-right w-28 font-bold"
-                    min="2000"
-                    max={Math.max(0, balance - Math.floor(balance * 0.0075))}
-                  />
+            <>
+              {/* Numéro MoMo enregistré */}
+              <div className="bg-white p-5 rounded-3xl shadow-lg border-2 border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[#0D2B0D] font-bold flex items-center gap-2">
+                    <Phone size={16} className="text-[#608C27]" /> Numéro MoMo de retrait
+                  </p>
+                  {!hasPendingMomoChange && (
+                    <button
+                      onClick={() => { setShowChangeForm(v => !v); setMomoChangeError(''); setMomoChangeSent(false); }}
+                      className="text-xs text-[#608C27] hover:text-[#0D2B0D] flex items-center gap-1 font-bold"
+                    >
+                      <Edit2 size={13} /> Modifier
+                    </button>
+                  )}
                 </div>
-
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
-                  <span className="font-bold text-[#0D2B0D]">Réseau :</span>
-                  <select
-                    value={wMomoProvider}
-                    onChange={e => setWMomoProvider(e.target.value)}
-                    className="bg-transparent outline-none text-right font-medium"
-                  >
-                    <option value="mtn">MTN MoMo</option>
-                    <option value="moov">Moov Money</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
-                  <span className="font-bold text-[#0D2B0D]">Numéro MoMo :</span>
-                  <input
-                    type="tel"
-                    placeholder="+22901XXXXXXXX"
-                    value={wMomoNumber}
-                    onChange={e => setWMomoNumber(e.target.value)}
-                    className="bg-transparent outline-none text-right w-36 font-medium"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
-                  <span className="font-bold text-[#0D2B0D]">Motif :</span>
-                  <input
-                    type="text"
-                    placeholder="Optionnel"
-                    value={wReason}
-                    onChange={e => setWReason(e.target.value)}
-                    className="bg-transparent outline-none text-right w-28 font-medium"
-                  />
-                </div>
-
-                {wAmount && parseFloat(wAmount) >= 2000 && (
-                  <div className="text-center py-2 bg-green-50 rounded-lg space-y-1">
-                    <p className="text-[#608C27] font-bold">Frais (0,75 %) : {fee.toLocaleString('fr-FR')} FCFA</p>
-                    <p className="text-[#0D2B0D] font-bold text-sm">Vous recevrez : {net.toLocaleString('fr-FR')} FCFA</p>
-                    <p className="text-gray-500 text-xs">Total débité du solde : {totalDeducted.toLocaleString('fr-FR')} FCFA</p>
-                  </div>
+                <p className="font-mono text-xl font-bold text-[#0D2B0D] text-center py-2 bg-gray-50 rounded-xl">
+                  {walletLoading ? '…' : (withdrawalNumber || '—')}
+                </p>
+                {isLocked && (
+                  <p className="text-xs text-orange-600 font-semibold mt-2 text-center">
+                    Retraits bloqués jusqu'au {lockoutUntil.toLocaleString('fr-FR')} (72h après changement)
+                  </p>
+                )}
+                {hasPendingMomoChange && (
+                  <p className="text-xs text-yellow-600 font-semibold mt-2 text-center flex items-center justify-center gap-1">
+                    <Clock size={12} /> Demande de changement en attente de validation admin
+                  </p>
+                )}
+                {momoChangeSent && (
+                  <p className="text-xs text-green-600 font-semibold mt-2 text-center flex items-center justify-center gap-1">
+                    <CheckCircle size={12} /> Demande envoyée — l'admin va valider
+                  </p>
                 )}
 
-                {wError && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-xl">
-                    <AlertCircle size={16} /> {wError}
-                  </div>
+                {showChangeForm && (
+                  <form onSubmit={handleMomoChangeRequest} className="mt-4 space-y-3 border-t pt-4">
+                    <p className="text-xs text-gray-500 text-center">
+                      Après approbation, un délai de <strong>72h</strong> s'applique avant tout retrait.
+                    </p>
+                    <div className="flex items-center gap-2 bg-gray-100 p-3 rounded-xl">
+                      <span className="text-sm font-bold text-[#0D2B0D] whitespace-nowrap">Nouveau numéro :</span>
+                      <input
+                        type="tel"
+                        value={newMomoNumber}
+                        onChange={e => setNewMomoNumber(e.target.value)}
+                        className="bg-transparent outline-none flex-1 text-right font-medium"
+                        placeholder="0197XXXXXX"
+                      />
+                    </div>
+                    {momoChangeError && (
+                      <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} /> {momoChangeError}</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={momoChangeLoading}
+                      className="w-full bg-[#608C27] text-white py-2 rounded-xl font-bold text-sm hover:bg-[#0D2B0D] transition-all disabled:opacity-60"
+                    >
+                      {momoChangeLoading ? 'Envoi…' : 'Envoyer la demande'}
+                    </button>
+                  </form>
                 )}
+              </div>
 
-                <div className="relative pt-4">
-                  {notifSucces && (
-                    <div className="absolute -top-6 left-0 flex items-center gap-1 text-green-600 font-bold animate-bounce">
-                      <CheckCircle size={16} /> Demande envoyée — l'admin va traiter votre retrait
+              {/* Formulaire de retrait */}
+              <form onSubmit={handleRetrait} className="bg-white p-6 rounded-3xl shadow-lg border-2 border-gray-100">
+                <h4 className="text-[#0D2B0D] font-bold text-center mb-6 text-xl">Formulaire de retrait</h4>
+                <div className="space-y-4">
+
+                  <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
+                    <span className="font-bold text-[#0D2B0D]">Montant :</span>
+                    <input
+                      type="number"
+                      placeholder="20000"
+                      value={wAmount}
+                      onChange={e => setWAmount(e.target.value)}
+                      className="bg-transparent outline-none text-right w-28 font-bold"
+                      min="2000"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
+                    <span className="font-bold text-[#0D2B0D]">Réseau :</span>
+                    <select
+                      value={wMomoProvider}
+                      onChange={e => setWMomoProvider(e.target.value)}
+                      className="bg-transparent outline-none text-right font-medium"
+                    >
+                      <option value="mtn">MTN MoMo</option>
+                      <option value="moov">Moov Money</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-gray-100 p-3 rounded-xl">
+                    <span className="font-bold text-[#0D2B0D]">Motif :</span>
+                    <input
+                      type="text"
+                      placeholder="Optionnel"
+                      value={wReason}
+                      onChange={e => setWReason(e.target.value)}
+                      className="bg-transparent outline-none text-right w-28 font-medium"
+                    />
+                  </div>
+
+                  {wAmount && parseFloat(wAmount) >= 2000 && (
+                    <div className="text-center py-2 bg-green-50 rounded-lg space-y-1">
+                      <p className="text-[#608C27] font-bold">Frais (0,75 %) : {fee.toLocaleString('fr-FR')} FCFA</p>
+                      <p className="text-[#0D2B0D] font-bold text-sm">Vous recevrez : {net.toLocaleString('fr-FR')} FCFA</p>
+                      <p className="text-gray-500 text-xs">Total débité du solde : {totalDeducted.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                   )}
-                  <button
-                    type="submit"
-                    disabled={wLoading}
-                    className="w-full bg-[#0D2B0D] text-white py-4 rounded-2xl font-bold text-xl hover:bg-[#608C27] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                  >
-                    <ArrowDownCircle size={24} /> {wLoading ? 'Traitement…' : 'Retrait'}
-                  </button>
+
+                  {wError && (
+                    <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-xl">
+                      <AlertCircle size={16} /> {wError}
+                    </div>
+                  )}
+
+                  {isLocked && (
+                    <div className="flex items-center gap-2 text-orange-600 text-sm bg-orange-50 p-3 rounded-xl">
+                      <AlertCircle size={16} /> Retraits bloqués — changement de numéro récent (72h)
+                    </div>
+                  )}
+
+                  <div className="relative pt-4">
+                    {notifSucces && (
+                      <div className="absolute -top-6 left-0 flex items-center gap-1 text-green-600 font-bold animate-bounce">
+                        <CheckCircle size={16} /> Demande envoyée — l'admin va traiter votre retrait
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={wLoading || isLocked}
+                      className="w-full bg-[#0D2B0D] text-white py-4 rounded-2xl font-bold text-xl hover:bg-[#608C27] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      <ArrowDownCircle size={24} /> {wLoading ? 'Traitement…' : 'Retrait'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </form>
+              </form>
+            </>
           )}
         </div>
 

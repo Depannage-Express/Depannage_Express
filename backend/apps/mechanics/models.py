@@ -72,6 +72,9 @@ class MechanicProfile(TimestampedModel):
     # Portefeuille virtuel
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
+    # Numéro de retrait MoMo (vide = utilise user.phone)
+    withdrawal_number = models.CharField(max_length=20, blank=True)
+
     class Meta:
         db_table = 'mechanics_profile'
         indexes = [
@@ -121,6 +124,33 @@ class MechanicReview(TimestampedModel):
         super().save(*args, **kwargs)
         if is_new:
             self.mechanic.update_rating(float(self.rating))
+
+
+class MomoNumberChangeRequest(TimestampedModel):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('approved', 'Approuvé'),
+        ('rejected', 'Rejeté'),
+    ]
+    mechanic = models.ForeignKey(
+        MechanicProfile, on_delete=models.CASCADE,
+        related_name='momo_change_requests'
+    )
+    new_number = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_note = models.TextField(blank=True)
+    processed_by = models.ForeignKey(
+        'accounts.User', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='processed_momo_changes'
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'mechanics_momo_change_request'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Changement MoMo {self.mechanic.user.full_name} → {self.new_number} [{self.status}]"
 
 
 class MechanicAdminMessage(TimestampedModel):

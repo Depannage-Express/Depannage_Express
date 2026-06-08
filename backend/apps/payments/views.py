@@ -295,8 +295,29 @@ def mechanic_wallet(request):
         })
     history.sort(key=lambda x: x['date'] or timezone.now(), reverse=True)
 
+    withdrawal_number = profile.withdrawal_number or profile.user.phone or ''
+
+    # Calcul éventuel du lockout 72h après dernier changement approuvé
+    from apps.mechanics.models import MomoNumberChangeRequest
+    import math
+    lockout_until = None
+    last_approved = (
+        MomoNumberChangeRequest.objects
+        .filter(mechanic=profile, status='approved')
+        .order_by('-processed_at')
+        .first()
+    )
+    if last_approved and last_approved.processed_at:
+        delta = timezone.now() - last_approved.processed_at
+        remaining = 72 * 3600 - delta.total_seconds()
+        if remaining > 0:
+            lockout_until = (last_approved.processed_at +
+                             timezone.timedelta(hours=72)).isoformat()
+
     return Response({
         'balance': str(profile.balance),
+        'withdrawal_number': withdrawal_number,
+        'lockout_until': lockout_until,
         'history': history,
     })
 
@@ -314,9 +335,28 @@ def mechanic_withdraw(request):
     if amount < 2000:
         return Response({'error': 'Le montant minimum de retrait est 2 000 FCFA.'}, status=400)
 
-    momo_number = (request.data.get('momo_number') or '').strip()
+    # Numéro de retrait = numéro enregistré (non modifiable depuis le formulaire)
+    momo_number = profile.withdrawal_number or profile.user.phone or ''
     if not momo_number:
-        return Response({'error': 'Numéro MoMo obligatoire.'}, status=400)
+        return Response({'error': 'Aucun numéro MoMo configuré sur votre profil.'}, status=400)
+
+    # Vérification lockout 72h après changement de numéro
+    from apps.mechanics.models import MomoNumberChangeRequest
+    import math
+    last_approved = (
+        MomoNumberChangeRequest.objects
+        .filter(mechanic=profile, status='approved')
+        .order_by('-processed_at')
+        .first()
+    )
+    if last_approved and last_approved.processed_at:
+        delta = timezone.now() - last_approved.processed_at
+        remaining = 72 * 3600 - delta.total_seconds()
+        if remaining > 0:
+            remaining_h = math.ceil(remaining / 3600)
+            return Response({
+                'error': f'Retrait bloqué 72h après changement de numéro. Encore {remaining_h}h à attendre.'
+            }, status=400)
 
     fee = (amount * Decimal('0.0075')).quantize(Decimal('1'), rounding=ROUND_DOWN)
     net_amount = amount

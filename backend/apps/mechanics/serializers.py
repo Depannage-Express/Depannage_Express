@@ -1,6 +1,6 @@
 # apps/mechanics/serializers.py
 from rest_framework import serializers
-from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage
+from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage, MomoNumberChangeRequest
 from apps.accounts.serializers import UserMiniSerializer
 
 
@@ -70,6 +70,23 @@ class MechanicAdminMessageSerializer(serializers.ModelSerializer):
         model = MechanicAdminMessage
         fields = ['id', 'sender_type', 'sender_name', 'content', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class MomoChangeRequestSerializer(serializers.ModelSerializer):
+    mechanic_name = serializers.CharField(source='mechanic.user.full_name', read_only=True)
+    mechanic_id = serializers.CharField(source='mechanic.id', read_only=True)
+    processed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MomoNumberChangeRequest
+        fields = [
+            'id', 'mechanic_id', 'mechanic_name', 'new_number',
+            'status', 'admin_note', 'processed_by_name', 'processed_at', 'created_at',
+        ]
+        read_only_fields = ['id', 'mechanic_id', 'mechanic_name', 'processed_by_name', 'processed_at', 'created_at']
+
+    def get_processed_by_name(self, obj):
+        return obj.processed_by.full_name if obj.processed_by else None
 
 
 class MechanicReviewSerializer(serializers.ModelSerializer):

@@ -487,6 +487,31 @@ export function processWithdrawal(id, action, adminNote = '') {
   });
 }
 
+export function fetchMyMomoChangeRequests() {
+  return apiRequest('/mechanics/momo-change/');
+}
+
+export function createMomoChangeRequest(newNumber) {
+  return apiRequest('/mechanics/momo-change/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_number: newNumber }),
+  });
+}
+
+export function fetchAdminMomoChanges(status = '') {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  return apiRequest(`/mechanics/admin/momo-changes/${qs}`);
+}
+
+export function processAdminMomoChange(id, action, adminNote = '') {
+  return apiRequest(`/mechanics/admin/momo-changes/${id}/process/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, admin_note: adminNote }),
+  });
+}
+
 export function adminFixMechanicLocation(profileId, latitude, longitude) {
   return apiRequest(`/mechanics/admin/${profileId}/fix-location/`, {
     method: 'PATCH',

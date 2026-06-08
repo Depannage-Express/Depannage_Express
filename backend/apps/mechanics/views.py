@@ -10,11 +10,11 @@ from rest_framework.response import Response
 
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
-from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage
+from .models import MechanicProfile, Specialty, MechanicReview, MechanicAdminMessage, MomoNumberChangeRequest
 from .serializers import (
     MechanicProfileSerializer, MechanicPublicSerializer,
     SpecialtySerializer, MechanicValidationSerializer, MechanicReviewSerializer,
-    MechanicAdminMessageSerializer,
+    MechanicAdminMessageSerializer, MomoChangeRequestSerializer,
 )
 
 
@@ -391,3 +391,86 @@ def mechanic_reviews(request, pk):
         mechanic=profile, is_visible=True
     ).order_by('-created_at')
     return Response(MechanicReviewSerializer(reviews, many=True).data)
+
+
+# ─── Changement numéro MoMo ───────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsApprovedMechanic])
+def mechanic_momo_change(request):
+    profile = request.user.mechanic_profile
+
+    if request.method == 'GET':
+        reqs = profile.momo_change_requests.all()[:20]
+        return Response(MomoChangeRequestSerializer(reqs, many=True).data)
+
+    new_number = (request.data.get('new_number') or '').strip()
+    if not new_number:
+        return Response({'error': 'Nouveau numéro obligatoire.'}, status=400)
+    if profile.momo_change_requests.filter(status='pending').exists():
+        return Response({'error': 'Une demande de changement est déjà en cours.'}, status=400)
+
+    req = MomoNumberChangeRequest.objects.create(mechanic=profile, new_number=new_number)
+
+    from apps.accounts.models import User
+    for admin in User.objects.filter(role='admin'):
+        send_notification(
+            admin,
+            title='Changement numéro MoMo',
+            message=f'{profile.user.full_name} demande un changement de numéro MoMo : {new_number}.',
+            notif_type='MOMO_CHANGE_REQUEST',
+            reference_id=str(req.id),
+        )
+    return Response(MomoChangeRequestSerializer(req).data, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_momo_change_list(request):
+    status_filter = request.query_params.get('status', '')
+    qs = MomoNumberChangeRequest.objects.select_related('mechanic__user', 'processed_by')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    return Response(MomoChangeRequestSerializer(qs, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def admin_momo_change_process(request, pk):
+    from django.shortcuts import get_object_or_404
+    req = get_object_or_404(MomoNumberChangeRequest, pk=pk)
+    if req.status != 'pending':
+        return Response({'error': 'Déjà traité.'}, status=400)
+
+    action = request.data.get('action')
+    req.admin_note = (request.data.get('admin_note') or '').strip()
+    req.processed_by = request.user
+    req.processed_at = timezone.now()
+
+    if action == 'approve':
+        req.status = 'approved'
+        req.mechanic.withdrawal_number = req.new_number
+        req.mechanic.save(update_fields=['withdrawal_number'])
+        send_notification(
+            req.mechanic.user,
+            title='Changement numéro MoMo approuvé',
+            message=f'Votre numéro MoMo a été mis à jour : {req.new_number}. '
+                    f'Vous pourrez effectuer un retrait dans 72h.',
+            notif_type='MOMO_CHANGE_APPROVED',
+            reference_id=str(req.id),
+        )
+    elif action == 'reject':
+        req.status = 'rejected'
+        send_notification(
+            req.mechanic.user,
+            title='Changement numéro MoMo refusé',
+            message=f'Votre demande de changement de numéro MoMo a été refusée. '
+                    f'{req.admin_note or "Contactez l\'administration."}',
+            notif_type='MOMO_CHANGE_REJECTED',
+            reference_id=str(req.id),
+        )
+    else:
+        return Response({'error': 'Action invalide (approve/reject).'}, status=400)
+
+    req.save()
+    return Response(MomoChangeRequestSerializer(req).data)
