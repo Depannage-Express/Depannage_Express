@@ -100,10 +100,20 @@ class MechanicListAdminView(generics.ListAPIView):
     serializer_class = MechanicProfileSerializer
 
     def get_queryset(self):
+        from django.db.models import Q
         qs = MechanicProfile.objects.select_related('user').prefetch_related('specialties')
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
+        q = self.request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(short_id__iexact=q.replace('-', '')) |
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(user__email__icontains=q) |
+                Q(user__phone__icontains=q)
+            )
         return qs.order_by('-created_at')
 
 

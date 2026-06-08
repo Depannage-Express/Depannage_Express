@@ -218,7 +218,12 @@ const MonCompte = ({onBack}) => {
         {/* --- BLOC SOLDE ET RETRAIT --- */}
         <div className="space-y-6 mt-8">
           <div className="bg-[#0D2B0D] p-8 rounded-3xl shadow-xl text-white text-center">
-            <p className="text-sm opacity-60 mb-1 break-all">Id : {profil?.id || '-'}</p>
+            <p className="text-xs opacity-40 uppercase tracking-widest mb-1">Votre identifiant</p>
+            <p className="text-3xl font-black tracking-[0.3em] text-[#608C27] mb-3">
+              {profileDetails?.short_id
+                ? `${profileDetails.short_id.slice(0,4)}-${profileDetails.short_id.slice(4)}`
+                : '—'}
+            </p>
             <p className="text-xs opacity-40 mb-3 uppercase tracking-widest">Solde disponible</p>
             {walletLoading ? (
               <p className="text-3xl font-bold opacity-50">…</p>

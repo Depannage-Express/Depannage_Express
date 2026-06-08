@@ -91,7 +91,8 @@ const Utilisateurs = ({ onBack }) => {
       (u.first_name || '').toLowerCase().includes(q) ||
       (u.last_name || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q) ||
-      (u.phone || '').toLowerCase().includes(q)
+      (u.phone || '').toLowerCase().includes(q) ||
+      (u.mechanic_short_id || '').toLowerCase().replace('-','').includes(q.replace('-',''))
     );
   }, [users, q]);
 
@@ -333,6 +334,11 @@ const Utilisateurs = ({ onBack }) => {
           <h4 className="font-bold text-[#0D2B0D] uppercase text-sm truncate">
             {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
           </h4>
+          {user.mechanic_short_id && (
+            <p className="text-sm font-black tracking-widest text-[#608C27] font-mono">
+              {user.mechanic_short_id.slice(0,4)}-{user.mechanic_short_id.slice(4)}
+            </p>
+          )}
           <p className="text-xs text-gray-500 font-mono truncate">ID: {user.id}</p>
           <p className="text-xs text-gray-700 truncate">Email: {user.email}</p>
           <p className="text-xs text-gray-700">📞 {user.phone || '-'}</p>
@@ -442,7 +448,7 @@ const Utilisateurs = ({ onBack }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher par nom, email, téléphone…"
+            placeholder="Rechercher par nom, email, téléphone, identifiant (ex: ABCD-EFGH)…"
             className="w-full border-2 border-[#0D2B0D] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white"
           />
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#0D2B0D]" />

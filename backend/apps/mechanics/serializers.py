@@ -21,13 +21,13 @@ class MechanicProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = MechanicProfile
         fields = [
-            'id', 'user', 'bio', 'years_experience', 'specialties', 'specialty_ids',
+            'id', 'short_id', 'user', 'bio', 'years_experience', 'specialties', 'specialty_ids',
             'latitude', 'longitude', 'address', 'city', 'country',
             'is_available', 'available_from', 'available_to', 'works_weekends',
             'id_card_front', 'id_card_back', 'certification_doc', 'profile_photo',
             'status', 'validated_at', 'rejection_reason',
             'total_interventions', 'average_rating', 'total_reviews',
-            'created_at', 'updated_at'
+            'withdrawal_number', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'status', 'validated_at', 'rejection_reason',

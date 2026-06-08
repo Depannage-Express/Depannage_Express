@@ -53,13 +53,14 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     mechanic_profile_status = serializers.SerializerMethodField()
     mechanic_profile_id = serializers.SerializerMethodField()
+    mechanic_short_id = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'phone', 'role', 'avatar', 'is_active', 'is_blocked',
-            'mechanic_profile_status', 'mechanic_profile_id',
+            'mechanic_profile_status', 'mechanic_profile_id', 'mechanic_short_id',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'role', 'is_blocked', 'created_at', 'updated_at']
@@ -76,6 +77,14 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.role in ('mechanic_standard', 'mechanic_premium'):
             try:
                 return str(obj.mechanic_profile.pk)
+            except Exception:
+                return None
+        return None
+
+    def get_mechanic_short_id(self, obj):
+        if obj.role in ('mechanic_standard', 'mechanic_premium'):
+            try:
+                return obj.mechanic_profile.short_id
             except Exception:
                 return None
         return None
