@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { fetchInterventionForBreakdown, driverConfirmIntervention } from '../lib/api';
 
-const Intervention = ({ onNo, onTerminer, breakdownId }) => {
+const Intervention = ({ onNo, onTerminer, breakdownId, driverToken }) => {
     const [interventionId, setInterventionId] = useState(null);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [confirmError, setConfirmError] = useState('');
 
     useEffect(() => {
         if (!breakdownId) return;
@@ -15,16 +16,16 @@ const Intervention = ({ onNo, onTerminer, breakdownId }) => {
 
     const handleConfirm = async () => {
         setIsConfirming(true);
+        setConfirmError('');
         try {
             if (interventionId) {
-                await driverConfirmIntervention(interventionId);
+                await driverConfirmIntervention(interventionId, driverToken);
             }
-        } catch {
-            // L'intervention sera confirmée même si l'appel échoue — on laisse continuer
-        } finally {
+            onTerminer(interventionId);
+        } catch (err) {
+            setConfirmError(err.message || 'Erreur lors de la confirmation.');
             setIsConfirming(false);
         }
-        onTerminer(interventionId);
     };
 
     return (
@@ -33,6 +34,12 @@ const Intervention = ({ onNo, onTerminer, breakdownId }) => {
                 <p className="text-center mt-4 font-medium">
                     Veuillez confirmer l&apos;intervention du mécanicien
                 </p>
+
+                {confirmError && (
+                    <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 text-center">
+                        {confirmError}
+                    </p>
+                )}
 
                 <div className="flex gap-10">
                     <button

@@ -305,6 +305,7 @@ function App() {
         return (
           <Intervention
             breakdownId={currentBreakdown?.id}
+            driverToken={currentBreakdown?.driver_token}
             onNo={() => setScreen(SCREENS.NO_FINISH)}
             onTerminer={(interventionId) => {
               if (interventionId) setCurrentIntervention({ id: interventionId });

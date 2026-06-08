@@ -387,10 +387,14 @@ export async function fetchInterventionForBreakdown(breakdownId) {
   return parseResponse(response);
 }
 
-export async function driverConfirmIntervention(interventionId) {
+export async function driverConfirmIntervention(interventionId, driverToken) {
   const response = await fetchWithTimeout(
     `${API_BASE_URL}/interventions/${interventionId}/driver-confirm/`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driver_token: driverToken }),
+    }
   );
   return parseResponse(response);
 }
