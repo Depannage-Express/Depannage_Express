@@ -101,12 +101,12 @@ const MonCompte = ({onBack}) => {
   const handleMomoChangeRequest = async (e) => {
     e.preventDefault();
     setMomoChangeError('');
-    if (!newMomoNumber.trim() || newMomoNumber.trim().length < 4) {
-      setMomoChangeError('Numéro invalide.'); return;
+    if (newMomoNumber.trim().length !== 10) {
+      setMomoChangeError('Numéro invalide (10 chiffres requis).'); return;
     }
     setMomoChangeLoading(true);
     try {
-      await createMomoChangeRequest(newMomoNumber.trim());
+      await createMomoChangeRequest('+229' + newMomoNumber.trim());
       setMomoChangeSent(true);
       setShowChangeForm(false);
       setNewMomoNumber('01');
@@ -220,9 +220,7 @@ const MonCompte = ({onBack}) => {
           <div className="bg-[#0D2B0D] p-8 rounded-3xl shadow-xl text-white text-center">
             <p className="text-xs opacity-40 uppercase tracking-widest mb-1">Votre identifiant</p>
             <p className="text-3xl font-black tracking-[0.3em] text-[#608C27] mb-3">
-              {profileDetails?.short_id
-                ? `${profileDetails.short_id.slice(0,4)}-${profileDetails.short_id.slice(4)}`
-                : '—'}
+              {profileDetails?.short_id || '—'}
             </p>
             <p className="text-xs opacity-40 mb-3 uppercase tracking-widest">Solde disponible</p>
             {walletLoading ? (
@@ -276,13 +274,14 @@ const MonCompte = ({onBack}) => {
                       Après approbation, un délai de <strong>72h</strong> s'applique avant tout retrait.
                     </p>
                     <div className="flex items-center gap-2 bg-gray-100 p-3 rounded-xl">
-                      <span className="text-sm font-bold text-[#0D2B0D] whitespace-nowrap">Nouveau numéro :</span>
+                      <span className="text-sm font-bold text-[#0D2B0D] whitespace-nowrap">+229</span>
                       <input
                         type="tel"
                         value={newMomoNumber}
                         onChange={e => setNewMomoNumber(e.target.value)}
-                        className="bg-transparent outline-none flex-1 text-right font-medium"
-                        placeholder="0197XXXXXX"
+                        maxLength={10}
+                        className="bg-transparent outline-none flex-1 font-medium"
+                        placeholder="0197654321"
                       />
                     </div>
                     {momoChangeError && (

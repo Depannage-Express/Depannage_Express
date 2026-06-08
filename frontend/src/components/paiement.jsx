@@ -96,8 +96,9 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
+                maxLength={10}
                 className="bg-transparent w-full outline-none text-gray-800 font-semibold text-sm placeholder-gray-500"
-                placeholder="00 00 00 00"
+                placeholder="0197654321"
               />
             </div>
           </div>

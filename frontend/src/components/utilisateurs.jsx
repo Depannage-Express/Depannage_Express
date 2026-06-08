@@ -92,7 +92,7 @@ const Utilisateurs = ({ onBack }) => {
       (u.last_name || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q) ||
       (u.phone || '').toLowerCase().includes(q) ||
-      (u.mechanic_short_id || '').toLowerCase().replace('-','').includes(q.replace('-',''))
+      (u.mechanic_short_id || '').toLowerCase().includes(q)
     );
   }, [users, q]);
 
@@ -336,7 +336,7 @@ const Utilisateurs = ({ onBack }) => {
           </h4>
           {user.mechanic_short_id && (
             <p className="text-sm font-black tracking-widest text-[#608C27] font-mono">
-              {user.mechanic_short_id.slice(0,4)}-{user.mechanic_short_id.slice(4)}
+              {user.mechanic_short_id}
             </p>
           )}
           <p className="text-xs text-gray-500 font-mono truncate">ID: {user.id}</p>
@@ -448,7 +448,7 @@ const Utilisateurs = ({ onBack }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher par nom, email, téléphone, identifiant (ex: ABCD-EFGH)…"
+            placeholder="Rechercher par nom, email, téléphone, identifiant (ex: MC00145)…"
             className="w-full border-2 border-[#0D2B0D] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white"
           />
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#0D2B0D]" />

@@ -108,7 +108,7 @@ class MechanicListAdminView(generics.ListAPIView):
         q = self.request.query_params.get('q', '').strip()
         if q:
             qs = qs.filter(
-                Q(short_id__iexact=q.replace('-', '')) |
+                Q(short_id__iexact=q) |
                 Q(user__first_name__icontains=q) |
                 Q(user__last_name__icontains=q) |
                 Q(user__email__icontains=q) |

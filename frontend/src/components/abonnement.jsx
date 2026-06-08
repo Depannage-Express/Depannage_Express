@@ -16,7 +16,9 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState(currentUser?.phone || '01');
+  const [payerPhone, setPayerPhone] = useState(
+    currentUser?.phone ? currentUser.phone.replace('+229', '') : '01'
+  );
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [step, setStep] = useState('form'); // 'form' | 'confirm' | 'success'
   const [pendingPaymentId, setPendingPaymentId] = useState(null);
@@ -30,7 +32,7 @@ const Abonnement = ({ onBack, currentUser }) => {
     try {
       const payment = await createSubscriptionPayment({
         payer_name: currentUser?.full_name || '',
-        payer_phone: payerPhone,
+        payer_phone: '+229' + payerPhone,
         payment_method: paymentMethod,
       });
       setPendingPaymentId(payment.id);
@@ -126,11 +128,13 @@ const Abonnement = ({ onBack, currentUser }) => {
                       </label>
                       <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-3">
                         <Phone size={18} className="text-[#608C27]" />
+                        <span className="font-bold text-sm text-[#0D2B0D] whitespace-nowrap">+229</span>
                         <input
                           type="tel"
                           value={payerPhone}
                           onChange={(e) => setPayerPhone(e.target.value)}
-                          placeholder="ex: 97000000"
+                          maxLength={10}
+                          placeholder="0197654321"
                           required
                           className="bg-transparent outline-none flex-1 font-medium"
                         />
@@ -187,7 +191,7 @@ const Abonnement = ({ onBack, currentUser }) => {
                     <p className="text-xl font-bold text-[#0D2B0D] mb-2">Confirmer le paiement</p>
                     <p className="text-gray-600 text-sm">
                       Validez votre paiement de <strong>{PLAN_PRICE}</strong> via{' '}
-                      <strong>{paymentMethod}</strong> au numéro <strong>{payerPhone}</strong>.
+                      <strong>{paymentMethod}</strong> au numéro <strong>+229{payerPhone}</strong>.
                     </p>
                   </div>
 

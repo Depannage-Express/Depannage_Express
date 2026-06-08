@@ -159,13 +159,13 @@ export default function HistoriqueOTP({ onBack }) {
   const handleRequestOTP = async (e) => {
     e.preventDefault();
     setError('');
-    if (!phone.trim()) {
-      setError('Entrez votre numéro de téléphone.');
+    if (phone.trim().length !== 10) {
+      setError('Entrez votre numéro de téléphone (10 chiffres).');
       return;
     }
     setLoading(true);
     try {
-      const res = await requestOTP(phone.trim());
+      const res = await requestOTP('+229' + phone.trim());
       if (res.otp_code) setDevCode(res.otp_code);
       setStep('code');
     } catch (err) {
@@ -184,7 +184,7 @@ export default function HistoriqueOTP({ onBack }) {
     }
     setLoading(true);
     try {
-      const data = await verifyOTP(phone.trim(), code.trim());
+      const data = await verifyOTP('+229' + phone.trim(), code.trim());
       setHistoryData(data);
     } catch (err) {
       setError(err.message || 'Code invalide.');
@@ -211,7 +211,7 @@ export default function HistoriqueOTP({ onBack }) {
         <p className="text-slate-500 text-sm mb-6">
           {step === 'phone'
             ? 'Entrez le numéro utilisé lors de vos demandes de dépannage.'
-            : `Un code à 6 chiffres a été envoyé au ${phone}.`}
+            : `Un code à 6 chiffres a été envoyé au +229${phone}.`}
         </p>
 
         {step === 'phone' ? (
@@ -220,13 +220,17 @@ export default function HistoriqueOTP({ onBack }) {
               <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Numéro de téléphone
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+229 01 23 45 67 89"
-                className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#608C27]"
-              />
+              <div className="flex items-center border border-slate-300 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-[#608C27]">
+                <span className="font-bold text-slate-700 text-sm mr-3 whitespace-nowrap">+229</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  maxLength={10}
+                  placeholder="0197654321"
+                  className="flex-1 outline-none text-slate-800 bg-transparent"
+                />
+              </div>
             </div>
 
             {error && (

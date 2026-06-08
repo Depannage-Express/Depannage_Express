@@ -1,14 +1,7 @@
 # apps/mechanics/models.py
-import random
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.core.models import TimestampedModel
-
-_SHORT_ID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-
-
-def _make_short_id():
-    return ''.join(random.choices(_SHORT_ID_CHARS, k=8))
 
 
 class Specialty(models.Model):
@@ -76,8 +69,8 @@ class MechanicProfile(TimestampedModel):
     )
     total_reviews = models.PositiveIntegerField(default=0)
 
-    # Identifiant court lisible
-    short_id = models.CharField(max_length=8, unique=True, blank=True, db_index=True)
+    # Identifiant court lisible (format MC00001)
+    short_id = models.CharField(max_length=10, unique=True, blank=True, db_index=True)
 
     # Portefeuille virtuel
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -96,11 +89,16 @@ class MechanicProfile(TimestampedModel):
 
     def save(self, *args, **kwargs):
         if not self.short_id:
-            for _ in range(50):
-                candidate = _make_short_id()
-                if not MechanicProfile.objects.filter(short_id=candidate).exists():
-                    self.short_id = candidate
-                    break
+            existing = MechanicProfile.objects.filter(
+                short_id__startswith='MC'
+            ).values_list('short_id', flat=True)
+            max_num = 0
+            for sid in existing:
+                try:
+                    max_num = max(max_num, int(sid[2:]))
+                except (ValueError, IndexError):
+                    pass
+            self.short_id = f'MC{max_num + 1:05d}'
         super().save(*args, **kwargs)
 
     def __str__(self):
