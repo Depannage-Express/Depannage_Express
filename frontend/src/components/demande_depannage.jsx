@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X, CheckCircle, Loader2 } from 'lucide-react';
+import { Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X } from 'lucide-react';
 import '../index.css';
-import { createBreakdownRequest, requestPhoneOtp, verifyPhoneOtp } from '../lib/api';
+import { createBreakdownRequest } from '../lib/api';
 
 const BREAKDOWN_TYPES = [
   { emoji: '🔧', label: 'Panne moteur' },
@@ -45,46 +45,6 @@ const Demande = ({ onConfirm }) => {
     const handlePhoneChange = (val) => {
       const digits = val.replace(/\D/g, '').slice(0, 10);
       setPhone(digits);
-      if (otpStep !== 'idle') {
-        setOtpStep('idle');
-        setOtpCode('');
-        setPhoneToken(null);
-        setOtpError('');
-      }
-    };
-    const [otpStep, setOtpStep] = useState('idle'); // idle | sending | sent | verifying | verified
-    const [otpCode, setOtpCode] = useState('');
-    const [otpError, setOtpError] = useState('');
-    const [phoneToken, setPhoneToken] = useState(null);
-
-    const handleRequestOtp = async () => {
-      if (phone.length < 8) return;
-      setOtpStep('sending');
-      setOtpError('');
-      try {
-        await requestPhoneOtp('+229' + phone);
-        setOtpStep('sent');
-      } catch (e) {
-        setOtpError(e.message);
-        setOtpStep('idle');
-      }
-    };
-
-    const handleVerifyOtp = async () => {
-      if (!otpCode || otpCode.length < 4) {
-        setOtpError('Entrez le code reçu par SMS.');
-        return;
-      }
-      setOtpStep('verifying');
-      setOtpError('');
-      try {
-        const result = await verifyPhoneOtp('+229' + phone, otpCode);
-        setPhoneToken(result.verify_token);
-        setOtpStep('verified');
-      } catch (e) {
-        setOtpError(e.message);
-        setOtpStep('sent');
-      }
     };
 
     const [breakdownDescription, setBreakdownDescription] = useState('');
@@ -153,11 +113,6 @@ const Demande = ({ onConfirm }) => {
         setError('Renseignez votre nom, votre numéro et sélectionnez au moins un type de panne.');
         return;
     }
-    if (otpStep !== 'verified') {
-        setError('Vérifiez votre numéro de téléphone par SMS avant de soumettre.');
-        return;
-    }
-
     if (!vehicleFile || !selfieFile || !idCardFile) {
         setError("Ajoutez la photo du véhicule, le selfie et la pièce d'identité.");
         return;
@@ -176,7 +131,6 @@ const Demande = ({ onConfirm }) => {
     formData.append('latitude', String(position.latitude));
     formData.append('longitude', String(position.longitude));
     formData.append('address_description', 'Position transmise depuis le navigateur');
-    if (phoneToken) formData.append('phone_verify_token', phoneToken);
 
     setIsSubmitting(true);
     try {
@@ -222,7 +176,7 @@ const Demande = ({ onConfirm }) => {
                         </div>
                         <div>
                             <label className={labelClass}>Téléphone</label>
-                            <div className={`flex rounded-xl overflow-hidden border-2 transition-all ${otpStep === 'verified' ? 'border-[#608C27]' : 'border-gray-200 focus-within:border-[#608C27]'}`}>
+                            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-[#608C27] transition-all">
                                 <span className="flex items-center gap-1 bg-gray-300 px-3 text-gray-700 font-bold text-sm select-none shrink-0">
                                     <Phone size={13} /> +229
                                 </span>
@@ -232,58 +186,9 @@ const Demande = ({ onConfirm }) => {
                                     value={phone}
                                     onChange={(e) => handlePhoneChange(e.target.value)}
                                     maxLength={10}
-                                    disabled={otpStep === 'verified'}
-                                    className="flex-1 bg-gray-200 px-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm disabled:opacity-70"
+                                    className="flex-1 bg-gray-200 px-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm"
                                 />
-                                {otpStep === 'verified' && (
-                                    <span className="flex items-center gap-1 bg-[#608C27] px-3 text-white text-xs font-bold shrink-0">
-                                        <CheckCircle size={13} /> Vérifié
-                                    </span>
-                                )}
                             </div>
-
-                            {/* OTP flow */}
-                            {otpStep === 'idle' && phone.length >= 8 && (
-                                <button
-                                    type="button"
-                                    onClick={handleRequestOtp}
-                                    className="mt-1.5 w-full text-xs font-bold text-white bg-[#608C27]/80 hover:bg-[#608C27] py-2 rounded-xl transition-colors"
-                                >
-                                    Envoyer un code SMS de vérification
-                                </button>
-                            )}
-                            {otpStep === 'sending' && (
-                                <div className="mt-1.5 flex items-center justify-center gap-2 text-white/60 text-xs py-2">
-                                    <Loader2 size={13} className="animate-spin" /> Envoi du code…
-                                </div>
-                            )}
-                            {(otpStep === 'sent' || otpStep === 'verifying') && (
-                                <div className="mt-2 flex gap-2">
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        placeholder="Code SMS"
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        maxLength={6}
-                                        className="flex-1 bg-gray-200 rounded-xl px-3 py-2.5 outline-none text-gray-800 placeholder-gray-500 font-bold text-sm focus:ring-2 focus:ring-[#608C27]"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleVerifyOtp}
-                                        disabled={otpStep === 'verifying'}
-                                        className="px-4 py-2.5 bg-[#608C27] text-white text-xs font-bold rounded-xl hover:bg-white hover:text-[#0D2B0D] transition-colors disabled:opacity-60"
-                                    >
-                                        {otpStep === 'verifying' ? <Loader2 size={14} className="animate-spin" /> : 'Vérifier'}
-                                    </button>
-                                </div>
-                            )}
-                            {(otpStep === 'sent' || otpStep === 'verifying') && (
-                                <button type="button" onClick={handleRequestOtp} className="mt-1 text-white/40 text-xs hover:text-white/70 transition-colors">
-                                    Renvoyer le code
-                                </button>
-                            )}
-                            {otpError && <p className="mt-1 text-red-400 text-xs">{otpError}</p>}
                         </div>
                     </div>
 

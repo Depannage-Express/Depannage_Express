@@ -1,7 +1,6 @@
 # apps/accounts/serializers.py
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from django.core import signing
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -13,11 +12,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     phone = serializers.CharField(required=True, min_length=8, max_length=20)
-    phone_verify_token = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'phone', 'role', 'password', 'password_confirm', 'phone_verify_token']
+        fields = ['email', 'first_name', 'last_name', 'phone', 'role', 'password', 'password_confirm']
         extra_kwargs = {
             'role': {'required': True}
         }
@@ -27,19 +25,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': 'Les mots de passe ne correspondent pas.'})
         if attrs.get('role') == 'admin':
             raise serializers.ValidationError({'role': 'Impossible de créer un compte admin via API.'})
-
-        token = attrs.pop('phone_verify_token')
-        phone = attrs.get('phone', '')
-        try:
-            payload = signing.loads(token, salt='driver-phone-verify', max_age=900)
-        except signing.SignatureExpired:
-            raise serializers.ValidationError({'phone_verify_token': 'Le code de vérification a expiré. Recommencez.'})
-        except signing.BadSignature:
-            raise serializers.ValidationError({'phone_verify_token': 'Token de vérification invalide.'})
-
-        if payload.get('phone') != phone:
-            raise serializers.ValidationError({'phone_verify_token': 'Le numéro vérifié ne correspond pas au numéro saisi.'})
-
         return attrs
 
     def create(self, validated_data):

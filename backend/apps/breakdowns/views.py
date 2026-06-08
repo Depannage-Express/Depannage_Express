@@ -165,8 +165,8 @@ def admin_cancel_breakdown(request, pk):
     except BreakdownRequest.DoesNotExist:
         return Response({'error': 'Demande introuvable.'}, status=404)
 
-    if req.status in ('completed', 'cancelled'):
-        return Response({'error': f'Impossible d\'annuler une demande déjà {req.status}.'}, status=400)
+    if req.status == 'cancelled':
+        return Response({'error': 'Cette demande est déjà annulée.'}, status=400)
 
     with transaction.atomic():
         req.status = 'cancelled'
@@ -195,24 +195,6 @@ def create_breakdown_request(request):
     Soumission d'une demande de dépannage par un conducteur sans compte.
     Le driver_token est retourné UNE SEULE FOIS ici — le conducteur doit le conserver.
     """
-    from django.core import signing
-
-    verify_token = (request.data.get('phone_verify_token') or '').strip()
-    driver_phone = (request.data.get('driver_phone') or '').strip()
-
-    if not verify_token:
-        return Response({'error': 'La vérification du numéro de téléphone par SMS est obligatoire.'}, status=400)
-
-    try:
-        token_data = signing.loads(verify_token, salt='driver-phone-verify', max_age=900)
-    except signing.SignatureExpired:
-        return Response({'error': 'La vérification du numéro a expiré. Recommencez.'}, status=400)
-    except signing.BadSignature:
-        return Response({'error': 'Token de vérification de téléphone invalide.'}, status=400)
-
-    if token_data.get('phone') != driver_phone:
-        return Response({'error': 'Le numéro vérifié ne correspond pas au numéro fourni.'}, status=400)
-
     serializer = BreakdownRequestCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 

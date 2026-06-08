@@ -301,14 +301,14 @@ const SupervisionInterventions = ({ onBack }) => {
                         </p>
                       )}
                       {cancelError && <p className="text-red-400 text-xs mt-1">{cancelError}</p>}
-                      {!['completed', 'cancelled'].includes(req.status) && (
+                      {req.status !== 'cancelled' && (
                         <button
                           onClick={() => handleCancelBreakdown(req.id)}
                           disabled={cancelLoading === req.id}
                           className="mt-3 w-full flex items-center justify-center gap-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50"
                         >
                           <ShieldAlert size={14} />
-                          {cancelLoading === req.id ? 'Annulation…' : 'Annuler — identité suspecte'}
+                          {cancelLoading === req.id ? 'Annulation…' : 'Annuler — vérification admin'}
                         </button>
                       )}
                     </div>
