@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone } from 'lucide-react';
-import { fetchAdminBreakdowns } from '../lib/api';
+import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone, ShieldAlert, Eye } from 'lucide-react';
+import { fetchAdminBreakdowns, adminCancelBreakdown } from '../lib/api';
 
 const STATUS_LABEL = {
   pending:     { text: 'En attente',         color: 'bg-yellow-100 text-yellow-700 border-yellow-400' },
@@ -30,6 +30,8 @@ const SupervisionInterventions = ({ onBack }) => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [openId, setOpenId] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(null);
+  const [cancelError, setCancelError] = useState('');
   const intervalRef = useRef(null);
   const statusFilterRef = useRef('');
 
@@ -57,6 +59,20 @@ const SupervisionInterventions = ({ onBack }) => {
     setStatusFilter(next);
     statusFilterRef.current = next;
     load(next);
+  };
+
+  const handleCancelBreakdown = async (id) => {
+    if (!window.confirm('Annuler cette demande pour identité suspecte ? Le mécanicien sera notifié.')) return;
+    setCancelLoading(id);
+    setCancelError('');
+    try {
+      await adminCancelBreakdown(id);
+      await load(statusFilterRef.current, { silent: true });
+    } catch (e) {
+      setCancelError(e.message);
+    } finally {
+      setCancelLoading(null);
+    }
   };
 
   const q = query.trim().toLowerCase();
@@ -205,6 +221,39 @@ const SupervisionInterventions = ({ onBack }) => {
                         <Row label="Nom" value={req.driver_name} />
                         <Row label="Téléphone" value={req.driver_phone} />
                         <Row label="Véhicule" value={req.vehicle_description} />
+                        {/* Photos d'identité */}
+                        {(req.driver_id_card || req.driver_selfie) && (
+                          <div className="mt-2 space-y-2">
+                            {req.driver_id_card && (
+                              <div>
+                                <p className="text-white/40 text-xs mb-1 flex items-center gap-1">
+                                  <Eye size={11} /> Pièce d'identité
+                                </p>
+                                <a href={req.driver_id_card} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={req.driver_id_card}
+                                    alt="Pièce d'identité conducteur"
+                                    className="w-full rounded-lg max-h-36 object-cover border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer"
+                                  />
+                                </a>
+                              </div>
+                            )}
+                            {req.driver_selfie && (
+                              <div>
+                                <p className="text-white/40 text-xs mb-1 flex items-center gap-1">
+                                  <Eye size={11} /> Selfie conducteur
+                                </p>
+                                <a href={req.driver_selfie} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={req.driver_selfie}
+                                    alt="Selfie conducteur"
+                                    className="w-full rounded-lg max-h-36 object-cover border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer"
+                                  />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </Section>
 
                       {/* Infos panne */}
@@ -243,13 +292,24 @@ const SupervisionInterventions = ({ onBack }) => {
 
                     </div>
 
-                    {/* Identifiants techniques */}
+                    {/* Identifiants techniques + action admin */}
                     <div className="border-t border-white/10 pt-3 mt-2">
                       <p className="text-white/40 text-xs font-mono">ID demande : {req.id}</p>
                       {req.refusal_count > 0 && (
                         <p className="text-orange-400 text-xs mt-1">
                           {req.refusal_count} refus enregistré{req.refusal_count > 1 ? 's' : ''}
                         </p>
+                      )}
+                      {cancelError && <p className="text-red-400 text-xs mt-1">{cancelError}</p>}
+                      {!['completed', 'cancelled'].includes(req.status) && (
+                        <button
+                          onClick={() => handleCancelBreakdown(req.id)}
+                          disabled={cancelLoading === req.id}
+                          className="mt-3 w-full flex items-center justify-center gap-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                          <ShieldAlert size={14} />
+                          {cancelLoading === req.id ? 'Annulation…' : 'Annuler — identité suspecte'}
+                        </button>
                       )}
                     </div>
 

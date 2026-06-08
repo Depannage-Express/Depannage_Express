@@ -11,6 +11,7 @@ from .models import User
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    phone = serializers.CharField(required=True, min_length=8, max_length=20)
 
     class Meta:
         model = User

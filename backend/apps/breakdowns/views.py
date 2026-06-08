@@ -155,12 +155,64 @@ def _try_escalate(req):
 # ─── Création demande (public, conducteur anonyme) ────────────────────────────
 
 @api_view(['POST'])
+@permission_classes([IsAdmin])
+def admin_cancel_breakdown(request, pk):
+    """Annule une demande de dépannage pour identité suspecte ou autre raison admin."""
+    from apps.interventions.models import Intervention
+
+    try:
+        req = BreakdownRequest.objects.select_related('assigned_mechanic__user').get(pk=pk)
+    except BreakdownRequest.DoesNotExist:
+        return Response({'error': 'Demande introuvable.'}, status=404)
+
+    if req.status in ('completed', 'cancelled'):
+        return Response({'error': f'Impossible d\'annuler une demande déjà {req.status}.'}, status=400)
+
+    with transaction.atomic():
+        req.status = 'cancelled'
+        req.save(update_fields=['status'])
+        Intervention.objects.filter(
+            breakdown_request=req,
+            status__in=['pending_acceptance', 'accepted'],
+        ).update(status='cancelled')
+
+    if req.assigned_mechanic:
+        send_notification(
+            req.assigned_mechanic.user,
+            title='Demande annulée',
+            message=f'La demande de {req.driver_name} a été annulée par l\'administration.',
+            notif_type='BREAKDOWN_CANCELLED',
+            reference_id=str(req.id),
+        )
+
+    return Response({'message': 'Demande annulée avec succès.'})
+
+
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def create_breakdown_request(request):
     """
     Soumission d'une demande de dépannage par un conducteur sans compte.
     Le driver_token est retourné UNE SEULE FOIS ici — le conducteur doit le conserver.
     """
+    from django.core import signing
+
+    verify_token = (request.data.get('phone_verify_token') or '').strip()
+    driver_phone = (request.data.get('driver_phone') or '').strip()
+
+    if not verify_token:
+        return Response({'error': 'La vérification du numéro de téléphone par SMS est obligatoire.'}, status=400)
+
+    try:
+        token_data = signing.loads(verify_token, salt='driver-phone-verify', max_age=900)
+    except signing.SignatureExpired:
+        return Response({'error': 'La vérification du numéro a expiré. Recommencez.'}, status=400)
+    except signing.BadSignature:
+        return Response({'error': 'Token de vérification de téléphone invalide.'}, status=400)
+
+    if token_data.get('phone') != driver_phone:
+        return Response({'error': 'Le numéro vérifié ne correspond pas au numéro fourni.'}, status=400)
+
     serializer = BreakdownRequestCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 

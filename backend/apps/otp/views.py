@@ -141,6 +141,60 @@ def _get_driver_history(phone):
     }
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([OTPRequestThrottle])
+def request_phone_otp(request):
+    """Envoie un OTP à n'importe quel numéro pour vérifier l'identité du conducteur avant soumission."""
+    phone = (request.data.get('phone') or '').strip()
+    if not phone:
+        return Response({'error': 'Le numéro de téléphone est obligatoire.'}, status=400)
+
+    otp = DriverOTP.create_for_phone(phone)
+    _send_otp_sms(phone, otp.code)
+
+    response_data = {'message': f'Code OTP envoyé au {phone}.'}
+    if settings.DEBUG or getattr(settings, 'OTP_SHOW_CODE', False):
+        response_data['otp_code'] = otp.code
+
+    return Response(response_data, status=200)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_phone_otp(request):
+    """Vérifie l'OTP et retourne un token signé prouvant que le numéro est validé (15 min)."""
+    from django.core import signing
+
+    phone = (request.data.get('phone') or '').strip()
+    code = (request.data.get('code') or '').strip()
+
+    if not phone or not code:
+        return Response({'error': 'Numéro de téléphone et code sont obligatoires.'}, status=400)
+
+    otp = DriverOTP.objects.filter(phone=phone, is_used=False).order_by('-created_at').first()
+
+    if not otp or not otp.is_valid():
+        return Response({'error': 'Code OTP expiré ou invalide. Demandez un nouveau code.'}, status=400)
+
+    otp.attempts += 1
+
+    if otp.code != code:
+        if otp.attempts >= 3:
+            otp.is_used = True
+            otp.save(update_fields=['is_used', 'attempts'])
+            return Response({'error': 'Trop de tentatives — demandez un nouveau code.'}, status=400)
+        otp.save(update_fields=['attempts'])
+        remaining = 3 - otp.attempts
+        return Response({'error': f'Code incorrect. {remaining} tentative(s) restante(s).'}, status=400)
+
+    otp.is_used = True
+    otp.save(update_fields=['is_used', 'attempts'])
+
+    verify_token = signing.dumps({'phone': phone}, salt='driver-phone-verify')
+    return Response({'verify_token': verify_token, 'message': 'Numéro vérifié.'}, status=200)
+
+
 def _send_otp_sms(phone, code):
     backend = getattr(settings, 'SMS_BACKEND', 'console')
     if backend == 'twilio':

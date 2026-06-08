@@ -22,10 +22,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
   };
 
   const handlePhoneChange = (val) => {
-    let digits = val.replace(/\D/g, '').slice(0, 10);
-    if (digits.length > 0 && !digits.startsWith('01')) {
-      digits = '01' + digits.slice(2);
-    }
+    const digits = val.replace(/\D/g, '').slice(0, 10);
     setForm((f) => ({ ...f, phone: digits }));
   };
 
@@ -34,6 +31,10 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     setError('');
     setSuccess('');
 
+    if (!form.phone || form.phone.replace(/\D/g, '').length < 8) {
+      setError('Entrez un numéro de téléphone valide (au moins 8 chiffres).');
+      return;
+    }
     if (form.password !== form.password_confirm) {
       setError('Les mots de passe ne correspondent pas.');
       return;

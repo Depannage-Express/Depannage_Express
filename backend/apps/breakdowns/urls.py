@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/stats/', views.admin_stats, name='breakdown-admin-stats'),
     path('admin/', views.BreakdownAdminListView.as_view(), name='breakdown-admin-list'),
     path('admin/<uuid:pk>/', views.breakdown_detail_admin, name='breakdown-admin-detail'),
+    path('admin/<uuid:pk>/cancel/', views.admin_cancel_breakdown, name='breakdown-admin-cancel'),
     path('status/<uuid:pk>/', views.breakdown_status_public, name='breakdown-status-public'),
     path('<uuid:pk>/intervention/', views.get_intervention_by_breakdown, name='breakdown-intervention'),
     path('<uuid:pk>/messages/', views.breakdown_messages, name='breakdown-messages'),

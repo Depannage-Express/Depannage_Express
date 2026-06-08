@@ -431,3 +431,25 @@ export async function verifyOTP(phone, code) {
   });
   return parseResponse(response);
 }
+
+export async function requestPhoneOtp(phone) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/otp/phone/request/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  return parseResponse(response);
+}
+
+export async function verifyPhoneOtp(phone, code) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/otp/phone/verify/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  });
+  return parseResponse(response);
+}
+
+export function adminCancelBreakdown(id) {
+  return apiRequest(`/breakdowns/admin/${id}/cancel/`, { method: 'POST' });
+}
