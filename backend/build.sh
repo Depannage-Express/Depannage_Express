@@ -4,7 +4,6 @@ set -e
 pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
-python manage.py purge_db
 python manage.py shell -c "
 import os
 from apps.accounts.models import User
