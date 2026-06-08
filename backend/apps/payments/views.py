@@ -311,21 +311,22 @@ def mechanic_withdraw(request):
     except Exception:
         return Response({'error': 'Montant invalide.'}, status=400)
 
-    if amount <= 0:
-        return Response({'error': 'Le montant doit être positif.'}, status=400)
-
-    profile.refresh_from_db(fields=['balance'])
-    if amount > profile.balance:
-        return Response({'error': 'Solde insuffisant.'}, status=400)
+    if amount < 2000:
+        return Response({'error': 'Le montant minimum de retrait est 2 000 FCFA.'}, status=400)
 
     momo_number = (request.data.get('momo_number') or '').strip()
     if not momo_number:
         return Response({'error': 'Numéro MoMo obligatoire.'}, status=400)
 
-    fee = (amount * Decimal('0.0025')).quantize(Decimal('1'), rounding=ROUND_DOWN)
-    net_amount = amount - fee
+    fee = (amount * Decimal('0.0075')).quantize(Decimal('1'), rounding=ROUND_DOWN)
+    net_amount = amount
+    total_deducted = amount + fee
 
-    profile.balance -= amount
+    profile.refresh_from_db(fields=['balance'])
+    if total_deducted > profile.balance:
+        return Response({'error': 'Solde insuffisant (montant + frais).'}, status=400)
+
+    profile.balance -= total_deducted
     profile.save(update_fields=['balance'])
 
     withdrawal = WithdrawalRequest.objects.create(
@@ -401,7 +402,7 @@ def admin_withdrawal_process(request, pk):
     else:
         withdrawal.status = 'rejected'
         from django.db.models import F
-        withdrawal.mechanic.balance = F('balance') + withdrawal.amount
+        withdrawal.mechanic.balance = F('balance') + withdrawal.amount + withdrawal.fee
         withdrawal.mechanic.save(update_fields=['balance'])
         send_notification(
             withdrawal.mechanic.user,

@@ -50,15 +50,17 @@ const MonCompte = ({onBack}) => {
   }, [profileDetails]);
 
   const balance = wallet ? parseFloat(wallet.balance) : 0;
-  const fee = wAmount ? Math.floor(parseFloat(wAmount) * 0.0025) : 0;
-  const net = wAmount ? parseFloat(wAmount) - fee : 0;
+  const fee = wAmount ? Math.floor(parseFloat(wAmount) * 0.0075) : 0;
+  const net = wAmount ? parseFloat(wAmount) : 0;
+  const totalDeducted = net + fee;
 
   const handleRetrait = async (e) => {
     e.preventDefault();
     setWError('');
     const amount = parseFloat(wAmount);
-    if (!amount || amount <= 0) { setWError('Montant invalide.'); return; }
-    if (amount > balance) { setWError('Solde insuffisant.'); return; }
+    if (!amount || amount < 2000) { setWError('Montant minimum : 2 000 FCFA.'); return; }
+    const feeCalc = Math.floor(amount * 0.0075);
+    if (amount + feeCalc > balance) { setWError('Solde insuffisant (montant + frais).'); return; }
     if (!wMomoNumber.trim()) { setWError('Numéro MoMo obligatoire.'); return; }
     setWLoading(true);
     try {
@@ -205,8 +207,8 @@ const MonCompte = ({onBack}) => {
                     value={wAmount}
                     onChange={e => setWAmount(e.target.value)}
                     className="bg-transparent outline-none text-right w-28 font-bold"
-                    min="500"
-                    max={balance}
+                    min="2000"
+                    max={Math.max(0, balance - Math.floor(balance * 0.0075))}
                   />
                 </div>
 
@@ -244,10 +246,11 @@ const MonCompte = ({onBack}) => {
                   />
                 </div>
 
-                {wAmount && parseFloat(wAmount) > 0 && (
+                {wAmount && parseFloat(wAmount) >= 2000 && (
                   <div className="text-center py-2 bg-green-50 rounded-lg space-y-1">
-                    <p className="text-[#608C27] font-bold">Frais (0,25 %) : {fee.toLocaleString('fr-FR')} FCFA</p>
+                    <p className="text-[#608C27] font-bold">Frais (0,75 %) : {fee.toLocaleString('fr-FR')} FCFA</p>
                     <p className="text-[#0D2B0D] font-bold text-sm">Vous recevrez : {net.toLocaleString('fr-FR')} FCFA</p>
+                    <p className="text-gray-500 text-xs">Total débité du solde : {totalDeducted.toLocaleString('fr-FR')} FCFA</p>
                   </div>
                 )}
 
