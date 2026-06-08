@@ -19,7 +19,7 @@ def create_payment(request):
 
     Contrôles backend obligatoires :
     1. driver_token + breakdown_request_id doivent correspondre
-    2. L'intervention liée doit être dans l'état 'completed'
+    2. L'intervention liée doit avoir été acceptée par le mécanicien
     3. Aucun paiement 'paid' ne doit déjà exister pour cette intervention
     """
     from apps.breakdowns.models import BreakdownRequest
@@ -43,16 +43,15 @@ def create_payment(request):
     except BreakdownRequest.DoesNotExist:
         return Response({'error': 'Token conducteur invalide ou demande introuvable.'}, status=403)
 
-    # L'intervention doit être 'completed' pour pouvoir payer
     intervention = breakdown.interventions.exclude(
         status__in=['refused', 'cancelled']
     ).first()
     if not intervention:
         return Response({'error': 'Aucune intervention active pour cette demande.'}, status=400)
 
-    if intervention.status not in ('completed', 'ending_acceptance'):
+    if intervention.status == 'pending_acceptance':
         return Response(
-            {'error': f"Le paiement n'est possible que lorsque l'intervention est terminée (statut actuel : {intervention.status})."},
+            {'error': 'Le mécanicien n\'a pas encore accepté l\'intervention.'},
             status=400,
         )
 
