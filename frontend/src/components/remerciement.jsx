@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CheckCircle, Star } from 'lucide-react';
 import { submitReviewForIntervention } from '../lib/api';
 
-const Remerciement = ({ onRemerc, interventionId, reviewerName }) => {
+const Remerciement = ({ onRemerc, interventionId, reviewerName, driverToken }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
@@ -24,6 +24,7 @@ const Remerciement = ({ onRemerc, interventionId, reviewerName }) => {
           rating,
           comment,
           reviewer_name: reviewerName || 'Conducteur anonyme',
+          driver_token: driverToken,
         });
         setSubmitted(true);
       } catch (err) {

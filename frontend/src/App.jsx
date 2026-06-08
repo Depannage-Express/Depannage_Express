@@ -296,6 +296,7 @@ function App() {
             onRemerc={goHome}
             interventionId={currentIntervention?.id}
             reviewerName={currentBreakdown?.driver_name}
+            driverToken={currentBreakdown?.driver_token}
           />
         );
       case SCREENS.NO_FINISH:
