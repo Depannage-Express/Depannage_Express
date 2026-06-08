@@ -16,6 +16,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL(
+            sql="DROP INDEX IF EXISTS mechanics_profile_short_id_1cfb3b51_like;",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.AlterField(
             model_name='mechanicprofile',
             name='short_id',
