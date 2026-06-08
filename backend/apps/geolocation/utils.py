@@ -45,6 +45,22 @@ def _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids):
     return candidates
 
 
+def _any_available_mechanic(specialty_id, exclude_ids):
+    """Fallback sans contrainte de distance : n'importe quel mécanicien approuvé disponible."""
+    from apps.mechanics.models import MechanicProfile
+    qs = MechanicProfile.objects.filter(
+        status='approved',
+        is_available=True,
+    ).select_related('user')
+    if specialty_id:
+        qs = qs.filter(specialties__id=specialty_id)
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    # Premium en premier, puis par date d'inscription
+    qs = qs.order_by('-user__is_premium', 'user__date_joined')
+    return qs.first()
+
+
 def find_nearest_mechanic(
     latitude: float,
     longitude: float,
@@ -52,16 +68,39 @@ def find_nearest_mechanic(
     specialty_id: Optional[int] = None,
     exclude_ids: Optional[list] = None,
 ):
-    """Retourne le mécanicien disponible le plus proche (premium en priorité)."""
-    if radius_km is None:
-        radius_km = getattr(settings, 'DEFAULT_SEARCH_RADIUS_KM', 10)
-    radius_km = min(radius_km, getattr(settings, 'MAX_MECHANIC_SEARCH_RADIUS_KM', 50))
+    """Retourne le mécanicien disponible le plus proche (premium en priorité).
+    Fallback progressif : rayon par défaut → rayon max → sans contrainte de distance.
+    """
+    default_radius = getattr(settings, 'DEFAULT_SEARCH_RADIUS_KM', 10)
+    max_radius = getattr(settings, 'MAX_MECHANIC_SEARCH_RADIUS_KM', 50)
 
-    candidates = _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids)
-    if not candidates:
-        return None, None
-    distance, mechanic = candidates[0]
-    return mechanic, round(distance, 2)
+    search_radius = min(radius_km, max_radius) if radius_km else default_radius
+
+    # 1er essai : rayon demandé (ou rayon par défaut)
+    candidates = _build_qs(latitude, longitude, search_radius, specialty_id, exclude_ids)
+    if candidates:
+        distance, mechanic = candidates[0]
+        return mechanic, round(distance, 2)
+
+    # 2e essai : rayon max si on n'était pas déjà dessus
+    if search_radius < max_radius:
+        candidates = _build_qs(latitude, longitude, max_radius, specialty_id, exclude_ids)
+        if candidates:
+            distance, mechanic = candidates[0]
+            return mechanic, round(distance, 2)
+
+    # 3e essai : sans contrainte de distance (toute la plateforme)
+    mechanic = _any_available_mechanic(specialty_id, exclude_ids)
+    if mechanic:
+        dist = None
+        if mechanic.latitude and mechanic.longitude:
+            dist = round(haversine_distance(
+                latitude, longitude,
+                float(mechanic.latitude), float(mechanic.longitude)
+            ), 2)
+        return mechanic, dist
+
+    return None, None
 
 
 def find_top_mechanics(

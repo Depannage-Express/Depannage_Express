@@ -1,4 +1,5 @@
 # apps/breakdowns/views.py
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import generics, status
@@ -8,13 +9,147 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.core.permissions import IsAdmin, IsApprovedMechanic, IsValidDriverToken
-from apps.geolocation.utils import find_nearest_mechanic
+from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics
 from apps.mechanics.models import MechanicProfile
 from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
 from apps.payments.models import PaymentTransaction
 from .models import BreakdownRequest, Message
 from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer
+
+PHASE_TIMEOUT_SECS = 120   # 2 minutes par phase
+PHASE_RADII_KM = {1: 10, 2: 20, 3: 50}  # phase 4 = broadcast
+
+
+def _assign_mechanic(req, mechanic, distance):
+    """Attribue un mécanicien et crée l'intervention."""
+    from apps.interventions.models import Intervention
+    req.assigned_mechanic = mechanic
+    req.assignment_distance_km = distance
+    req.assigned_at = timezone.now()
+    req.status = 'assigned'
+    req.save(update_fields=['assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status'])
+    Intervention.objects.get_or_create(
+        breakdown_request=req,
+        mechanic=mechanic,
+        defaults={'status': 'pending_acceptance'},
+    )
+    send_notification(
+        mechanic.user,
+        title='Nouvelle demande de dépannage',
+        message=f'Demande de {req.driver_name} à {distance} km de vous.',
+        notif_type='NEW_BREAKDOWN',
+        reference_id=str(req.id),
+    )
+
+
+def _broadcast_mechanics(req, top):
+    """Notifie jusqu'à 10 mécaniciens en mode broadcast."""
+    from apps.interventions.models import Intervention
+    if not top:
+        return
+    first = top[0]
+    req.assigned_mechanic = first['profile']
+    req.assignment_distance_km = first['distance_km']
+    req.assigned_at = timezone.now()
+    req.status = 'assigned'
+    req.save(update_fields=['assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status'])
+    for item in top:
+        Intervention.objects.get_or_create(
+            breakdown_request=req,
+            mechanic=item['profile'],
+            defaults={'status': 'pending_acceptance'},
+        )
+        send_notification(
+            item['profile'].user,
+            title='Dépannage urgent — Répondez vite !',
+            message=(
+                f'Demande de {req.driver_name} à {item["distance_km"]} km. '
+                'Le premier à accepter intervient.'
+            ),
+            notif_type='NEW_BREAKDOWN',
+            reference_id=str(req.id),
+        )
+
+
+def _try_escalate(req):
+    """
+    Escalade lazily si le mécanicien ne répond pas dans PHASE_TIMEOUT_SECS.
+    Appelée à chaque poll du statut conducteur.
+    """
+    if req.status not in ('pending', 'assigned'):
+        return
+    if req.search_phase >= 4 and req.status == 'assigned':
+        return  # broadcast déjà lancé, on attend
+
+    if not req.phase_started_at:
+        return
+
+    elapsed = (timezone.now() - req.phase_started_at).total_seconds()
+    if elapsed < PHASE_TIMEOUT_SECS:
+        return
+
+    # Verrou atomique pour éviter les doubles escalades concurrentes
+    with transaction.atomic():
+        req_locked = BreakdownRequest.objects.select_for_update().get(pk=req.pk)
+
+        # Revérifier dans le verrou
+        if req_locked.status not in ('pending', 'assigned'):
+            return
+        elapsed2 = (timezone.now() - req_locked.phase_started_at).total_seconds()
+        if elapsed2 < PHASE_TIMEOUT_SECS:
+            return
+
+        from apps.interventions.models import Intervention
+
+        # Mécanicien qui n'a pas répondu → exclure
+        skipped = list(req_locked.refused_mechanic_ids or [])
+        if req_locked.assigned_mechanic_id and req_locked.assigned_mechanic_id not in skipped:
+            skipped.append(req_locked.assigned_mechanic_id)
+
+        # Annuler les interventions en attente
+        Intervention.objects.filter(
+            breakdown_request=req_locked,
+            status='pending_acceptance',
+        ).update(status='cancelled')
+
+        next_phase = req_locked.search_phase + 1
+        req_locked.assigned_mechanic = None
+        req_locked.assigned_at = None
+        req_locked.assignment_distance_km = None
+        req_locked.status = 'pending'
+        req_locked.search_phase = next_phase
+        req_locked.phase_started_at = timezone.now()
+        req_locked.save(update_fields=[
+            'assigned_mechanic', 'assigned_at', 'assignment_distance_km',
+            'status', 'search_phase', 'phase_started_at',
+        ])
+
+        lat = float(req_locked.latitude)
+        lon = float(req_locked.longitude)
+        specialty_id = req_locked.specialty_requested_id
+
+        if next_phase <= 3:
+            radius = PHASE_RADII_KM[next_phase]
+            mechanic, distance = find_nearest_mechanic(
+                latitude=lat, longitude=lon,
+                radius_km=radius,
+                specialty_id=specialty_id,
+                exclude_ids=skipped,
+            )
+            if mechanic:
+                _assign_mechanic(req_locked, mechanic, distance)
+        else:
+            top = find_top_mechanics(
+                latitude=lat, longitude=lon,
+                n=10,
+                specialty_id=specialty_id,
+                exclude_ids=skipped,
+            )
+            _broadcast_mechanics(req_locked, top)
+
+    # Rafraîchir l'instance locale
+    req.refresh_from_db()
 
 
 # ─── Création demande (public, conducteur anonyme) ────────────────────────────
@@ -35,6 +170,11 @@ def create_breakdown_request(request):
         driver_account=request.user if request.user.is_authenticated else None,
     )
 
+    # Démarrer le chrono de phase dès la création
+    instance.phase_started_at = timezone.now()
+    instance.search_phase = 1
+    instance.save(update_fields=['phase_started_at', 'search_phase'])
+
     # Attribution automatique du mécanicien le plus proche
     mechanic, distance = find_nearest_mechanic(
         latitude=float(instance.latitude),
@@ -43,27 +183,7 @@ def create_breakdown_request(request):
     )
 
     if mechanic:
-        instance.assigned_mechanic = mechanic
-        instance.assignment_distance_km = distance
-        instance.assigned_at = timezone.now()
-        instance.status = 'assigned'
-        instance.save(update_fields=[
-            'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status'
-        ])
-
-        from apps.interventions.models import Intervention
-        Intervention.objects.get_or_create(
-            breakdown_request=instance,
-            defaults={'mechanic': mechanic, 'status': 'pending_acceptance'},
-        )
-
-        send_notification(
-            mechanic.user,
-            title='Nouvelle demande de dépannage',
-            message=f'Demande de {instance.driver_name} à {distance} km de vous.',
-            notif_type='NEW_BREAKDOWN',
-            reference_id=str(instance.id),
-        )
+        _assign_mechanic(instance, mechanic, distance)
 
     data = BreakdownRequestSerializer(instance).data
     # Le driver_token est exposé UNIQUEMENT à la création, jamais ailleurs
@@ -181,6 +301,9 @@ def breakdown_status_public(request, pk):
     except BreakdownRequest.DoesNotExist:
         return Response({'error': 'Demande introuvable.'}, status=404)
 
+    # Escalade automatique si le mécanicien ne répond pas
+    _try_escalate(req)
+
     mechanic_data = None
     if req.assigned_mechanic:
         mechanic_data = MechanicPublicSerializer(req.assigned_mechanic).data
@@ -196,6 +319,7 @@ def breakdown_status_public(request, pk):
         ),
         'assigned_mechanic': mechanic_data,
         'refusal_count': req.refusal_count,
+        'search_phase': req.search_phase,
     })
 
 

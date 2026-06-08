@@ -208,7 +208,7 @@ function App() {
 
   const handleBreakdownCreated = (breakdown) => {
     setCurrentBreakdown(breakdown);
-    setScreen(SCREENS.BREAKDOWN_CONFIRMATION);
+    setScreen(SCREENS.BREAKDOWN_TRACKING);
   };
 
   const currentAmount = getBreakdownAmount(currentBreakdown);

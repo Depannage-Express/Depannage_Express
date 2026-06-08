@@ -58,6 +58,10 @@ class BreakdownRequest(TimestampedModel):
     refusal_count = models.PositiveIntegerField(default=0)
     refused_mechanic_ids = models.JSONField(default=list, blank=True)
 
+    # Search phase (timeout escalation: 1=10km, 2=20km, 3=50km, 4=broadcast)
+    search_phase = models.IntegerField(default=1)
+    phase_started_at = models.DateTimeField(null=True, blank=True)
+
     # Traceability
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
