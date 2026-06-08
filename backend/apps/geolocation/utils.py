@@ -130,6 +130,43 @@ def find_top_mechanics(
     ]
 
 
+def find_mechanic_at_radius(
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    specialty_id: Optional[int] = None,
+    exclude_ids: Optional[list] = None,
+):
+    """Cherche le mécanicien le plus proche strictement dans radius_km, sans fallback."""
+    candidates = _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids)
+    if not candidates:
+        return None, None
+    dist, profile = candidates[0]
+    return profile, round(dist, 2)
+
+
+def find_all_available_for_broadcast(specialty_id=None, exclude_ids=None):
+    """Retourne tous les mécaniciens disponibles (premium en premier) pour le broadcast commune/ville."""
+    from apps.mechanics.models import MechanicProfile
+    from django.db.models import Case, When, Value, IntegerField
+    qs = MechanicProfile.objects.filter(
+        status='approved',
+        is_available=True,
+    ).select_related('user')
+    if specialty_id:
+        qs = qs.filter(specialties__id=specialty_id)
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    qs = qs.annotate(
+        premium_order=Case(
+            When(user__role='mechanic_premium', then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by('premium_order', 'user__created_at')
+    return list(qs)
+
+
 def find_mechanics_nearby(
     latitude: float,
     longitude: float,

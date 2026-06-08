@@ -128,9 +128,12 @@ def _apply_side_effects(intervention, action: str, data: dict):
         br.assigned_at = None
         br.assignment_distance_km = None
         br.status = 'pending'
+        br.search_phase = 1
+        br.phase_started_at = now
         br.save(update_fields=[
             'refused_mechanic_ids', 'refusal_count',
             'assigned_mechanic', 'assigned_at', 'assignment_distance_km', 'status',
+            'search_phase', 'phase_started_at',
         ])
 
         _reassign_after_refusal(br)
@@ -203,28 +206,23 @@ def _apply_side_effects(intervention, action: str, data: dict):
 
 def _reassign_after_refusal(breakdown_request):
     """
-    Ré-assigne une demande après refus d'un mécanicien.
-    - Refus 1-2 : prochain mécanicien le plus proche (hors refusants)
-    - Refus 3+  : broadcast simultané aux 10 meilleurs mécaniciens disponibles
+    Ré-assigne une demande après refus.
+    Cercles : 10 km → 20 km → 50 km (premium priorité dans chaque cercle).
+    Fallback : broadcast à TOUS les mécaniciens disponibles (commune/ville),
+    le premier à accepter gagne, les autres sont annulés.
     """
-    from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics
+    from apps.geolocation.utils import find_mechanic_at_radius, find_all_available_for_broadcast, haversine_distance
     from apps.interventions.models import Intervention
     from apps.notifications.utils import send_notification
 
     lat = float(breakdown_request.latitude)
     lon = float(breakdown_request.longitude)
     specialty_id = breakdown_request.specialty_requested_id
-    excluded = breakdown_request.refused_mechanic_ids or []
-    count = breakdown_request.refusal_count
+    excluded = list(breakdown_request.refused_mechanic_ids or [])
 
-    if count < 3:
-        # Séquentiel : prochain mécanicien disponible
-        mechanic, distance = find_nearest_mechanic(
-            latitude=lat, longitude=lon,
-            specialty_id=specialty_id,
-            exclude_ids=excluded,
-        )
-
+    # Cercles concentriques : 10 km → 20 km → 50 km
+    for radius in [10, 20, 50]:
+        mechanic, distance = find_mechanic_at_radius(lat, lon, radius, specialty_id, excluded)
         if mechanic:
             breakdown_request.assigned_mechanic = mechanic
             breakdown_request.assignment_distance_km = distance
@@ -233,13 +231,11 @@ def _reassign_after_refusal(breakdown_request):
             breakdown_request.save(update_fields=[
                 'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status',
             ])
-
             Intervention.objects.create(
                 breakdown_request=breakdown_request,
                 mechanic=mechanic,
                 status='pending_acceptance',
             )
-
             send_notification(
                 mechanic.user,
                 title='Nouvelle demande de dépannage',
@@ -247,39 +243,40 @@ def _reassign_after_refusal(breakdown_request):
                 notif_type='NEW_BREAKDOWN',
                 reference_id=str(breakdown_request.id),
             )
+            return
 
-    else:
-        # Broadcast : jusqu'à 10 mécaniciens en simultané
-        top = find_top_mechanics(
-            latitude=lat, longitude=lon,
-            n=10,
-            specialty_id=specialty_id,
-            exclude_ids=excluded,
+    # Broadcast commune/ville : tous les mécaniciens disponibles
+    all_mechs = find_all_available_for_broadcast(specialty_id=specialty_id, exclude_ids=excluded)
+    if not all_mechs:
+        return
+
+    first = all_mechs[0]
+    first_dist = None
+    if first.latitude and first.longitude:
+        first_dist = round(haversine_distance(lat, lon, float(first.latitude), float(first.longitude)), 2)
+
+    breakdown_request.assigned_mechanic = first
+    breakdown_request.assignment_distance_km = first_dist
+    breakdown_request.assigned_at = timezone.now()
+    breakdown_request.status = 'assigned'
+    breakdown_request.save(update_fields=[
+        'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status',
+    ])
+
+    for mech in all_mechs:
+        mech_dist = None
+        if mech.latitude and mech.longitude:
+            mech_dist = round(haversine_distance(lat, lon, float(mech.latitude), float(mech.longitude)), 2)
+        Intervention.objects.create(
+            breakdown_request=breakdown_request,
+            mechanic=mech,
+            status='pending_acceptance',
         )
-
-        if top:
-            first = top[0]
-            breakdown_request.assigned_mechanic = first['profile']
-            breakdown_request.assignment_distance_km = first['distance_km']
-            breakdown_request.assigned_at = timezone.now()
-            breakdown_request.status = 'assigned'
-            breakdown_request.save(update_fields=[
-                'assigned_mechanic', 'assignment_distance_km', 'assigned_at', 'status',
-            ])
-
-            for item in top:
-                Intervention.objects.create(
-                    breakdown_request=breakdown_request,
-                    mechanic=item['profile'],
-                    status='pending_acceptance',
-                )
-                send_notification(
-                    item['profile'].user,
-                    title='Dépannage urgent — Répondez vite !',
-                    message=(
-                        f'Demande de {breakdown_request.driver_name} '
-                        f'à {item["distance_km"]} km. Le premier à accepter intervient.'
-                    ),
-                    notif_type='NEW_BREAKDOWN',
-                    reference_id=str(breakdown_request.id),
-                )
+        dist_msg = f'à {mech_dist} km de vous. ' if mech_dist else ''
+        send_notification(
+            mech.user,
+            title='Dépannage urgent — Répondez vite !',
+            message=f'Demande de {breakdown_request.driver_name} {dist_msg}Le premier à accepter intervient.',
+            notif_type='NEW_BREAKDOWN',
+            reference_id=str(breakdown_request.id),
+        )

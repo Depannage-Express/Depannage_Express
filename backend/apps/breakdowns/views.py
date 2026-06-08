@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.core.permissions import IsAdmin, IsApprovedMechanic, IsValidDriverToken
-from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics
+from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics, find_all_available_for_broadcast, haversine_distance
 from apps.mechanics.models import MechanicProfile
 from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
@@ -140,12 +140,17 @@ def _try_escalate(req):
             if mechanic:
                 _assign_mechanic(req_locked, mechanic, distance)
         else:
-            top = find_top_mechanics(
-                latitude=lat, longitude=lon,
-                n=10,
+            # Broadcast commune/ville : tous les mécaniciens disponibles
+            all_mechs = find_all_available_for_broadcast(
                 specialty_id=specialty_id,
                 exclude_ids=skipped,
             )
+            top = []
+            for m in all_mechs:
+                dist = None
+                if m.latitude and m.longitude:
+                    dist = round(haversine_distance(lat, lon, float(m.latitude), float(m.longitude)), 2)
+                top.append({'profile': m, 'distance_km': dist})
             _broadcast_mechanics(req_locked, top)
 
     # Rafraîchir l'instance locale
