@@ -14,6 +14,7 @@ urlpatterns = [
     # Admin
     path('admin/list/', views.MechanicListAdminView.as_view(), name='admin-mechanics-list'),
     path('admin/<uuid:pk>/validate/', views.validate_mechanic_view, name='admin-validate-mechanic'),
+    path('admin/<uuid:pk>/fix-location/', views.admin_fix_mechanic_location, name='admin-fix-location'),
     path('admin/complete-approve/<uuid:user_id>/', views.admin_complete_and_approve, name='admin-complete-approve'),
     path('admin/reviews/', views.ReviewAdminListView.as_view(), name='admin-reviews-list'),
     path('admin/reviews/<int:pk>/', views.admin_delete_review, name='admin-review-delete'),

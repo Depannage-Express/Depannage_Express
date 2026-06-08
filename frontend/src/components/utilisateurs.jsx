@@ -7,6 +7,7 @@ import {
   validateAdminMechanic,
   fetchSpecialties,
   adminCompleteAndApproveMechanic,
+  adminFixMechanicLocation,
 } from '../lib/api';
 import { DEPARTMENTS, getCitiesForDept, getQuartiersForCity, getCoordsForQuartier } from '../lib/benin_locations';
 
@@ -45,6 +46,13 @@ const Utilisateurs = ({ onBack }) => {
   // Modal refus
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Modal GPS fix
+  const [gpsFixTarget, setGpsFixTarget] = useState(null); // { profileId, name }
+  const [gpsFixLat, setGpsFixLat] = useState('');
+  const [gpsFixLng, setGpsFixLng] = useState('');
+  const [gpsFixLoading, setGpsFixLoading] = useState(false);
+  const [gpsFixError, setGpsFixError] = useState('');
 
   // Modal compléter le profil
   const [completeTarget, setCompleteTarget] = useState(null);
@@ -272,6 +280,41 @@ const Utilisateurs = ({ onBack }) => {
     }
   };
 
+  const openGpsFix = (user) => {
+    setGpsFixTarget({ profileId: user.mechanic_profile_id, name: user.full_name || user.email });
+    setGpsFixLat('');
+    setGpsFixLng('');
+    setGpsFixError('');
+  };
+
+  const requestGpsForFix = () => {
+    if (!navigator.geolocation) return;
+    setGpsFixLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsFixLat(pos.coords.latitude.toFixed(6));
+        setGpsFixLng(pos.coords.longitude.toFixed(6));
+        setGpsFixLoading(false);
+      },
+      () => { setGpsFixLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const handleGpsFixSubmit = async () => {
+    if (!gpsFixLat || !gpsFixLng) { setGpsFixError('Entrez les coordonnées ou utilisez le GPS.'); return; }
+    setGpsFixLoading(true);
+    setGpsFixError('');
+    try {
+      await adminFixMechanicLocation(gpsFixTarget.profileId, gpsFixLat, gpsFixLng);
+      setGpsFixTarget(null);
+    } catch (e) {
+      setGpsFixError(e.message);
+    } finally {
+      setGpsFixLoading(false);
+    }
+  };
+
   const ProfileStatusBadge = ({ status }) => {
     const cls = STATUS_BADGE[status] || 'bg-gray-100 text-gray-600 border-gray-300';
     return (
@@ -336,6 +379,16 @@ const Utilisateurs = ({ onBack }) => {
             ✕ Refuser
           </button>
         </div>
+      )}
+
+      {/* Bouton corriger GPS (mécaniciens approuvés seulement) */}
+      {user.mechanic_profile_id && user.mechanic_profile_status === 'approved' && (
+        <button
+          onClick={() => openGpsFix(user)}
+          className="w-full mt-2 flex items-center justify-center gap-1 bg-[#608C27]/10 text-[#608C27] border border-[#608C27]/40 text-xs py-2 rounded-xl hover:bg-[#608C27] hover:text-white transition-colors font-bold uppercase"
+        >
+          <MapPin size={12} /> Corriger GPS
+        </button>
       )}
 
       {/* Boutons standard */}
@@ -720,6 +773,76 @@ const Utilisateurs = ({ onBack }) => {
               >
                 <UserCheck size={16} />
                 {pendingAction ? 'Validation...' : 'Valider & Activer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal : Corriger GPS mécanicien ── */}
+      {gpsFixTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-black text-[#0D2B0D] flex items-center gap-2">
+                  <MapPin size={18} className="text-[#608C27]" /> Corriger la position GPS
+                </h3>
+                <p className="text-sm text-gray-500 mt-0.5">{gpsFixTarget.name}</p>
+              </div>
+              <button onClick={() => setGpsFixTarget(null)} className="text-gray-400 hover:text-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4">
+              Si vous êtes <strong>physiquement à l'atelier du mécanicien</strong>, utilisez "Ma position GPS". Sinon, saisissez les coordonnées manuellement.
+            </p>
+
+            <button
+              onClick={requestGpsForFix}
+              disabled={gpsFixLoading}
+              className="w-full flex items-center justify-center gap-2 bg-[#0D2B0D] text-white text-sm font-bold py-3 rounded-2xl hover:bg-[#608C27] transition-colors mb-4 disabled:opacity-60"
+            >
+              <LocateFixed size={15} />
+              {gpsFixLoading ? 'Localisation…' : 'Utiliser ma position GPS actuelle'}
+            </button>
+
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Latitude</label>
+                <input
+                  type="text"
+                  value={gpsFixLat}
+                  onChange={e => setGpsFixLat(e.target.value)}
+                  placeholder="9.339800"
+                  className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] ${gpsFixLat ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Longitude</label>
+                <input
+                  type="text"
+                  value={gpsFixLng}
+                  onChange={e => setGpsFixLng(e.target.value)}
+                  placeholder="2.619700"
+                  className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] ${gpsFixLng ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                />
+              </div>
+            </div>
+
+            {gpsFixError && <p className="text-red-600 text-xs mt-2 mb-2">{gpsFixError}</p>}
+
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setGpsFixTarget(null)} className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl hover:bg-gray-300">
+                Annuler
+              </button>
+              <button
+                onClick={handleGpsFixSubmit}
+                disabled={gpsFixLoading || !gpsFixLat || !gpsFixLng}
+                className="flex-1 bg-[#608C27] text-white font-bold py-3 rounded-2xl hover:bg-[#0D2B0D] disabled:opacity-60"
+              >
+                {gpsFixLoading ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
           </div>

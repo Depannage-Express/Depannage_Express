@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { User, History, ArrowDownCircle,ArrowLeft, CheckCircle } from 'lucide-react';
-import { fetchCurrentUser, fetchMechanicProfile } from '../lib/api';
+import { User, History, ArrowDownCircle, ArrowLeft, CheckCircle, MapPin, LocateFixed } from 'lucide-react';
+import { fetchCurrentUser, fetchMechanicProfile, updateMyMechanicLocation } from '../lib/api';
 
 const MonCompte = ({onBack}) => {
   const [notifSucces, setNotifSucces] = useState(false);
   const [profil, setProfil] = useState(null);
   const [profileDetails, setProfileDetails] = useState(null);
   const [error, setError] = useState('');
+  const [gpsUpdating, setGpsUpdating] = useState(false);
+  const [gpsMessage, setGpsMessage] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -36,6 +38,29 @@ const MonCompte = ({onBack}) => {
     e.preventDefault();
     setNotifSucces(true);
     setTimeout(() => setNotifSucces(false), 3000);
+  };
+
+  const handleUpdateGps = () => {
+    if (!navigator.geolocation) { setGpsMessage('Géolocalisation non disponible.'); return; }
+    setGpsUpdating(true);
+    setGpsMessage('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await updateMyMechanicLocation(
+            pos.coords.latitude.toFixed(6),
+            pos.coords.longitude.toFixed(6),
+          );
+          setGpsMessage('Position mise à jour avec succès.');
+        } catch (e) {
+          setGpsMessage(e.message);
+        } finally {
+          setGpsUpdating(false);
+        }
+      },
+      () => { setGpsMessage('Impossible d\'obtenir votre position.'); setGpsUpdating(false); },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   return (
@@ -70,7 +95,35 @@ const MonCompte = ({onBack}) => {
             <p className="text-black font-bold">Spécialité: <span className="font-medium">{profileDetails?.specialties?.map((item) => item.name).join(', ') || 'Non renseigné'}</span></p>
             <p className="text-black font-bold">Ville: <span className="font-medium">{profileDetails?.city || '-'}</span></p>
             <p className="text-black font-bold">Statut profil: <span className="font-medium">{profileDetails?.status || 'En attente de création'}</span></p>
+            {profileDetails?.latitude && profileDetails?.longitude && (
+              <p className="text-black font-bold text-xs">GPS: <span className="font-mono font-normal">{parseFloat(profileDetails.latitude).toFixed(4)}, {parseFloat(profileDetails.longitude).toFixed(4)}</span></p>
+            )}
           </div>
+
+          {/* Mise à jour GPS */}
+          {profileDetails?.status === 'approved' && (
+            <div className="bg-white p-4 rounded-3xl shadow-md border-l-4 border-[#608C27]">
+              <p className="text-sm font-bold text-[#0D2B0D] mb-1 flex items-center gap-2">
+                <MapPin size={15} className="text-[#608C27]" /> Ma position de travail
+              </p>
+              <p className="text-xs text-gray-500 mb-3">
+                Mettez à jour votre position depuis votre atelier pour apparaître aux bons conducteurs.
+              </p>
+              <button
+                onClick={handleUpdateGps}
+                disabled={gpsUpdating}
+                className="w-full flex items-center justify-center gap-2 bg-[#608C27] text-white text-sm font-bold py-3 rounded-2xl hover:bg-[#0D2B0D] transition-all disabled:opacity-60"
+              >
+                <LocateFixed size={15} />
+                {gpsUpdating ? 'Localisation en cours…' : 'Mettre à jour ma position GPS'}
+              </button>
+              {gpsMessage && (
+                <p className={`text-xs mt-2 text-center font-medium ${gpsMessage.includes('succès') ? 'text-green-600' : 'text-red-500'}`}>
+                  {gpsMessage}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* --- BLOC SOLDE ET RETRAIT --- */}

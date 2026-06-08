@@ -453,3 +453,19 @@ export async function verifyPhoneOtp(phone, code) {
 export function adminCancelBreakdown(id) {
   return apiRequest(`/breakdowns/admin/${id}/cancel/`, { method: 'POST' });
 }
+
+export function adminFixMechanicLocation(profileId, latitude, longitude) {
+  return apiRequest(`/mechanics/admin/${profileId}/fix-location/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+}
+
+export function updateMyMechanicLocation(latitude, longitude) {
+  return apiRequest('/mechanics/profile/me/', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+}

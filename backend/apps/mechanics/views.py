@@ -145,6 +145,31 @@ def validate_mechanic_view(request, pk):
     return Response({'success': True, 'status': profile.status})
 
 
+@api_view(['PATCH'])
+@permission_classes([IsAdmin])
+def admin_fix_mechanic_location(request, pk):
+    """Corrige les coordonnées GPS d'un mécanicien sans re-valider tout le profil."""
+    try:
+        profile = MechanicProfile.objects.get(pk=pk)
+    except MechanicProfile.DoesNotExist:
+        return Response({'error': 'Profil introuvable.'}, status=404)
+
+    lat = str(request.data.get('latitude') or '').strip()
+    lng = str(request.data.get('longitude') or '').strip()
+
+    if not lat or not lng:
+        return Response({'error': 'latitude et longitude sont obligatoires.'}, status=400)
+
+    try:
+        profile.latitude = float(lat)
+        profile.longitude = float(lng)
+        profile.save(update_fields=['latitude', 'longitude'])
+    except ValueError:
+        return Response({'error': 'Coordonnées invalides.'}, status=400)
+
+    return Response({'success': True, 'latitude': lat, 'longitude': lng})
+
+
 # ─── Availability toggle ─────────────────────────────────────────────────────
 
 @api_view(['POST'])
