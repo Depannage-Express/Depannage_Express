@@ -377,19 +377,29 @@ def get_intervention_by_breakdown(request, pk):
     from apps.interventions.models import Intervention
     intervention = breakdown.interventions.exclude(
         status__in=['refused', 'cancelled']
-    ).select_related('mechanic__user').first()
+    ).select_related('mechanic__user', 'mechanic').first()
     if not intervention:
         return Response({'error': 'Aucune intervention active pour cette demande.'}, status=404)
 
     mechanic_phone = None
-    if intervention.status in ('paid', 'reviewed') and intervention.mechanic:
-        mechanic_phone = intervention.mechanic.user.phone or None
+    mechanic_lat = None
+    mechanic_lon = None
+    mechanic_city = None
+    if intervention.mechanic:
+        if intervention.status in ('paid', 'reviewed'):
+            mechanic_phone = intervention.mechanic.user.phone or None
+        mechanic_lat = str(intervention.mechanic.latitude) if intervention.mechanic.latitude else None
+        mechanic_lon = str(intervention.mechanic.longitude) if intervention.mechanic.longitude else None
+        mechanic_city = intervention.mechanic.city or None
 
     return Response({
         'id': str(intervention.id),
         'status': intervention.status,
         'driver_confirmed': intervention.driver_confirmed,
         'mechanic_phone': mechanic_phone,
+        'mechanic_latitude': mechanic_lat,
+        'mechanic_longitude': mechanic_lon,
+        'mechanic_city': mechanic_city,
     })
 
 

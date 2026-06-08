@@ -319,6 +319,8 @@ function App() {
             onabout={() => setScreen(SCREENS.INTERVENTION)}
             paymentId={currentPayment?.id}
             breakdownId={currentBreakdown?.id}
+            driverLat={currentBreakdown?.latitude}
+            driverLon={currentBreakdown?.longitude}
           />
         );
       case SCREENS.PAYMENT:

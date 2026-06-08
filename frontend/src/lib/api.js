@@ -543,3 +543,27 @@ export function updateMyMechanicLocation(latitude, longitude) {
     body: JSON.stringify({ latitude, longitude }),
   });
 }
+
+const _geoCache = new Map();
+
+export async function reverseGeocode(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = `${lat},${lon}`;
+  if (_geoCache.has(key)) return _geoCache.get(key);
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1&accept-language=fr`,
+      { headers: { 'User-Agent': 'DepannageExpress/1.0' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const a = data.address || {};
+    const city = a.city || a.town || a.village || a.county || '';
+    const neighbourhood = a.neighbourhood || a.suburb || a.quarter || a.hamlet || '';
+    const result = { city, neighbourhood };
+    _geoCache.set(key, result);
+    return result;
+  } catch {
+    return null;
+  }
+}

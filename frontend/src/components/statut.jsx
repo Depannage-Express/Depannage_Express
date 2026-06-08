@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchMechanicRequests } from '../lib/api';
+import { MapPin } from 'lucide-react';
+import { fetchMechanicRequests, reverseGeocode } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
 
@@ -9,6 +10,26 @@ const STATUS_LABELS = {
   in_progress: 'En cours',
   completed: 'Terminée',
   cancelled: 'Annulée',
+};
+
+const GeoLabel = ({ lat, lon, fallback }) => {
+  const [geo, setGeo] = useState(null);
+
+  useEffect(() => {
+    if (!lat || !lon) return;
+    reverseGeocode(lat, lon).then(setGeo);
+  }, [lat, lon]);
+
+  if (!lat || !lon) return <span>{fallback || 'Non renseignée'}</span>;
+
+  if (!geo) return <span>{fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</span>;
+
+  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
+  return (
+    <span>
+      {parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}
+    </span>
+  );
 };
 
 const StatutMissions = ({ onBack }) => {
@@ -74,9 +95,20 @@ const StatutMissions = ({ onBack }) => {
               <p className="text-black font-bold text-lg">
                 Client : <span className="font-medium">{mission.driver_name}</span>
               </p>
-              <p className="text-black font-bold text-lg">
-                Localisation : <span className="font-medium">{mission.address_description || 'GPS'}</span>
+              <p className="text-black font-bold text-lg flex items-center gap-1">
+                <MapPin size={18} className="text-[#608C27] flex-shrink-0" />
+                <span className="font-bold">Localisation :</span>&nbsp;
+                <span className="font-medium">
+                  <GeoLabel
+                    lat={mission.latitude}
+                    lon={mission.longitude}
+                    fallback={mission.address_description}
+                  />
+                </span>
               </p>
+              {mission.address_description && (mission.latitude || mission.longitude) && (
+                <p className="text-gray-500 text-sm pl-6">{mission.address_description}</p>
+              )}
             </div>
 
             <div className="space-y-2 md:text-right">
