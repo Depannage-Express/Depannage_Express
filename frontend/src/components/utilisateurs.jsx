@@ -4,6 +4,8 @@ import {
   blockAdminUser,
   fetchAdminUsers,
   unblockAdminUser,
+  suspendAdminUser,
+  deleteAdminUser,
   validateAdminMechanic,
   fetchSpecialties,
   adminCompleteAndApproveMechanic,
@@ -46,6 +48,9 @@ const Utilisateurs = ({ onBack }) => {
   // Modal refus
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Modal confirmation suppression
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Modal GPS fix
   const [gpsFixTarget, setGpsFixTarget] = useState(null); // { profileId, name }
@@ -110,6 +115,35 @@ const Utilisateurs = ({ onBack }) => {
       admins: filteredUsers.filter(u => u.role === 'admin'),
     };
   }, [filteredUsers]);
+
+  const handleSuspendAction = async (user) => {
+    const action = user.is_active ? 'suspendre' : 'reactiver';
+    setPendingAction(`${action}-${user.id}`);
+    setError('');
+    try {
+      await suspendAdminUser(user.id);
+      await loadUsers();
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setPendingAction('');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setPendingAction(`delete-${deleteTarget.id}`);
+    setError('');
+    try {
+      await deleteAdminUser(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadUsers();
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setPendingAction('');
+    }
+  };
 
   const handleBlockAction = async (user) => {
     const type = user.is_blocked ? 'debloquer' : 'bloquer';
@@ -404,22 +438,34 @@ const Utilisateurs = ({ onBack }) => {
         </button>
       )}
 
-      {/* Boutons standard */}
-      <div className="grid grid-cols-3 gap-1 mt-2">
-        <button
-          onClick={() => handleBlockAction(user)}
-          disabled={pendingAction === `bloquer-${user.id}` || pendingAction === `debloquer-${user.id}`}
-          className="bg-gray-800 text-white text-xs py-2 rounded-lg hover:bg-black uppercase font-bold disabled:opacity-60"
-        >
-          {user.is_blocked ? 'Débloquer' : 'Bloquer'}
-        </button>
-        <button className="bg-orange-500 text-white text-xs py-2 rounded-lg hover:bg-orange-600 uppercase font-bold opacity-50 cursor-not-allowed">
-          Suspendre
-        </button>
-        <button className="bg-red-600 text-white text-xs py-2 rounded-lg hover:bg-red-800 uppercase font-bold opacity-50 cursor-not-allowed">
-          Supprimer
-        </button>
-      </div>
+      {/* Boutons standard — masqués pour les admins */}
+      {user.role !== 'admin' && (
+        <div className="grid grid-cols-3 gap-1 mt-2">
+          <button
+            onClick={() => handleBlockAction(user)}
+            disabled={!!pendingAction}
+            className="bg-gray-800 text-white text-xs py-2 rounded-lg hover:bg-black uppercase font-bold disabled:opacity-60"
+          >
+            {user.is_blocked ? 'Débloquer' : 'Bloquer'}
+          </button>
+          <button
+            onClick={() => handleSuspendAction(user)}
+            disabled={!!pendingAction}
+            className="bg-orange-500 text-white text-xs py-2 rounded-lg hover:bg-orange-600 uppercase font-bold disabled:opacity-60"
+          >
+            {pendingAction === `suspendre-${user.id}` || pendingAction === `reactiver-${user.id}`
+              ? '...'
+              : user.is_active ? 'Suspendre' : 'Réactiver'}
+          </button>
+          <button
+            onClick={() => setDeleteTarget(user)}
+            disabled={!!pendingAction}
+            className="bg-red-600 text-white text-xs py-2 rounded-lg hover:bg-red-800 uppercase font-bold disabled:opacity-60"
+          >
+            Supprimer
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -856,6 +902,36 @@ const Utilisateurs = ({ onBack }) => {
                 className="flex-1 bg-[#608C27] text-white font-bold py-3 rounded-2xl hover:bg-[#0D2B0D] disabled:opacity-60"
               >
                 {gpsFixLoading ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal : Confirmation suppression ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+            <h3 className="text-lg font-black text-red-700 mb-2">Supprimer définitivement</h3>
+            <p className="text-sm text-gray-700 mb-1">
+              Utilisateur : <strong>{deleteTarget.full_name || deleteTarget.email}</strong>
+            </p>
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 mb-6">
+              Cette action est <strong>irréversible</strong>. Toutes les données liées à cet utilisateur seront supprimées.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={!!pendingAction}
+                className="flex-1 bg-red-600 text-white font-bold py-3 rounded-2xl hover:bg-red-700 disabled:opacity-60"
+              >
+                {pendingAction ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
             </div>
           </div>

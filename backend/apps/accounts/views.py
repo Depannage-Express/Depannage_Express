@@ -139,3 +139,44 @@ def unblock_user_view(request, pk):
 
     log_security_event(request, request.user, 'UNBLOCK_USER', f'Déblocage de {user.email}')
     return Response({'success': True, 'message': f'{user.full_name} débloqué.'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def suspend_user_view(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'error': 'Utilisateur introuvable.'}, status=404)
+
+    if user.role == 'admin':
+        return Response({'error': 'Impossible de suspendre un administrateur.'}, status=403)
+
+    if not user.is_active:
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        log_security_event(request, request.user, 'UNSUSPEND_USER', f'Réactivation de {user.email}')
+        return Response({'success': True, 'message': f'{user.full_name} réactivé.'})
+
+    user.is_active = False
+    user.save(update_fields=['is_active'])
+    log_security_event(request, request.user, 'SUSPEND_USER', f'Suspension de {user.email}')
+    return Response({'success': True, 'message': f'{user.full_name} suspendu.'})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdmin])
+def delete_user_view(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'error': 'Utilisateur introuvable.'}, status=404)
+
+    if user.role == 'admin':
+        return Response({'error': 'Impossible de supprimer un administrateur.'}, status=403)
+
+    name = user.full_name
+    email = user.email
+    user.delete()
+    log_security_event(request, request.user, 'DELETE_USER', f'Suppression de {email}')
+    return Response({'success': True, 'message': f'{name} supprimé définitivement.'})

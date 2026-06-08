@@ -204,6 +204,18 @@ export function unblockAdminUser(userId) {
   });
 }
 
+export function suspendAdminUser(userId) {
+  return apiRequest(`/auth/users/${userId}/suspend/`, {
+    method: 'POST',
+  });
+}
+
+export function deleteAdminUser(userId) {
+  return apiRequest(`/auth/users/${userId}/delete/`, {
+    method: 'DELETE',
+  });
+}
+
 export function fetchAdminBreakdowns(status) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';
   return apiRequest(`/breakdowns/admin/${query}`);

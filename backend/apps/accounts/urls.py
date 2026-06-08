@@ -13,4 +13,6 @@ urlpatterns = [
     path('users/', views.UserListView.as_view(), name='admin-users-list'),
     path('users/<uuid:pk>/block/', views.block_user_view, name='admin-block-user'),
     path('users/<uuid:pk>/unblock/', views.unblock_user_view, name='admin-unblock-user'),
+    path('users/<uuid:pk>/suspend/', views.suspend_user_view, name='admin-suspend-user'),
+    path('users/<uuid:pk>/delete/', views.delete_user_view, name='admin-delete-user'),
 ]
