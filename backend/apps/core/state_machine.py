@@ -15,6 +15,7 @@ TRANSITION_GRAPH = {
     },
     'accepted': {
         'start': 'in_progress',
+        'complete': 'completed',
         'cancel': 'cancelled',
     },
     'in_progress': {

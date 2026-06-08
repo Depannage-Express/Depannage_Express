@@ -242,6 +242,14 @@ export function acceptIntervention(id) {
   return apiRequest(`/interventions/${id}/accept/`, { method: 'POST' });
 }
 
+export function startIntervention(id) {
+  return apiRequest(`/interventions/${id}/start/`, { method: 'POST' });
+}
+
+export function completeIntervention(id) {
+  return apiRequest(`/interventions/${id}/complete/`, { method: 'POST' });
+}
+
 export function refuseIntervention(id, reason = '') {
   return apiRequest(`/interventions/${id}/refuse/`, {
     method: 'POST',

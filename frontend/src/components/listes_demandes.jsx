@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone } from 'lucide-react';
-import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention } from '../lib/api';
+import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone, Navigation, FlagTriangleRight } from 'lucide-react';
+import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, startIntervention, completeIntervention } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
 
@@ -59,6 +59,32 @@ const ListesCommandes = ({ onBack }) => {
     setActionError('');
     try {
       await refuseIntervention(interventionId);
+      await loadAll({ silent: true });
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStart = async (interventionId) => {
+    setActionLoading(interventionId + '_start');
+    setActionError('');
+    try {
+      await startIntervention(interventionId);
+      await loadAll({ silent: true });
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleComplete = async (interventionId) => {
+    setActionLoading(interventionId + '_complete');
+    setActionError('');
+    try {
+      await completeIntervention(interventionId);
       await loadAll({ silent: true });
     } catch (e) {
       setActionError(e.message);
@@ -158,13 +184,25 @@ const ListesCommandes = ({ onBack }) => {
           {filtered.map((command) => {
             const intervention = interventionMap[command.id];
             const isPending = intervention?.status === 'pending_acceptance';
+            const isAccepted = intervention?.status === 'accepted';
+            const isInProgress = intervention?.status === 'in_progress';
 
             return (
-              <div key={command.id} className={`bg-white rounded-2xl shadow-lg border overflow-hidden ${isPending ? 'border-[#608C27] border-2' : 'border-slate-200'}`}>
+              <div key={command.id} className={`bg-white rounded-2xl shadow-lg border overflow-hidden ${isPending ? 'border-[#608C27] border-2' : isAccepted ? 'border-blue-400 border-2' : isInProgress ? 'border-orange-400 border-2' : 'border-slate-200'}`}>
 
                 {isPending && (
                   <div className="bg-[#608C27] px-6 py-2 text-white text-xs font-bold uppercase tracking-wider text-center">
                     Nouvelle demande — en attente de votre réponse
+                  </div>
+                )}
+                {isAccepted && (
+                  <div className="bg-blue-600 px-6 py-2 text-white text-xs font-bold uppercase tracking-wider text-center">
+                    Mission acceptée — partez vers le client
+                  </div>
+                )}
+                {isInProgress && (
+                  <div className="bg-orange-500 px-6 py-2 text-white text-xs font-bold uppercase tracking-wider text-center">
+                    Mission en cours
                   </div>
                 )}
 
@@ -216,6 +254,40 @@ const ListesCommandes = ({ onBack }) => {
                         >
                           <XCircle size={20} />
                           {actionLoading === intervention.id + '_refuse' ? 'Refus…' : 'Refuser'}
+                        </button>
+                      </div>
+                    )}
+
+                    {isAccepted && (
+                      <div className="pt-4 border-t border-white/20 flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleStart(intervention.id)}
+                          disabled={!!actionLoading}
+                          className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-60"
+                        >
+                          <Navigation size={20} />
+                          {actionLoading === intervention.id + '_start' ? 'En cours…' : 'En route'}
+                        </button>
+                        <button
+                          onClick={() => handleComplete(intervention.id)}
+                          disabled={!!actionLoading}
+                          className="flex-1 flex items-center justify-center gap-2 bg-[#608C27] hover:bg-[#4a6e1e] text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-60"
+                        >
+                          <FlagTriangleRight size={20} />
+                          {actionLoading === intervention.id + '_complete' ? 'Finalisation…' : 'Terminer la mission'}
+                        </button>
+                      </div>
+                    )}
+
+                    {isInProgress && (
+                      <div className="pt-4 border-t border-white/20">
+                        <button
+                          onClick={() => handleComplete(intervention.id)}
+                          disabled={!!actionLoading}
+                          className="w-full flex items-center justify-center gap-2 bg-[#608C27] hover:bg-[#4a6e1e] text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-60"
+                        >
+                          <FlagTriangleRight size={20} />
+                          {actionLoading === intervention.id + '_complete' ? 'Finalisation…' : 'Terminer la mission'}
                         </button>
                       </div>
                     )}
