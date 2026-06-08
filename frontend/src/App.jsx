@@ -348,6 +348,7 @@ function App() {
         return (
           <Suivre
             requestId={currentBreakdown?.id}
+            driverToken={currentBreakdown?.driver_token}
             onBack={goHome}
             onMechanicAssigned={() => setScreen(SCREENS.BILLING)}
           />

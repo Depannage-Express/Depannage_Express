@@ -270,8 +270,9 @@ export function refuseIntervention(id, reason = '') {
   });
 }
 
-export async function fetchBreakdownStatus(id) {
-  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/`);
+export async function fetchBreakdownStatus(id, driverToken) {
+  const qs = driverToken ? `?driver_token=${encodeURIComponent(driverToken)}` : '';
+  const response = await fetchWithTimeout(`${API_BASE_URL}/breakdowns/status/${id}/${qs}`);
   return parseResponse(response);
 }
 

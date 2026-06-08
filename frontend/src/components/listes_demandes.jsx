@@ -234,7 +234,7 @@ const ListesCommandes = ({ onBack }) => {
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openCommandId === command.id ? 'max-h-[900px] border-t border-[#608C27]' : 'max-h-0'}`}>
                   <div className="bg-[#0D2B0D] p-8 space-y-6 text-white rounded-b-2xl">
                     <DetailItem title="Client" value={command.driver_name} icon={<Wrench size={20} />} />
-                    <DetailItem title="Téléphone" value={command.driver_phone} icon={<Phone size={20} />} />
+                    <DetailItem title="Téléphone" value={(isAccepted || isInProgress || isPaid) ? command.driver_phone : null} icon={<Phone size={20} />} />
                     <DetailItem title="Description détaillée" value={command.breakdown_description} icon={<Wrench size={20} />} />
                     <div className="flex items-start gap-3">
                       <div className="text-[#608C27] shrink-0"><MapPin size={20} /></div>

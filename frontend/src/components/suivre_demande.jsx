@@ -36,7 +36,7 @@ function getStatusInfo(data) {
   return { text: data.status, color: 'text-white/60' };
 }
 
-const Suivre = ({ requestId, onBack, onMechanicAssigned }) => {
+const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const assignedCalledRef = useRef(false);
@@ -46,7 +46,7 @@ const Suivre = ({ requestId, onBack, onMechanicAssigned }) => {
 
     const poll = async () => {
       try {
-        const result = await fetchBreakdownStatus(requestId);
+        const result = await fetchBreakdownStatus(requestId, driverToken);
         setData(result);
         setError('');
 

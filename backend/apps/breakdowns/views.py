@@ -343,9 +343,16 @@ def breakdown_status_public(request, pk):
     # Escalade automatique si le mécanicien ne répond pas
     _try_escalate(req)
 
+    token = request.query_params.get('driver_token') or request.data.get('driver_token')
+    token_valid = token and str(req.driver_token) == str(token)
+
     mechanic_data = None
     if req.assigned_mechanic:
         mechanic_data = MechanicPublicSerializer(req.assigned_mechanic).data
+        if not token_valid:
+            mechanic_data.pop('user_name', None)
+            mechanic_data.pop('city', None)
+            mechanic_data.pop('country', None)
 
     return Response({
         'id': str(req.id),
@@ -399,9 +406,9 @@ def get_intervention_by_breakdown(request, pk):
         if payment_done:
             mechanic_phone = intervention.mechanic.user.phone or None
             mechanic_name = intervention.mechanic.user.full_name or None
-        mechanic_lat = str(intervention.mechanic.latitude) if intervention.mechanic.latitude else None
-        mechanic_lon = str(intervention.mechanic.longitude) if intervention.mechanic.longitude else None
-        mechanic_city = intervention.mechanic.city or None
+            mechanic_lat = str(intervention.mechanic.latitude) if intervention.mechanic.latitude else None
+            mechanic_lon = str(intervention.mechanic.longitude) if intervention.mechanic.longitude else None
+            mechanic_city = intervention.mechanic.city or None
 
     return Response({
         'id': str(intervention.id),
