@@ -169,8 +169,10 @@ const MonCompte = ({onBack}) => {
         {/* --- BLOC PROFIL --- */}
         <div className="space-y-6 mt-8">
           <div className="bg-white p-6 rounded-3xl shadow-lg border-t-4 border-[#608C27] flex flex-col items-center">
-            <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-4 border-4 border-[#0D2B0D]">
-              <User size={64} className="text-[#0D2B0D]" />
+            <div className="w-32 h-32 rounded-full mb-4 border-4 border-[#0D2B0D] overflow-hidden bg-gray-200 flex items-center justify-center">
+              {profileDetails?.profile_photo || profil?.mechanic_profile_photo
+                ? <img src={profileDetails?.profile_photo || profil?.mechanic_profile_photo} alt="Photo profil" className="w-full h-full object-cover" />
+                : <User size={64} className="text-[#0D2B0D]" />}
             </div>
             <h3 className="text-xl font-bold text-[#0D2B0D]">Profil</h3>
           </div>

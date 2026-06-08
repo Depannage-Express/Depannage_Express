@@ -54,6 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
     mechanic_profile_status = serializers.SerializerMethodField()
     mechanic_profile_id = serializers.SerializerMethodField()
     mechanic_short_id = serializers.SerializerMethodField()
+    mechanic_profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -61,7 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'phone', 'role', 'avatar', 'is_active', 'is_blocked',
             'mechanic_profile_status', 'mechanic_profile_id', 'mechanic_short_id',
-            'created_at', 'updated_at'
+            'mechanic_profile_photo', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'role', 'is_blocked', 'created_at', 'updated_at']
 
@@ -87,6 +88,17 @@ class UserSerializer(serializers.ModelSerializer):
                 return obj.mechanic_profile.short_id
             except Exception:
                 return None
+        return None
+
+    def get_mechanic_profile_photo(self, obj):
+        if obj.role in ('mechanic_standard', 'mechanic_premium'):
+            try:
+                photo = obj.mechanic_profile.profile_photo
+                if photo:
+                    request = self.context.get('request')
+                    return request.build_absolute_uri(photo.url) if request else photo.url
+            except Exception:
+                pass
         return None
 
 

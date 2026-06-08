@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed, User } from 'lucide-react';
 import {
   blockAdminUser,
   fetchAdminUsers,
@@ -330,7 +330,13 @@ const Utilisateurs = ({ onBack }) => {
       user.is_blocked ? 'border-red-500 bg-red-50' : showValidation ? 'border-yellow-400 bg-yellow-50' : 'border-transparent'
     }`}>
       <div className="flex justify-between items-start">
-        <div className="min-w-0 pr-2">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-full border-2 border-[#0D2B0D] overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
+            {user.mechanic_profile_photo || user.avatar
+              ? <img src={user.mechanic_profile_photo || user.avatar} alt="" className="w-full h-full object-cover" />
+              : <User size={24} className="text-[#0D2B0D]" />}
+          </div>
+          <div className="min-w-0 flex-1">
           <h4 className="font-bold text-[#0D2B0D] uppercase text-sm truncate">
             {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
           </h4>
@@ -347,6 +353,7 @@ const Utilisateurs = ({ onBack }) => {
               <ProfileStatusBadge status={user.mechanic_profile_status} />
             </div>
           )}
+          </div>
         </div>
         {user.is_blocked
           ? <Clock size={16} className="text-red-500 animate-pulse shrink-0" />
