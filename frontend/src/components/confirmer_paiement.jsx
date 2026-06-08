@@ -23,7 +23,7 @@ const GeoValue = ({ lat, lon, fallback }) => {
     reverseGeocode(lat, lon).then(setGeo);
   }, [lat, lon]);
 
-  if (!lat && !lon) return <span>{fallback || '—'}</span>;
+  if (!lat || !lon) return <span>{fallback || '—'}</span>;
   if (!geo) return <span>{fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</span>;
 
   const parts = [geo.neighbourhood, geo.city].filter(Boolean);

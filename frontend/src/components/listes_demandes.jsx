@@ -37,7 +37,9 @@ const ListesCommandes = ({ onBack }) => {
       setAllCommands(reqData.results || []);
       const map = {};
       (intervData.results || []).forEach((iv) => {
-        map[iv.breakdown_request] = iv;
+        if (!map[iv.breakdown_request]) {
+          map[iv.breakdown_request] = iv;
+        }
       });
       setInterventionMap(map);
     } catch (requestError) {
