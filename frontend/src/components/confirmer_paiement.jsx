@@ -36,13 +36,12 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
 
   useEffect(() => {
     if (!paymentId || !breakdownId) return;
-    confirmPayment(paymentId, breakdownId).catch(() => {});
+    confirmPayment(paymentId, breakdownId)
+      .catch(() => {})
+      .finally(() => {
+        fetchInterventionForBreakdown(breakdownId).then(setData).catch(() => {});
+      });
   }, [paymentId, breakdownId]);
-
-  useEffect(() => {
-    if (!breakdownId) return;
-    fetchInterventionForBreakdown(breakdownId).then(setData).catch(() => {});
-  }, [breakdownId]);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">

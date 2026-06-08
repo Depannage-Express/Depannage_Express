@@ -386,8 +386,17 @@ def get_intervention_by_breakdown(request, pk):
     mechanic_lat = None
     mechanic_lon = None
     mechanic_city = None
+
+    from apps.payments.models import PaymentTransaction
+    payment_done = (
+        intervention.status in ('paid', 'reviewed')
+        or PaymentTransaction.objects.filter(
+            breakdown_request=breakdown, status='paid'
+        ).exists()
+    )
+
     if intervention.mechanic:
-        if intervention.status in ('paid', 'reviewed'):
+        if payment_done:
             mechanic_phone = intervention.mechanic.user.phone or None
             mechanic_name = intervention.mechanic.user.full_name or None
         mechanic_lat = str(intervention.mechanic.latitude) if intervention.mechanic.latitude else None
