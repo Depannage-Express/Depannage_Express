@@ -33,9 +33,21 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
         migrations.RunPython(populate_short_ids, migrations.RunPython.noop),
-        migrations.AlterField(
-            model_name='mechanicprofile',
-            name='short_id',
-            field=models.CharField(blank=True, db_index=True, max_length=8, unique=True),
+        # AlterField avec db_index=True + unique=True génère deux fois le CREATE INDEX _like
+        # sur PostgreSQL (déferred SQL). On ajoute uniquement la contrainte unique en SQL brut.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql="ALTER TABLE mechanics_profile ADD CONSTRAINT mechanics_profile_short_id_key UNIQUE (short_id);",
+                    reverse_sql="ALTER TABLE mechanics_profile DROP CONSTRAINT IF EXISTS mechanics_profile_short_id_key;",
+                ),
+            ],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='mechanicprofile',
+                    name='short_id',
+                    field=models.CharField(blank=True, db_index=True, max_length=8, unique=True),
+                ),
+            ],
         ),
     ]
