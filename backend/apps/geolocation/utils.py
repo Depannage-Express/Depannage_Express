@@ -48,6 +48,7 @@ def _build_qs(latitude, longitude, radius_km, specialty_id, exclude_ids):
 def _any_available_mechanic(specialty_id, exclude_ids):
     """Fallback sans contrainte de distance : n'importe quel mécanicien approuvé disponible."""
     from apps.mechanics.models import MechanicProfile
+    from django.db.models import Case, When, Value, IntegerField
     qs = MechanicProfile.objects.filter(
         status='approved',
         is_available=True,
@@ -56,8 +57,14 @@ def _any_available_mechanic(specialty_id, exclude_ids):
         qs = qs.filter(specialties__id=specialty_id)
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)
-    # Premium en premier, puis par date d'inscription
-    qs = qs.order_by('-user__is_premium', 'user__date_joined')
+    # Premium en premier (user__role='mechanic_premium'), puis par date d'inscription
+    qs = qs.annotate(
+        premium_order=Case(
+            When(user__role='mechanic_premium', then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by('premium_order', 'user__created_at')
     return qs.first()
 
 
