@@ -21,7 +21,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 4_000;
 
 const SupervisionInterventions = ({ onBack }) => {
   const [requests, setRequests] = useState([]);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone } from 'lucide-react';
 import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention } from '../lib/api';
 
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 4_000;
 
 const ListesCommandes = ({ onBack }) => {
   const [allCommands, setAllCommands] = useState([]);

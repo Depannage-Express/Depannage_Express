@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchMechanicRequests } from '../lib/api';
 
-const POLL_INTERVAL_MS = 20_000;
+const POLL_INTERVAL_MS = 4_000;
 
 const STATUS_LABELS = {
   pending: 'En attente',

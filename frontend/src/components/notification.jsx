@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Wrench, ChevronRight } from 'lucide-react';
 import { fetchMechanicRequests } from '../lib/api';
 
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 4_000;
 
 const STATUS_LABELS = {
   pending: 'En attente',

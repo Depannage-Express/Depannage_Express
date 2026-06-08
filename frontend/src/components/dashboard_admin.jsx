@@ -9,7 +9,7 @@ import AdminMessages from './admin_messages';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText } from 'lucide-react';
 import { fetchAdminStats } from '../lib/api';
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 4_000;
 
 const DashboardAdmin = () => {
   const [view, setView] = useState('menu');
@@ -17,8 +17,15 @@ const DashboardAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const intervalRef = useRef(null);
+  const viewRef = useRef('menu');
+
+  const setViewSafe = (v) => {
+    viewRef.current = v;
+    setView(v);
+  };
 
   const loadDashboard = async ({ silent = false } = {}) => {
+    if (silent && viewRef.current !== 'menu') return;
     if (!silent) setIsLoading(true);
     try {
       const data = await fetchAdminStats();
@@ -50,26 +57,26 @@ const DashboardAdmin = () => {
   const renderContent = () => {
     switch (view) {
       case 'utilisateurs':
-        return <Utilisateurs onBack={() => setView('menu')} />;
+        return <Utilisateurs onBack={() => setViewSafe('menu')} />;
       
       // On peut ajouter les autres ici plus tard
       case 'interve':
-                return <SupervisionInterventions onBack={() => setView('menu')} />;
+                return <SupervisionInterventions onBack={() => setViewSafe('menu')} />;
       case 'abonnements':
-                return <Abonnements onBack={() => setView('menu')} />;
+                return <Abonnements onBack={() => setViewSafe('menu')} />;
       case 'paieadmin':
-                return <GestionPaiements onBack={()=> setView('menu')}/>;
+                return <GestionPaiements onBack={()=> setViewSafe('menu')}/>;
       case 'signal':
-                return <Signalements onBack={() => setView('menu')} />;
+                return <Signalements onBack={() => setViewSafe('menu')} />;
       case 'avis':
-                return <GestionAvis onBack={() => setView('menu')} />;
+                return <GestionAvis onBack={() => setViewSafe('menu')} />;
       case 'messages':
-                return <AdminMessages onBack={() => setView('menu')} />;
+                return <AdminMessages onBack={() => setViewSafe('menu')} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
             <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
-            <button onClick={() => setView('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
+            <button onClick={() => setViewSafe('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
               ← Retour au menu
             </button>
           </div>
@@ -135,40 +142,40 @@ const DashboardAdmin = () => {
           {/* Listes des Utilisateurs  */}
           <MenuCard 
             item={menuItems[0]} 
-            onClick={() => setView('utilisateurs')}
+            onClick={() => setViewSafe('utilisateurs')}
           />
 
           {/* Mon Compte (Centre) - On le place au milieu dans la grille */}
           <div className="lg:row-span-2 flex items-center">
              <MenuCard item={menuItems[2]} isLarge={true} 
-                  onClick={() => setView('abonnements')}
+                  onClick={() => setViewSafe('abonnements')}
              />
           </div>
 
           {/* Notification (Droite Haut) */}
           <MenuCard 
             item={menuItems[1]} 
-            onClick={() => setView('interve')}
+            onClick={() => setViewSafe('interve')}
           />
 
           {/* Statut des missions (Gauche Bas) */}
           <MenuCard item={menuItems[3]} 
-            onClick={() => setView('paieadmin')}
+            onClick={() => setViewSafe('paieadmin')}
           />
 
           {/* Signalements (Droite Bas) */}
           <MenuCard item={menuItems[4]}
-            onClick={() => setView('signal')}
+            onClick={() => setViewSafe('signal')}
           />
 
           {/* Gestion des avis */}
           <MenuCard item={menuItems[5]}
-            onClick={() => setView('avis')}
+            onClick={() => setViewSafe('avis')}
           />
 
           {/* Messages conducteurs & mécaniciens */}
           <MenuCard item={menuItems[6]}
-            onClick={() => setView('messages')}
+            onClick={() => setViewSafe('messages')}
           />
 
         </div>
