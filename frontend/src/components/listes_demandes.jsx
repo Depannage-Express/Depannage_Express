@@ -1,18 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone, FlagTriangleRight } from 'lucide-react';
-import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, completeIntervention, reverseGeocode } from '../lib/api';
-
-const GeoLabel = ({ lat, lon, fallback }) => {
-  const [geo, setGeo] = useState(null);
-  useEffect(() => {
-    if (!lat || !lon) return;
-    reverseGeocode(lat, lon).then(setGeo);
-  }, [lat, lon]);
-  if (!lat || !lon) return <>{fallback || 'Position GPS reçue'}</>;
-  if (!geo) return <>{fallback || 'Chargement...'}</>;
-  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
-  return <>{parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</>;
-};
+import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, completeIntervention } from '../lib/api';
+import GeoLabel from './geo_label';
 
 const POLL_INTERVAL_MS = 4_000;
 

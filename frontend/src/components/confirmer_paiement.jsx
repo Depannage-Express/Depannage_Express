@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, MapPin, Phone, User, Wrench, Navigation } from 'lucide-react';
-import { confirmPayment, fetchInterventionForBreakdown, reverseGeocode } from '../lib/api';
+import { confirmPayment, fetchInterventionForBreakdown } from '../lib/api';
+import GeoLabel from './geo_label';
 
 const InfoRow = ({ icon, label, value }) => {
   if (!value) return null;
@@ -13,22 +14,6 @@ const InfoRow = ({ icon, label, value }) => {
       </div>
     </div>
   );
-};
-
-const GeoValue = ({ lat, lon, fallback }) => {
-  const [geo, setGeo] = useState(null);
-
-  useEffect(() => {
-    if (!lat || !lon) return;
-    reverseGeocode(lat, lon).then(setGeo);
-  }, [lat, lon]);
-
-  if (!lat || !lon) return <span>{fallback || '—'}</span>;
-  if (!geo) return <span>{fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</span>;
-
-  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
-  const label = parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`;
-  return <span>{label}</span>;
 };
 
 const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon }) => {
@@ -88,7 +73,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#608C27]">Position mécanicien</p>
                 <p className="text-sm text-[#0D2B0D] font-medium">
-                  <GeoValue lat={data.mechanic_latitude} lon={data.mechanic_longitude} fallback={data.mechanic_city} />
+                  <GeoLabel lat={data.mechanic_latitude} lon={data.mechanic_longitude} fallback={data.mechanic_city} />
                 </p>
               </div>
             </div>
@@ -110,7 +95,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
             </p>
             <div className="flex items-center gap-2 text-blue-900 text-sm font-medium">
               <MapPin size={15} className="text-blue-500 flex-shrink-0" />
-              <GeoValue lat={driverLat} lon={driverLon} />
+              <GeoLabel lat={driverLat} lon={driverLon} />
             </div>
           </div>
         )}

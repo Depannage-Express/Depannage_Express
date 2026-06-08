@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { fetchMechanicRequests, reverseGeocode } from '../lib/api';
+import { fetchMechanicRequests } from '../lib/api';
+import GeoLabel from './geo_label';
 
 const POLL_INTERVAL_MS = 4_000;
 
@@ -10,26 +11,6 @@ const STATUS_LABELS = {
   in_progress: 'En cours',
   completed: 'Terminée',
   cancelled: 'Annulée',
-};
-
-const GeoLabel = ({ lat, lon, fallback }) => {
-  const [geo, setGeo] = useState(null);
-
-  useEffect(() => {
-    if (!lat || !lon) return;
-    reverseGeocode(lat, lon).then(setGeo);
-  }, [lat, lon]);
-
-  if (!lat || !lon) return <span>{fallback || 'Non renseignée'}</span>;
-
-  if (!geo) return <span>{fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</span>;
-
-  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
-  return (
-    <span>
-      {parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}
-    </span>
-  );
 };
 
 const StatutMissions = ({ onBack }) => {
