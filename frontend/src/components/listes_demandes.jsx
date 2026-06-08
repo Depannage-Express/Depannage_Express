@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone, FlagTriangleRight } from 'lucide-react';
-import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, completeIntervention } from '../lib/api';
+import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, completeIntervention, reverseGeocode } from '../lib/api';
+
+const GeoLabel = ({ lat, lon, fallback }) => {
+  const [geo, setGeo] = useState(null);
+  useEffect(() => {
+    if (!lat || !lon) return;
+    reverseGeocode(lat, lon).then(setGeo);
+  }, [lat, lon]);
+  if (!lat || !lon) return <>{fallback || 'Position GPS reçue'}</>;
+  if (!geo) return <>{fallback || 'Chargement...'}</>;
+  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
+  return <>{parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</>;
+};
 
 const POLL_INTERVAL_MS = 4_000;
 
@@ -173,6 +185,7 @@ const ListesCommandes = ({ onBack }) => {
             const isPending = intervention?.status === 'pending_acceptance';
             const isAccepted = intervention?.status === 'accepted';
             const isInProgress = intervention?.status === 'in_progress';
+            const isPaid = intervention?.status === 'paid' || intervention?.status === 'reviewed';
 
             return (
               <div key={command.id} className={`bg-white rounded-2xl shadow-lg border overflow-hidden ${isPending ? 'border-[#608C27] border-2' : isAccepted ? 'border-blue-400 border-2' : isInProgress ? 'border-orange-400 border-2' : 'border-slate-200'}`}>
@@ -221,7 +234,17 @@ const ListesCommandes = ({ onBack }) => {
                     <DetailItem title="Client" value={command.driver_name} icon={<Wrench size={20} />} />
                     <DetailItem title="Téléphone" value={command.driver_phone} icon={<Phone size={20} />} />
                     <DetailItem title="Description détaillée" value={command.breakdown_description} icon={<Wrench size={20} />} />
-                    <DetailItem title="Localisation" value={command.address_description || 'Position GPS reçue'} icon={<MapPin size={20} />} />
+                    <div className="flex items-start gap-3">
+                      <div className="text-[#608C27] shrink-0"><MapPin size={20} /></div>
+                      <div>
+                        <p className="text-sm font-bold uppercase tracking-wide text-[#608C27]">Localisation</p>
+                        <p className="text-base text-white">
+                          {isPaid
+                            ? <GeoLabel lat={command.latitude} lon={command.longitude} fallback={command.address_description} />
+                            : (command.address_description || 'Position GPS reçue')}
+                        </p>
+                      </div>
+                    </div>
                     <DetailItem title="Distance estimée" value={command.assignment_distance_km ? `${command.assignment_distance_km} km` : 'Non calculée'} icon={<MapPin size={20} />} />
 
                     {isPending && (

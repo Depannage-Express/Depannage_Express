@@ -382,12 +382,14 @@ def get_intervention_by_breakdown(request, pk):
         return Response({'error': 'Aucune intervention active pour cette demande.'}, status=404)
 
     mechanic_phone = None
+    mechanic_name = None
     mechanic_lat = None
     mechanic_lon = None
     mechanic_city = None
     if intervention.mechanic:
         if intervention.status in ('paid', 'reviewed'):
             mechanic_phone = intervention.mechanic.user.phone or None
+            mechanic_name = intervention.mechanic.user.full_name or None
         mechanic_lat = str(intervention.mechanic.latitude) if intervention.mechanic.latitude else None
         mechanic_lon = str(intervention.mechanic.longitude) if intervention.mechanic.longitude else None
         mechanic_city = intervention.mechanic.city or None
@@ -397,9 +399,13 @@ def get_intervention_by_breakdown(request, pk):
         'status': intervention.status,
         'driver_confirmed': intervention.driver_confirmed,
         'mechanic_phone': mechanic_phone,
+        'mechanic_name': mechanic_name,
         'mechanic_latitude': mechanic_lat,
         'mechanic_longitude': mechanic_lon,
         'mechanic_city': mechanic_city,
+        'assignment_distance_km': str(breakdown.assignment_distance_km) if breakdown.assignment_distance_km else None,
+        'breakdown_type': breakdown.breakdown_type or None,
+        'breakdown_description': breakdown.breakdown_description or None,
     })
 
 

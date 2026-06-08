@@ -1,8 +1,21 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, MapPin, Phone } from 'lucide-react';
+import { CheckCircle, MapPin, Phone, User, Wrench, Navigation } from 'lucide-react';
 import { confirmPayment, fetchInterventionForBreakdown, reverseGeocode } from '../lib/api';
 
-const GeoInfo = ({ lat, lon, label, colorClass }) => {
+const InfoRow = ({ icon, label, value }) => {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <div className="text-[#608C27] shrink-0 mt-0.5">{icon}</div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-[#608C27]">{label}</p>
+        <p className="text-sm text-[#0D2B0D] font-medium">{value}</p>
+      </div>
+    </div>
+  );
+};
+
+const GeoValue = ({ lat, lon, fallback }) => {
   const [geo, setGeo] = useState(null);
 
   useEffect(() => {
@@ -10,31 +23,16 @@ const GeoInfo = ({ lat, lon, label, colorClass }) => {
     reverseGeocode(lat, lon).then(setGeo);
   }, [lat, lon]);
 
-  if (!lat || !lon) return null;
+  if (!lat && !lon) return <span>{fallback || '—'}</span>;
+  if (!geo) return <span>{fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`}</span>;
 
-  return (
-    <div className={`w-full rounded-xl px-5 py-4 flex flex-col gap-1 border ${colorClass}`}>
-      <div className="flex items-center gap-2 mb-1">
-        <MapPin size={16} className="flex-shrink-0" />
-        <span className="text-sm font-semibold">{label}</span>
-      </div>
-      {geo ? (
-        <>
-          {geo.city && <p className="text-sm"><span className="font-medium">Ville :</span> {geo.city}</p>}
-          {geo.neighbourhood && <p className="text-sm"><span className="font-medium">Quartier :</span> {geo.neighbourhood}</p>}
-        </>
-      ) : (
-        <p className="text-xs text-gray-400">Chargement de la localisation...</p>
-      )}
-      <p className="text-xs text-gray-400 mt-1">{parseFloat(lat).toFixed(5)}, {parseFloat(lon).toFixed(5)}</p>
-    </div>
-  );
+  const parts = [geo.neighbourhood, geo.city].filter(Boolean);
+  const label = parts.length > 0 ? parts.join(', ') : fallback || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`;
+  return <span>{label}</span>;
 };
 
 const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon }) => {
-  const [mechanicPhone, setMechanicPhone] = useState(null);
-  const [mechanicLat, setMechanicLat] = useState(null);
-  const [mechanicLon, setMechanicLon] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     if (!paymentId || !breakdownId) return;
@@ -43,65 +41,86 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
 
   useEffect(() => {
     if (!breakdownId) return;
-    fetchInterventionForBreakdown(breakdownId)
-      .then((data) => {
-        if (data?.mechanic_phone) setMechanicPhone(data.mechanic_phone);
-        if (data?.mechanic_latitude) setMechanicLat(data.mechanic_latitude);
-        if (data?.mechanic_longitude) setMechanicLon(data.mechanic_longitude);
-      })
-      .catch(() => {});
+    fetchInterventionForBreakdown(breakdownId).then(setData).catch(() => {});
   }, [breakdownId]);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white px-10 py-8 rounded-xl shadow-2xl flex flex-col items-center gap-4 w-full max-w-md">
+      <div className="bg-white px-8 py-8 rounded-2xl shadow-2xl flex flex-col items-center gap-5 w-full max-w-md">
 
-        <CheckCircle
-          size={50}
-          className="text-white fill-[#0D2B0D] mb-2"
-          strokeWidth={3}
-        />
-        <p className="text-center font-medium text-lg">Paiement réussi avec succès</p>
-        <p className="text-center font-bold">
-          Statut : <span className="text-[#608C27] font-bold ml-2">Accepté</span>
-        </p>
+        <CheckCircle size={52} className="text-white fill-[#0D2B0D]" strokeWidth={3} />
+        <div className="text-center">
+          <p className="font-bold text-xl text-[#0D2B0D]">Paiement réussi</p>
+          <p className="text-sm text-gray-500 mt-1">Votre mécanicien est en route</p>
+        </div>
 
-        {mechanicPhone && (
-          <div className="mt-1 bg-[#f0f7e6] border border-[#608C27] rounded-xl px-6 py-4 flex flex-col items-center gap-2 w-full">
-            <p className="text-sm text-gray-600 font-medium">Numéro de votre mécanicien</p>
-            <div className="flex items-center gap-2">
-              <Phone size={20} className="text-[#608C27]" />
-              <a
-                href={`tel:${mechanicPhone}`}
-                className="text-[#0D2B0D] font-bold text-lg hover:text-[#608C27] transition-colors"
-              >
-                {mechanicPhone}
-              </a>
+        {/* Carte mécanicien */}
+        {data && (
+          <div className="w-full bg-[#f0f7e6] border border-[#608C27] rounded-2xl p-5 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#608C27] border-b border-[#608C27]/30 pb-2">
+              Votre mécanicien
+            </p>
+            <InfoRow
+              icon={<User size={16} />}
+              label="Nom"
+              value={data.mechanic_name}
+            />
+            <InfoRow
+              icon={<Phone size={16} />}
+              label="Téléphone"
+              value={
+                data.mechanic_phone
+                  ? <a href={`tel:${data.mechanic_phone}`} className="hover:text-[#608C27] transition-colors">{data.mechanic_phone}</a>
+                  : null
+              }
+            />
+            <InfoRow
+              icon={<Wrench size={16} />}
+              label="Type de panne"
+              value={data.breakdown_type}
+            />
+            <InfoRow
+              icon={<Wrench size={16} />}
+              label="Description"
+              value={data.breakdown_description}
+            />
+            <div className="flex items-start gap-3">
+              <div className="text-[#608C27] shrink-0 mt-0.5"><MapPin size={16} /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#608C27]">Position mécanicien</p>
+                <p className="text-sm text-[#0D2B0D] font-medium">
+                  <GeoValue lat={data.mechanic_latitude} lon={data.mechanic_longitude} fallback={data.mechanic_city} />
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-gray-400">Appelez-le directement pour coordination</p>
+            {data.assignment_distance_km && (
+              <InfoRow
+                icon={<Navigation size={16} />}
+                label="Distance estimée"
+                value={`${parseFloat(data.assignment_distance_km).toFixed(2)} km`}
+              />
+            )}
           </div>
         )}
 
-        <div className="w-full flex flex-col gap-3 mt-1">
-          <GeoInfo
-            lat={driverLat}
-            lon={driverLon}
-            label="Votre position"
-            colorClass="bg-blue-50 border-blue-200 text-blue-900"
-          />
-          <GeoInfo
-            lat={mechanicLat}
-            lon={mechanicLon}
-            label="Position du mécanicien"
-            colorClass="bg-[#f0f7e6] border-[#608C27] text-[#0D2B0D]"
-          />
-        </div>
+        {/* Votre position */}
+        {(driverLat || driverLon) && (
+          <div className="w-full bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-1">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 border-b border-blue-200 pb-2 mb-3">
+              Votre position
+            </p>
+            <div className="flex items-center gap-2 text-blue-900 text-sm font-medium">
+              <MapPin size={15} className="text-blue-500 flex-shrink-0" />
+              <GeoValue lat={driverLat} lon={driverLon} />
+            </div>
+          </div>
+        )}
 
         <button
           onClick={onabout}
-          className="mt-2 bg-[#608C27] text-white px-10 py-2 rounded-lg font-semibold hover:bg-[#0D2B0D] transition-colors"
+          className="w-full bg-[#608C27] text-white py-3 rounded-xl font-bold hover:bg-[#0D2B0D] transition-colors"
         >
-          OK
+          OK — Continuer
         </button>
 
       </div>
