@@ -129,22 +129,13 @@ def confirm_payment(request, pk):
             status=400,
         )
 
-    # Confirmer le paiement
+    # Confirmer le paiement (séquestre : fonds retenus jusqu'à confirmation des deux parties)
     payment.status = 'paid'
     payment.paid_at = timezone.now()
     payment.save(update_fields=['status', 'paid_at'])
 
-    # Créditer le solde du mécanicien
-    if payment.mechanic_id and payment.payment_for == 'intervention':
-        from apps.mechanics.models import MechanicProfile
-        MechanicProfile.objects.filter(pk=payment.mechanic_id).update(
-            balance=F('balance') + payment.amount
-        )
-
-    # NE PAS déclencher la transition ici.
-    # C'est driver_confirm_intervention (POST /interventions/<id>/driver-confirm/)
-    # qui fait la transition completed → paid de façon explicite.
-    # confirm_payment ne fait que valider le paiement côté financier.
+    # Le crédit du mécanicien se fait dans driver_confirm_intervention,
+    # une fois que les deux parties ont confirmé la fin de l'intervention.
 
     log_security_event(
         request, None, 'PAYMENT_CONFIRMED',

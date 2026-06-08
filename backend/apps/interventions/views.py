@@ -112,17 +112,27 @@ def driver_confirm_intervention(request, pk):
 
     # Vérifier qu'un paiement validé existe avant de passer à 'paid'
     from apps.payments.models import PaymentTransaction
-    has_paid = PaymentTransaction.objects.filter(
+    from django.db.models import F as DbF
+    payment = PaymentTransaction.objects.filter(
         breakdown_request=intervention.breakdown_request,
         status='paid',
-    ).exists()
-    if not has_paid:
+    ).first()
+    if not payment:
         return Response(
             {'error': "Le paiement n'a pas encore été validé. Veuillez régler avant de confirmer."},
             status=400,
         )
 
-    return _transition_response(intervention, 'pay', 'driver')
+    response = _transition_response(intervention, 'pay', 'driver')
+
+    # Les deux parties ont confirmé : on crédite maintenant le compte virtuel du mécanicien
+    if response.status_code == 200 and payment.mechanic_id and payment.payment_for == 'intervention':
+        from apps.mechanics.models import MechanicProfile
+        MechanicProfile.objects.filter(pk=payment.mechanic_id).update(
+            balance=DbF('balance') + payment.amount
+        )
+
+    return response
 
 
 @api_view(['POST'])
