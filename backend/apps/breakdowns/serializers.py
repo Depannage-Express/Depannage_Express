@@ -9,8 +9,8 @@ class BreakdownRequestCreateSerializer(serializers.ModelSerializer):
         model = BreakdownRequest
         fields = [
             'driver_name', 'driver_phone', 'driver_id_card', 'driver_selfie',
-            'vehicle_description', 'vehicle_photo', 'breakdown_description',
-            'breakdown_type',
+            'vehicle_type', 'vehicle_brand', 'vehicle_description', 'vehicle_photo',
+            'breakdown_description', 'breakdown_type',
             'specialty_requested',
             'latitude', 'longitude', 'address_description',
         ]
@@ -33,7 +33,7 @@ class BreakdownRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'driver_name', 'driver_phone',
             'driver_id_card', 'driver_selfie',
-            'vehicle_description', 'vehicle_photo',
+            'vehicle_type', 'vehicle_brand', 'vehicle_description', 'vehicle_photo',
             'breakdown_description', 'breakdown_type', 'specialty_requested',
             'latitude', 'longitude', 'address_description',
             'assigned_mechanic', 'assigned_mechanic_detail',

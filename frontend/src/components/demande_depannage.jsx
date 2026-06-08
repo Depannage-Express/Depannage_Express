@@ -33,6 +33,8 @@ const Demande = ({ onConfirm }) => {
     const [position, setPosition] = useState(null);
     const [driverName, setDriverName] = useState('');
     const [phone, setPhone] = useState('01');
+    const [vehicleType, setVehicleType] = useState('');
+    const [vehicleBrand, setVehicleBrand] = useState('');
     const [breakdownTypes, setBreakdownTypes] = useState([]);
     const [typeQuery, setTypeQuery] = useState('');
 
@@ -109,8 +111,8 @@ const Demande = ({ onConfirm }) => {
         return;
     }
 
-    if (!driverName || phone.length < 8 || breakdownTypes.length === 0) {
-        setError('Renseignez votre nom, votre numéro et sélectionnez au moins un type de panne.');
+    if (!driverName || phone.length < 8 || breakdownTypes.length === 0 || !vehicleType) {
+        setError('Renseignez votre nom, votre numéro, le type de véhicule et au moins un type de panne.');
         return;
     }
     if (!vehicleFile || !selfieFile || !idCardFile) {
@@ -123,7 +125,9 @@ const Demande = ({ onConfirm }) => {
     formData.append('driver_phone', '+229' + phone);
     formData.append('driver_id_card', idCardFile);
     formData.append('driver_selfie', selfieFile);
-    formData.append('vehicle_description', 'Véhicule en panne');
+    formData.append('vehicle_type', vehicleType);
+    formData.append('vehicle_brand', vehicleBrand);
+    formData.append('vehicle_description', [vehicleType, vehicleBrand].filter(Boolean).join(' ') || 'Véhicule en panne');
     formData.append('vehicle_photo', vehicleFile);
     const typeLabel = breakdownTypes.join(', ');
     formData.append('breakdown_description', breakdownDescription || typeLabel);
@@ -189,6 +193,37 @@ const Demande = ({ onConfirm }) => {
                                     className="flex-1 bg-gray-200 px-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm"
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Type et marque de véhicule */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className={labelClass}>Type de véhicule <span className="text-red-400">*</span></label>
+                            <select
+                                value={vehicleType}
+                                onChange={(e) => setVehicleType(e.target.value)}
+                                className={`${inputClass} appearance-none cursor-pointer`}
+                            >
+                                <option value="">— Choisir —</option>
+                                <option value="moto">Moto</option>
+                                <option value="tricycle">Tricycle</option>
+                                <option value="voiture">Voiture</option>
+                                <option value="camion">Camion</option>
+                                <option value="bus">Bus</option>
+                                <option value="camionnette">Camionnette</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Marque <span className="text-white/30 normal-case font-normal">(optionnel)</span></label>
+                            <input
+                                type="text"
+                                placeholder="Ex : Yamaha, Toyota…"
+                                value={vehicleBrand}
+                                onChange={(e) => setVehicleBrand(e.target.value)}
+                                className={inputClass}
+                            />
                         </div>
                     </div>
 

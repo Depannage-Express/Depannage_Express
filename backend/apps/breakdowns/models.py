@@ -27,7 +27,19 @@ class BreakdownRequest(TimestampedModel):
         null=True, blank=True, related_name='breakdown_requests'
     )
 
+    VEHICLE_TYPE_CHOICES = [
+        ('moto', 'Moto'),
+        ('tricycle', 'Tricycle'),
+        ('voiture', 'Voiture'),
+        ('camion', 'Camion'),
+        ('bus', 'Bus'),
+        ('camionnette', 'Camionnette'),
+        ('autre', 'Autre'),
+    ]
+
     # Vehicle & breakdown
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES, blank=True)
+    vehicle_brand = models.CharField(max_length=100, blank=True)
     vehicle_description = models.CharField(max_length=200)
     vehicle_photo = models.FileField(upload_to='breakdowns/vehicles/')
     breakdown_description = models.TextField()
