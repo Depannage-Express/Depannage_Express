@@ -126,10 +126,11 @@ const MonCompte = ({onBack}) => {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          await updateMyMechanicLocation(
+          const updated = await updateMyMechanicLocation(
             pos.coords.latitude.toFixed(6),
             pos.coords.longitude.toFixed(6),
           );
+          setProfileDetails(updated);
           setGpsMessage('Position mise à jour avec succès.');
         } catch (e) {
           setGpsMessage(e.message);
