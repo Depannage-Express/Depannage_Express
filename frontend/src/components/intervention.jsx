@@ -4,6 +4,7 @@ import { fetchInterventionForBreakdown, driverConfirmIntervention } from '../lib
 
 const Intervention = ({ onNo, onTerminer, breakdownId, driverToken }) => {
     const [interventionId, setInterventionId] = useState(null);
+    const [loadError, setLoadError] = useState('');
     const [isConfirming, setIsConfirming] = useState(false);
     const [confirmError, setConfirmError] = useState('');
 
@@ -11,7 +12,7 @@ const Intervention = ({ onNo, onTerminer, breakdownId, driverToken }) => {
         if (!breakdownId) return;
         fetchInterventionForBreakdown(breakdownId)
             .then(data => setInterventionId(data.id))
-            .catch(() => {});
+            .catch(() => setLoadError("Impossible de récupérer les données de l'intervention. Veuillez réessayer."));
     }, [breakdownId]);
 
     const handleConfirm = async () => {
@@ -35,6 +36,12 @@ const Intervention = ({ onNo, onTerminer, breakdownId, driverToken }) => {
                     Veuillez confirmer l&apos;intervention du mécanicien
                 </p>
 
+                {loadError && (
+                    <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 text-center">
+                        {loadError}
+                    </p>
+                )}
+
                 {confirmError && (
                     <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 text-center">
                         {confirmError}
@@ -51,11 +58,13 @@ const Intervention = ({ onNo, onTerminer, breakdownId, driverToken }) => {
 
                     <button
                         onClick={handleConfirm}
-                        disabled={isConfirming}
+                        disabled={isConfirming || !interventionId}
                         className="mt-6 bg-[#608C27] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#0D2B0D] hover:text-white transition-colors disabled:opacity-60 flex items-center gap-2"
                     >
                         {isConfirming
                             ? <><Loader2 className="animate-spin" size={16} /> Confirmation...</>
+                            : !interventionId
+                            ? <><Loader2 className="animate-spin" size={16} /> Chargement...</>
                             : 'Terminer'}
                     </button>
                 </div>

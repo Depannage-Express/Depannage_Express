@@ -361,7 +361,7 @@ def breakdown_status_public(request, pk):
         'created_at': req.created_at,
         'assigned_at': req.assigned_at,
         'assignment_distance_km': (
-            str(req.assignment_distance_km) if req.assignment_distance_km else None
+            str(req.assignment_distance_km) if req.assignment_distance_km is not None else None
         ),
         'assigned_mechanic': mechanic_data,
         'refusal_count': req.refusal_count,
@@ -419,7 +419,7 @@ def get_intervention_by_breakdown(request, pk):
         'mechanic_latitude': mechanic_lat,
         'mechanic_longitude': mechanic_lon,
         'mechanic_city': mechanic_city,
-        'assignment_distance_km': str(breakdown.assignment_distance_km) if breakdown.assignment_distance_km else None,
+        'assignment_distance_km': str(breakdown.assignment_distance_km) if breakdown.assignment_distance_km is not None else None,
         'breakdown_type': breakdown.breakdown_type or None,
         'breakdown_description': breakdown.breakdown_description or None,
     })
