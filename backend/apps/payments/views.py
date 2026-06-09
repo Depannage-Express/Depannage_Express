@@ -93,12 +93,15 @@ def create_payment(request):
         payment = serializer.save(status='pending', provider_reference='')
 
     try:
-        transaction_id, payment_url = create_transaction(
-            description=f"Dépannage #{breakdown_id}",
+        result = create_transaction(
             amount=int(payment.amount),
+            description=f"Dépannage #{breakdown_id}",
+            customer_name=None,
+            customer_phone=payment.payer_phone,
             callback_url=f"{settings.BACKEND_BASE_URL}/api/payments/callback/",
-            payer_phone=payment.payer_phone,
         )
+        transaction_id = result['transaction_id']
+        payment_url = result['payment_url']
 
         payment.provider_reference = transaction_id
         payment.status = 'authorized'
