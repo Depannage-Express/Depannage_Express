@@ -51,7 +51,9 @@ async function parseResponse(response) {
     };
 
     const message = normalizeErrorMessage();
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

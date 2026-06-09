@@ -146,7 +146,12 @@ const Utilisateurs = ({ onBack }) => {
       setDeleteTarget(null);
       await loadUsers();
     } catch (actionError) {
-      setError(actionError.message);
+      if (actionError.status === 409) {
+        setError("Impossible de supprimer : ce mécanicien a des interventions en cours");
+        setDeleteTarget(null);
+      } else {
+        setError(actionError.message);
+      }
     } finally {
       setPendingAction('');
     }
