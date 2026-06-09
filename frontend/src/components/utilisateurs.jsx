@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed, User } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed, User, Phone, ArrowLeft, Star } from 'lucide-react';
 import {
   blockAdminUser,
   fetchAdminUsers,
@@ -395,7 +395,7 @@ const Utilisateurs = ({ onBack }) => {
           )}
           <p className="text-xs text-gray-500 font-mono truncate">ID: {user.id}</p>
           <p className="text-xs text-gray-700 truncate">Email: {user.email}</p>
-          <p className="text-xs text-gray-700">📞 {user.phone || '-'}</p>
+          <p className="text-xs text-gray-700 flex items-center gap-1"><Phone size={11} /> {user.phone || '-'}</p>
           {user.mechanic_profile_status && (
             <div className="mt-1">
               <ProfileStatusBadge status={user.mechanic_profile_status} />
@@ -441,9 +441,9 @@ const Utilisateurs = ({ onBack }) => {
               setRejectReason('');
             }}
             disabled={!!pendingAction}
-            className="bg-red-600 text-white text-xs py-2 rounded-xl hover:bg-red-700 uppercase font-bold disabled:opacity-60"
+            className="flex items-center justify-center gap-1 bg-red-600 text-white text-xs py-2 rounded-xl hover:bg-red-700 uppercase font-bold disabled:opacity-60"
           >
-            ✕ Refuser
+            <X size={13} /> Refuser
           </button>
         </div>
       )}
@@ -504,7 +504,7 @@ const Utilisateurs = ({ onBack }) => {
           <div className="flex items-center gap-4">
             {onBack && (
               <button onClick={onBack} className="inline-flex items-center gap-2 rounded-xl bg-[#608C27] px-4 py-2 text-sm font-bold text-white hover:bg-[#0D2B0D]">
-                ← Retour
+                <ArrowLeft size={16} /> Retour
               </button>
             )}
             <h2 className="text-2xl font-black text-[#0D2B0D] tracking-tighter">GESTION UTILISATEURS</h2>
@@ -588,8 +588,8 @@ const Utilisateurs = ({ onBack }) => {
 
           {/* MÉCANICIENS PREMIUM APPROUVÉS */}
           <section>
-            <div className="bg-yellow-600 text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm">
-              PREMIUM ★
+            <div className="bg-yellow-600 text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm flex items-center justify-center gap-1">
+              PREMIUM <Star size={14} />
             </div>
             {groupedUsers.approvedPremiums.length === 0 ? (
               <p className="text-center text-sm text-gray-400 py-4 italic">Aucun approuvé</p>

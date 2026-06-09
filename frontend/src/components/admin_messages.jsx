@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, SendHorizonal, MessageSquareText, Users, Car, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, SendHorizonal, MessageSquareText, Users, Car, ShieldCheck } from 'lucide-react';
 import {
   fetchAdminBreakdowns,
   fetchMessages,
@@ -239,7 +239,7 @@ const AdminMessages = ({ onBack }) => {
                     <p className="font-semibold text-sm">{bd.driver_name || 'Conducteur'}</p>
                     <p className="text-xs text-gray-500">{bd.breakdown_type || 'Dépannage'} · {bd.status}</p>
                   </div>
-                  <span className="text-xs text-[#608C27] font-medium">Ouvrir →</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-[#608C27] font-medium">Ouvrir <ArrowRight size={12} /></span>
                 </button>
               ))
             )}
@@ -264,7 +264,7 @@ const AdminMessages = ({ onBack }) => {
                       {m.msg_count > 0 ? `${m.msg_count} message${m.msg_count > 1 ? 's' : ''}` : 'Aucun message'}
                     </p>
                   </div>
-                  <span className="text-xs text-[#608C27] font-medium">Ouvrir →</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-[#608C27] font-medium">Ouvrir <ArrowRight size={12} /></span>
                 </button>
               ))
             )}

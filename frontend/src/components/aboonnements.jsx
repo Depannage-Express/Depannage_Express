@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Eye, Loader, RefreshCcw, User } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Eye, Loader, RefreshCcw, User, ArrowLeft, Star } from 'lucide-react';
 import { fetchAdminUsers, fetchAdminPayments } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
@@ -55,8 +55,8 @@ const Abonnements = ({ onBack }) => {
 
       <div className="bg-[#0D2B0D] text-white p-4 flex items-center gap-3">
         {onBack && (
-          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
-            ← Retour
+          <button onClick={onBack} className="inline-flex items-center gap-1 text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
+            <ArrowLeft size={16} /> Retour
           </button>
         )}
         <h2 className="text-xl sm:text-3xl font-bold flex-1 text-center">Liste Abonnés Premium</h2>
@@ -197,7 +197,7 @@ const Abonnements = ({ onBack }) => {
                         <p><span className="font-bold">Email :</span> {sub.email || '—'}</p>
                         <p><span className="font-bold">Téléphone :</span> {sub.phone || '—'}</p>
                         <p><span className="font-bold">ID :</span> <span className="font-mono text-[#608C27]">{sub.mechanic_short_id || sub.id.slice(0, 8)}</span></p>
-                        <p><span className="font-bold">Plan :</span> Premium ★</p>
+                        <p className="flex items-center gap-1"><span className="font-bold">Plan :</span> Premium <Star size={12} className="text-yellow-500 fill-yellow-500" /></p>
                       </div>
                     </div>
                   );

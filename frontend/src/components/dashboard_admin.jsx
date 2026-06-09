@@ -7,7 +7,7 @@ import SupervisionInterventions from './supervisions_interv';
 import GestionAvis from './gestion_avis';
 import AdminMessages from './admin_messages';
 import RetraitsAdmin from './retraits_admin';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText, ArrowDownCircle } from 'lucide-react';
+import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText, ArrowDownCircle, ArrowLeft } from 'lucide-react';
 import { fetchAdminStats } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
@@ -80,8 +80,8 @@ const DashboardAdmin = () => {
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
             <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
-            <button onClick={() => setViewSafe('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
-              ← Retour au menu
+            <button onClick={() => setViewSafe('menu')} className="inline-flex items-center gap-2 bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
+              <ArrowLeft size={16} /> Retour au menu
             </button>
           </div>
         );

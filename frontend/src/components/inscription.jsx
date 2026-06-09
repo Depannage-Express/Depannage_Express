@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, ArrowRight } from 'lucide-react';
 import { registerMechanic, setAuthTokens } from '../lib/api';
 
 const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
@@ -210,9 +210,9 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
               <p className="text-white/50 text-xs mb-2">Vous avez déjà un compte ?</p>
               <button
                 onClick={onSignUpClick}
-                className="text-[#608C27] font-bold text-sm hover:text-white transition-colors"
+                className="inline-flex items-center gap-1 text-[#608C27] font-bold text-sm hover:text-white transition-colors"
               >
-                Se connecter →
+                Se connecter <ArrowRight size={14} />
               </button>
             </div>
           </div>

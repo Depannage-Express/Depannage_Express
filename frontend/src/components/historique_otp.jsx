@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { requestOTP, verifyOTP } from '../lib/api';
 
 const STATUS_LABELS = {
@@ -51,7 +52,7 @@ function HistoryList({ data, onBack }) {
           onClick={onBack}
           className="mb-6 text-white font-semibold hover:underline flex items-center gap-2"
         >
-          ← Retour
+          <ArrowLeft size={16} /> Retour
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
@@ -204,7 +205,7 @@ export default function HistoriqueOTP({ onBack }) {
           onClick={onBack}
           className="text-[#608C27] font-semibold hover:underline text-sm mb-6 flex items-center gap-1"
         >
-          ← Retour
+          <ArrowLeft size={16} /> Retour
         </button>
 
         <h2 className="text-2xl font-bold text-[#0D2B0D] mb-2">Mon historique</h2>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Wrench, AlertTriangle, CreditCard, Lock, Smartphone } from 'lucide-react';
 import { createPayment } from '../lib/api';
 
 const OPERATORS = [
@@ -45,6 +46,8 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
           breakdown_id: breakdownId,
           driver_token: driverToken,
         }));
+        sessionStorage.setItem('driver_token', driverToken || '');
+        sessionStorage.setItem('breakdown_id', breakdownId || '');
         window.location.href = payment.payment_url;
         return;
       }
@@ -58,78 +61,322 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-[#608C27] p-4">
-      <div className="bg-[#0D2B0D] p-12 rounded-lg shadow-sm w-full max-w-2xl min-h-[400px] flex flex-col justify-center">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: "'Segoe UI', sans-serif",
+    }}>
 
-        <div className="flex justify-center mb-10">
-          <h2 className="bg-[#608C27] text-white text-2xl font-bold px-12 py-2 rounded-full shadow-md">
-            Paiement
-          </h2>
+      <div style={{
+        background: '#fff',
+        borderRadius: '24px',
+        width: '100%',
+        maxWidth: '480px',
+        overflow: 'hidden',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+      }}>
+
+        {/* HEADER */}
+        <div style={{
+          background: 'linear-gradient(135deg, #e85d04, #f48c06)',
+          padding: '32px 28px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: '72px',
+            height: '72px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+          }}>
+            <Wrench size={32} color="#fff" />
+          </div>
+          <h1 style={{
+            color: '#fff',
+            margin: 0,
+            fontSize: '22px',
+            fontWeight: '700',
+            letterSpacing: '0.5px',
+          }}>
+            Paiement de l'intervention
+          </h1>
+          <p style={{
+            color: 'rgba(255,255,255,0.85)',
+            margin: '8px 0 0',
+            fontSize: '14px',
+          }}>
+            DépannageExpress — Paiement sécurisé
+          </p>
         </div>
 
-        {amount ? (
-          <p className="text-center text-white font-bold text-lg mb-6">
-            Montant : {amount.toLocaleString('fr-FR')} FCFA
-          </p>
-        ) : null}
+        {/* CORPS */}
+        <div style={{ padding: '28px' }}>
 
-        <div className="space-y-6">
+          {/* Montant */}
+          {amount && (
+            <div style={{
+              background: '#fff8f0',
+              border: '2px solid #f48c06',
+              borderRadius: '16px',
+              padding: '20px',
+              textAlign: 'center',
+              marginBottom: '24px',
+            }}>
+              <p style={{
+                margin: '0 0 6px',
+                color: '#888',
+                fontSize: '13px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+              }}>
+                Montant à payer
+              </p>
+              <p style={{
+                margin: 0,
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#e85d04',
+                letterSpacing: '-1px',
+              }}>
+                {amount.toLocaleString('fr-FR')}
+                <span style={{ fontSize: '18px' }}> FCFA</span>
+              </p>
+            </div>
+          )}
 
           {/* Opérateur */}
-          <div>
-            <label className="block text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2 pl-1">
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{
+              display: 'block',
+              color: '#555',
+              fontSize: '12px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '8px',
+            }}>
               Moyen de paiement
             </label>
-            <select
-              value={operator}
-              onChange={(e) => setOperator(e.target.value)}
-              className="w-full bg-gray-200 px-4 py-3 rounded-xl border-none outline-none text-gray-800 font-semibold text-sm appearance-none cursor-pointer focus:ring-2 focus:ring-[#608C27] transition-all"
-            >
-              {OPERATORS.map((op) => (
-                <option key={op.value} value={op.value} disabled={op.value === ''}>
-                  {op.label}
-                </option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={operator}
+                onChange={(e) => setOperator(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#f8f9fa',
+                  border: '2px solid #e9ecef',
+                  borderRadius: '12px',
+                  padding: '14px 16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: operator ? '#333' : '#999',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = '#f48c06'}
+                onBlur={e => e.target.style.borderColor = '#e9ecef'}
+              >
+                {OPERATORS.map((op) => (
+                  <option key={op.value} value={op.value} disabled={op.value === ''}>
+                    {op.label}
+                  </option>
+                ))}
+              </select>
+              <span style={{
+                position: 'absolute',
+                right: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                color: '#999',
+                fontSize: '12px',
+              }}>▼</span>
+            </div>
           </div>
 
           {/* Numéro */}
-          <div>
-            <label className="block text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2 pl-1">
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              color: '#555',
+              fontSize: '12px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '8px',
+            }}>
               Votre numéro
             </label>
-            <div className="flex items-center bg-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#608C27] transition-all">
-              <div className="flex items-center gap-2 border-r border-gray-400 pr-3 mr-3 shrink-0">
-                <span className="text-xl">🇧🇯</span>
-                <span className="font-bold text-gray-700 text-sm">+229</span>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#f8f9fa',
+              border: '2px solid #e9ecef',
+              borderRadius: '12px',
+              padding: '12px 16px',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRight: '1px solid #ddd',
+                paddingRight: '12px',
+                marginRight: '12px',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '20px' }}>🇧🇯</span>
+                <span style={{ fontWeight: '700', color: '#555', fontSize: '14px' }}>+229</span>
               </div>
               <input
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 maxLength={10}
-                className="bg-transparent w-full outline-none text-gray-800 font-semibold text-sm placeholder-gray-500"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  width: '100%',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: '#333',
+                }}
                 placeholder="0197654321"
               />
             </div>
           </div>
 
+          {/* Erreur */}
           {error && (
-            <div className="w-full rounded-xl bg-gray-400 text-center text-[#0D2B0D] text-sm font-medium italic px-4 py-3">
-              {error}
+            <div style={{
+              background: '#fff0f0',
+              border: '1px solid #ffcdd2',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              color: '#c62828',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <AlertTriangle size={16} /> {error}
             </div>
           )}
 
+          {/* Bouton principal */}
           <button
             onClick={handlePayer}
             disabled={isSubmitting}
-            className="w-full bg-[#608C27] text-white font-bold py-4 rounded-2xl hover:bg-white hover:text-[#0D2B0D] transition-all shadow-lg tracking-wide text-sm disabled:opacity-60 mt-2"
+            style={{
+              width: '100%',
+              padding: '16px',
+              background: isSubmitting
+                ? '#ccc'
+                : 'linear-gradient(135deg, #e85d04, #f48c06)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '14px',
+              fontSize: '17px',
+              fontWeight: '700',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              transition: 'transform 0.1s, box-shadow 0.1s',
+              boxShadow: isSubmitting ? 'none' : '0 6px 20px rgba(232,93,4,0.4)',
+              letterSpacing: '0.3px',
+            }}
+            onMouseEnter={e => {
+              if (!isSubmitting) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(232,93,4,0.5)';
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = isSubmitting ? 'none' : '0 6px 20px rgba(232,93,4,0.4)';
+            }}
           >
-            {isSubmitting ? 'Traitement...' : 'Confirmer le paiement'}
+            {isSubmitting ? (
+              <>
+                <span style={{
+                  width: '18px',
+                  height: '18px',
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                  display: 'inline-block',
+                  flexShrink: 0,
+                }} />
+                Initialisation...
+              </>
+            ) : (
+              <><CreditCard size={18} /> Confirmer le paiement</>
+            )}
           </button>
+
+          {/* Badges sécurité */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '16px',
+            marginTop: '20px',
+            flexWrap: 'wrap',
+          }}>
+            {[
+              { icon: <Lock size={14} />, label: 'SSL sécurisé' },
+              { icon: <Smartphone size={14} />, label: 'Mobile Money' },
+              { icon: <CreditCard size={14} />, label: 'Carte bancaire' },
+            ].map(badge => (
+              <div key={badge.label} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                color: '#888',
+                fontSize: '12px',
+              }}>
+                {badge.icon}
+                <span>{badge.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* FedaPay mention */}
+          <div style={{
+            textAlign: 'center',
+            marginTop: '16px',
+            padding: '12px',
+            background: '#f8f9fa',
+            borderRadius: '10px',
+          }}>
+            <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
+              Paiement traité par{' '}
+              <strong style={{ color: '#555' }}>FedaPay</strong>
+              {' '}— Plateforme de paiement sécurisée en Afrique
+            </p>
+          </div>
 
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
     </div>
   );
 };

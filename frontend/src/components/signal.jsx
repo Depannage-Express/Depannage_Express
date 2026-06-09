@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Filter, Search, X } from 'lucide-react';
+import { Filter, Search, X, ArrowLeft } from 'lucide-react';
 import {
   fetchAdminIncidents,
   fetchAdminIncidentStats,
@@ -115,9 +115,9 @@ const Signalements = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0"
+            className="inline-flex items-center gap-1 text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0"
           >
-            ← Retour
+            <ArrowLeft size={16} /> Retour
           </button>
         )}
         <h2 className="text-xl sm:text-3xl font-bold flex-1 text-center">

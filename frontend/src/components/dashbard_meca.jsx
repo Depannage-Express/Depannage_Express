@@ -5,7 +5,7 @@ import DiscussionMeca from './discussion_meca';
 import StatutMissions from './statut';
 import MonCompte from './compteMeca';
 import Abonnement from './abonnement';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown } from 'lucide-react';
+import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown, ArrowLeft } from 'lucide-react';
 import { fetchMechanicRequests, fetchMyInterventions, fetchMechanicAdminMessages } from '../lib/api';
 
 const POLL_MS = 8_000;
@@ -110,8 +110,8 @@ const DashboardMecanicien = ({ currentUser }) => {
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
             <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
-            <button onClick={() => handleSetView('menu')} className="bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
-              ← Retour au menu
+            <button onClick={() => handleSetView('menu')} className="inline-flex items-center gap-2 bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
+              <ArrowLeft size={16} /> Retour au menu
             </button>
           </div>
         );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Star, User, MessageCircle, SearchX, Send } from 'lucide-react';
+import { Star, User, MessageCircle, SearchX, Send, X, ArrowLeft } from 'lucide-react';
 import { fetchPublicMechanics, fetchMechanicReviews, postMechanicReview } from '../lib/api';
+import SafeImage from './SafeImage';
 
 const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
   const [mechanics, setMechanics] = useState([]);
@@ -115,13 +116,13 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
                 className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"
                 title="Effacer la recherche"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
           )}
           {onBack ? (
-            <button onClick={onBack} className="text-white hover:text-[#608C27] font-bold text-sm shrink-0">
-              ← Retour
+            <button onClick={onBack} className="inline-flex items-center gap-1 text-white hover:text-[#608C27] font-bold text-sm shrink-0">
+              <ArrowLeft size={16} /> Retour
             </button>
           ) : null}
         </div>
@@ -161,12 +162,13 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
                   className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${selected?.id === m.id ? 'border-[#608C27] bg-[#608C27]/10' : 'border-gray-200 hover:border-gray-400 bg-white'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
-                      {m.profile_photo ? (
-                        <img src={m.profile_photo} alt={m.user_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={24} className="text-gray-500" />
-                      )}
+                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                      <SafeImage
+                        src={m.profile_photo_url}
+                        alt={m.user_name}
+                        name={m.user_name}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%' }}
+                      />
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-[#0D2B0D] truncate">{m.user_name}</p>
@@ -192,12 +194,13 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center gap-6">
                   <div className="relative shrink-0">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
-                      {selected.profile_photo ? (
-                        <img src={selected.profile_photo} alt={selected.user_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={48} className="text-gray-400" />
-                      )}
+                    <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden">
+                      <SafeImage
+                        src={selected.profile_photo_url}
+                        alt={selected.user_name}
+                        name={selected.user_name}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%' }}
+                      />
                     </div>
                     {selected.is_available ? (
                       <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-white rounded-full" />
@@ -230,7 +233,7 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
 
                 {selected.is_premium ? (
                   <div className="bg-[#608C27]/10 border border-[#608C27] rounded-2xl p-4 text-center">
-                    <p className="text-[#608C27] font-bold">⭐ Mécanicien Premium — Contact direct disponible</p>
+                    <p className="text-[#608C27] font-bold flex items-center justify-center gap-2"><Star size={16} className="text-yellow-500 fill-yellow-500" /> Mécanicien Premium — Contact direct disponible</p>
                   </div>
                 ) : null}
 

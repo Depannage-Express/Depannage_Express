@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Zap, Shield, Clock, Users, Phone, Mail, MapPin, Star, CheckCircle, Wrench, CreditCard, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap, Shield, Clock, Users, Phone, Mail, MapPin, Star, CheckCircle, Wrench, CreditCard, MessageCircle, Code, PenTool } from 'lucide-react';
 
 const FAQ_ITEMS = [
   {
@@ -36,9 +36,9 @@ const STEPS = [
 ];
 
 const TEAM = [
-  { name: "Équipe Développement", role: "Conception & Backend", emoji: "💻" },
-  { name: "Équipe Design", role: "Interface & Expérience", emoji: "🎨" },
-  { name: "Équipe Terrain", role: "Réseau mécaniciens", emoji: "🔧" },
+  { name: "Équipe Développement", role: "Conception & Backend", icon: <Code size={32} color="#0D2B0D" /> },
+  { name: "Équipe Design", role: "Interface & Expérience", icon: <PenTool size={32} color="#608C27" /> },
+  { name: "Équipe Terrain", role: "Réseau mécaniciens", icon: <Wrench size={32} color="#e85d04" /> },
 ];
 
 const FaqItem = ({ item }) => {
@@ -157,7 +157,7 @@ const APropos = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {TEAM.map((member) => (
               <div key={member.name} className="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
-                <span className="text-4xl">{member.emoji}</span>
+                <span className="flex justify-center">{member.icon}</span>
                 <p className="font-bold text-[#0D2B0D] mt-3 text-sm">{member.name}</p>
                 <p className="text-gray-500 text-xs mt-1">{member.role}</p>
               </div>

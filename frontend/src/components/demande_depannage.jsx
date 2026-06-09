@@ -1,31 +1,36 @@
 import { useState, useRef } from "react";
-import { Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X } from 'lucide-react';
+import {
+  Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X,
+  Wrench, Battery, Thermometer, Car, Zap, Wind, Fuel,
+  AlertTriangle, Settings, Droplets, Lightbulb, Snowflake,
+  HelpCircle, RefreshCw, Layers,
+} from 'lucide-react';
 import '../index.css';
 import { createBreakdownRequest } from '../lib/api';
 
 const BREAKDOWN_TYPES = [
-  { emoji: '🔧', label: 'Panne moteur' },
-  { emoji: '🔋', label: 'Batterie déchargée' },
-  { emoji: '🛞', label: 'Pneu crevé' },
-  { emoji: '⛽', label: 'Panne de carburant' },
-  { emoji: '🌡️', label: 'Surchauffe moteur' },
-  { emoji: '🚗', label: 'Problème de démarrage' },
-  { emoji: '⚡', label: 'Panne électrique' },
-  { emoji: '💨', label: 'Courroie cassée' },
-  { emoji: '🛑', label: 'Frein défaillant' },
-  { emoji: '🔩', label: 'Embrayage' },
-  { emoji: '💧', label: 'Fuite de liquide' },
-  { emoji: '🌫️', label: 'Moteur fumant' },
-  { emoji: '🔦', label: 'Éclairage en panne' },
-  { emoji: '🏎️', label: 'Boîte de vitesses' },
-  { emoji: '🔄', label: 'Alternateur' },
-  { emoji: '❄️', label: 'Climatisation' },
-  { emoji: '🪟', label: 'Vitre / Serrure' },
-  { emoji: '📟', label: 'Tableau de bord' },
-  { emoji: '💥', label: 'Accident / Collision' },
-  { emoji: '🔧', label: 'Suspension / Amortisseurs' },
-  { emoji: '🌊', label: 'Radiateur' },
-  { emoji: '❓', label: 'Autre panne' },
+  { icon: <Wrench size={16} />,      label: 'Panne moteur' },
+  { icon: <Battery size={16} />,     label: 'Batterie déchargée' },
+  { icon: <Layers size={16} />,      label: 'Pneu crevé' },
+  { icon: <Fuel size={16} />,        label: 'Panne de carburant' },
+  { icon: <Thermometer size={16} />, label: 'Surchauffe moteur' },
+  { icon: <Car size={16} />,         label: 'Problème de démarrage' },
+  { icon: <Zap size={16} />,         label: 'Panne électrique' },
+  { icon: <Wind size={16} />,        label: 'Courroie cassée' },
+  { icon: <AlertTriangle size={16} />, label: 'Frein défaillant' },
+  { icon: <Settings size={16} />,    label: 'Embrayage' },
+  { icon: <Droplets size={16} />,    label: 'Fuite de liquide' },
+  { icon: <Wind size={16} />,        label: 'Moteur fumant' },
+  { icon: <Lightbulb size={16} />,   label: 'Éclairage en panne' },
+  { icon: <Car size={16} />,         label: 'Boîte de vitesses' },
+  { icon: <RefreshCw size={16} />,   label: 'Alternateur' },
+  { icon: <Snowflake size={16} />,   label: 'Climatisation' },
+  { icon: <Layers size={16} />,      label: 'Vitre / Serrure' },
+  { icon: <Settings size={16} />,    label: 'Tableau de bord' },
+  { icon: <Zap size={16} />,         label: 'Accident / Collision' },
+  { icon: <Wrench size={16} />,      label: 'Suspension / Amortisseurs' },
+  { icon: <Droplets size={16} />,    label: 'Radiateur' },
+  { icon: <HelpCircle size={16} />,  label: 'Autre panne' },
 ];
 
 const Demande = ({ onConfirm }) => {
@@ -288,7 +293,7 @@ const Demande = ({ onConfirm }) => {
                                                 : 'bg-gray-200 text-gray-700 border-transparent hover:border-[#608C27] hover:bg-gray-300'
                                         }`}
                                     >
-                                        <span className="text-base shrink-0">{t.emoji}</span>
+                                        <span className="shrink-0">{t.icon}</span>
                                         <span className="leading-tight flex-1">{t.label}</span>
                                         {selected && <span className="text-xs shrink-0">✓</span>}
                                     </button>

@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
+import { CheckCircle, AlertTriangle, MapPin, Phone, Wrench, FileText, Search, Lightbulb, Navigation } from 'lucide-react';
 import { confirmPayment, fetchInterventionForBreakdown } from '../lib/api';
 import GeoLabel from './geo_label';
 import SafeImage from './SafeImage';
 
 const BREAKDOWN_LABELS = {
-  moteur:     '🔩 Panne moteur',
-  pneu:       '🛞 Crevaison / Pneu',
-  electrique: '⚡ Panne électrique',
-  carburant:  '⛽ Panne de carburant',
-  demarrage:  '🔑 Problème démarrage',
-  general:    '🔧 Dépannage général',
+  moteur:     'Panne moteur',
+  pneu:       'Crevaison / Pneu',
+  electrique: 'Panne électrique',
+  carburant:  'Panne de carburant',
+  demarrage:  'Problème démarrage',
+  general:    'Dépannage général',
 };
 
 const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon, driverToken }) => {
@@ -71,10 +72,9 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px',
-              fontSize: '40px',
               animation: 'popIn 0.5s ease-out',
             }}>
-              ✅
+              <CheckCircle size={40} color="#fff" />
             </div>
             <h1 style={{
               color: '#fff',
@@ -89,7 +89,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               margin: 0,
               fontSize: '15px',
             }}>
-              Votre mécanicien est en route 🚗
+              Votre mécanicien est en route
             </p>
           </div>
 
@@ -110,7 +110,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                 alignItems: 'center',
                 gap: '8px',
               }}>
-                ⚠️ {error}
+                <AlertTriangle size={16} /> {error}
               </div>
             )}
 
@@ -127,7 +127,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                 marginBottom: '20px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '24px' }}>📍</span>
+                  <MapPin size={24} color="#e85d04" />
                   <div>
                     <p style={{
                       margin: 0,
@@ -226,7 +226,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                             fontWeight: '600',
                           }}
                         >
-                          📞 {data.mechanic_phone}
+                          <Phone size={14} /> {data.mechanic_phone}
                         </a>
                       )}
                     </div>
@@ -235,17 +235,17 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                   {/* Détails */}
                   {[
                     {
-                      icon: '🔩',
+                      icon: <Wrench size={16} color="#888" />,
                       label: 'Type de panne',
                       value: BREAKDOWN_LABELS[data.breakdown_type] || data.breakdown_type,
                     },
                     data.breakdown_description && {
-                      icon: '📝',
+                      icon: <FileText size={16} color="#888" />,
                       label: 'Description',
                       value: data.breakdown_description,
                     },
                     (data.mechanic_latitude || data.mechanic_longitude || data.mechanic_city) && {
-                      icon: '📍',
+                      icon: <MapPin size={16} color="#888" />,
                       label: 'Position mécanicien',
                       value: <GeoLabel lat={data.mechanic_latitude} lon={data.mechanic_longitude} fallback={data.mechanic_city} />,
                     },
@@ -295,7 +295,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                 alignItems: 'center',
                 gap: '10px',
               }}>
-                <span style={{ fontSize: '20px' }}>🧭</span>
+                <Navigation size={20} color="#1565c0" />
                 <div>
                   <p style={{
                     margin: '0 0 4px',
@@ -345,7 +345,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              Continuer le suivi 🔍
+              <Search size={18} /> Continuer le suivi
             </button>
 
           </div>
@@ -360,7 +360,7 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
           alignItems: 'flex-start',
           gap: '12px',
         }}>
-          <span style={{ fontSize: '20px' }}>💡</span>
+          <Lightbulb size={20} color="rgba(255,255,255,0.75)" />
           <p style={{
             margin: 0,
             color: 'rgba(255,255,255,0.75)',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, ArrowLeft } from 'lucide-react';
 import { fetchMechanicRequests } from '../lib/api';
 import GeoLabel from './geo_label';
 
@@ -42,8 +42,8 @@ const StatutMissions = ({ onBack }) => {
 
       <div className="p-6 flex justify-between w-full max-w-4xl">
         {onBack && (
-          <button onClick={onBack} className="text-white font-bold hover:text-[#608C27] transition-colors">
-            ← Retour
+          <button onClick={onBack} className="inline-flex items-center gap-1 text-white font-bold hover:text-[#608C27] transition-colors">
+            <ArrowLeft size={16} /> Retour
           </button>
         )}
         <h2 className="text-white text-xl font-bold uppercase tracking-widest">

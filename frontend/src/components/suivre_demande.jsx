@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, CheckCircle, MapPin, Wrench, Clock } from 'lucide-react';
+import { Loader2, CheckCircle, MapPin, Wrench, Clock, ArrowLeft } from 'lucide-react';
 import { fetchBreakdownStatus } from '../lib/api';
 
 const POLL_MS = 4_000;
@@ -178,9 +178,9 @@ const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="text-white/40 text-xs hover:text-white/70 transition-colors mt-2"
+            className="inline-flex items-center gap-1 text-white/40 text-xs hover:text-white/70 transition-colors mt-2"
           >
-            ← Retour à l'accueil
+            <ArrowLeft size={14} /> Retour à l'accueil
           </button>
         )}
       </div>

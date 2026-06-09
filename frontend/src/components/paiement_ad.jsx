@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, ArrowLeft, User, UserCheck, Wrench, Tag } from 'lucide-react';
 import { fetchAdminPayments, fetchAdminPaymentStats } from '../lib/api';
 
 const STATUS_CONFIG = {
@@ -70,9 +70,9 @@ const GestionPaiements = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0"
+            className="inline-flex items-center gap-1 text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0"
           >
-            ← Retour
+            <ArrowLeft size={16} /> Retour
           </button>
         )}
         <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight italic flex-1 text-center">
@@ -179,26 +179,26 @@ const GestionPaiements = ({ onBack }) => {
                       </p>
                       <div className="text-xs mt-2 space-y-1 text-gray-600">
                         {t.driver_name && (
-                          <p>
-                            👤 <span className="font-bold text-blue-600">Conducteur :</span>{' '}
+                          <p className="flex items-center gap-1">
+                            <User size={12} /> <span className="font-bold text-blue-600">Conducteur :</span>{' '}
                             {t.driver_name}
                           </p>
                         )}
                         {t.mechanic_name && (
-                          <p>
-                            👷 <span className="font-bold text-yellow-600">Mécanicien :</span>{' '}
+                          <p className="flex items-center gap-1">
+                            <UserCheck size={12} /> <span className="font-bold text-yellow-600">Mécanicien :</span>{' '}
                             {t.mechanic_name}
                           </p>
                         )}
                         {t.breakdown_type && (
-                          <p>
-                            🔧 <span className="font-bold">Type de panne :</span>{' '}
+                          <p className="flex items-center gap-1">
+                            <Wrench size={12} /> <span className="font-bold">Type de panne :</span>{' '}
                             {t.breakdown_type}
                           </p>
                         )}
                         {t.provider_reference && (
-                          <p>
-                            🔖 <span className="font-bold">Référence :</span>{' '}
+                          <p className="flex items-center gap-1">
+                            <Tag size={12} /> <span className="font-bold">Référence :</span>{' '}
                             <span className="font-mono">{t.provider_reference}</span>
                           </p>
                         )}

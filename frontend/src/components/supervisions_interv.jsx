@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone, ShieldAlert, Eye } from 'lucide-react';
+import { MapPin, Clock, Wrench, Search, X, RefreshCcw, ChevronDown, ChevronUp, User, Phone, ShieldAlert, Eye, ArrowLeft } from 'lucide-react';
 import { fetchAdminBreakdowns, adminCancelBreakdown } from '../lib/api';
 
 const STATUS_LABEL = {
@@ -93,8 +93,8 @@ const SupervisionInterventions = ({ onBack }) => {
       {/* En-tête */}
       <div className="bg-[#0D2B0D] rounded-t-[1.5rem] p-4 flex items-center gap-3">
         {onBack && (
-          <button onClick={onBack} className="text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
-            ← Retour
+          <button onClick={onBack} className="inline-flex items-center gap-1 text-white text-sm font-bold hover:text-[#608C27] transition-colors shrink-0">
+            <ArrowLeft size={16} /> Retour
           </button>
         )}
         <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight italic text-center flex-1">

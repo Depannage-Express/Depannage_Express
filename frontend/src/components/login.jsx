@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { loginMechanic, setAuthTokens } from '../lib/api';
 
 const Connexion = ({
@@ -98,9 +99,9 @@ const Connexion = ({
               <p className="text-white/50 text-xs mb-2">Pas encore inscrit ?</p>
               <button
                 onClick={onInscriptionClick}
-                className="text-[#608C27] font-bold text-sm hover:text-white transition-colors"
+                className="inline-flex items-center gap-1 text-[#608C27] font-bold text-sm hover:text-white transition-colors"
               >
-                Créer un compte →
+                Créer un compte <ArrowRight size={14} />
               </button>
             </div>
           </div>

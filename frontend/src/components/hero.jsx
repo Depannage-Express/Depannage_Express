@@ -1,6 +1,6 @@
 import '../index.css'
 import { useEffect, useState } from 'react';
-import { Loader } from 'lucide-react';
+import { Loader, Star } from 'lucide-react';
 import logo from '../assets/arriere.jpeg';
 import { fetchPublicMechanics, fetchPlatformStats } from '../lib/api';
 
@@ -105,8 +105,8 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
                     {tech.user_name}
                   </h4>
 
-                  <p className="text-xs font-medium">
-                    ({tech.average_rating ? Number(tech.average_rating).toFixed(1) : "—"} ⭐)
+                  <p className="text-xs font-medium inline-flex items-center gap-1">
+                    ({tech.average_rating ? Number(tech.average_rating).toFixed(1) : "—"} <Star size={11} className="text-yellow-500 fill-yellow-500" />)
                   </p>
                 </div>
               </div>

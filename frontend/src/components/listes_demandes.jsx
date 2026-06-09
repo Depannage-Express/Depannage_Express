@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone, FlagTriangleRight, Car, User, ChevronDown, Navigation, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Wrench, Search, X, CheckCircle, XCircle, Phone, FlagTriangleRight, Car, User, ChevronDown, Navigation, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { fetchMechanicRequests, fetchMyInterventions, acceptIntervention, refuseIntervention, completeIntervention } from '../lib/api';
 import GeoLabel from './geo_label';
 
@@ -111,7 +111,7 @@ const ListesCommandes = ({ onBack }) => {
               onClick={onBack}
               className="flex items-center gap-2 bg-[#0D2B0D] text-white px-4 py-2 rounded-xl font-semibold hover:bg-[#608C27] transition-colors text-sm shrink-0"
             >
-              ← Retour
+              <ArrowLeft size={16} /> Retour
             </button>
           )}
           <div className="flex-1 text-center">
