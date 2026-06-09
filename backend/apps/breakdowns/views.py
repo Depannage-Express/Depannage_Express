@@ -18,7 +18,7 @@ from apps.payments.models import PaymentTransaction
 from .models import BreakdownRequest, Message
 from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer
 
-PHASE_TIMEOUT_SECS = 120   # 2 minutes par phase
+# PHASE_TIMEOUT_SECS moved to settings
 
 
 def _assign_mechanic(req, mechanic, distance):
@@ -86,7 +86,7 @@ def _try_escalate(req):
         return
 
     elapsed = (timezone.now() - req.phase_started_at).total_seconds()
-    if elapsed < PHASE_TIMEOUT_SECS:
+    if elapsed < settings.PHASE_TIMEOUT_SECS:
         return
 
     # Verrou atomique pour éviter les doubles escalades concurrentes
@@ -97,7 +97,7 @@ def _try_escalate(req):
         if req_locked.status not in ('pending', 'assigned'):
             return
         elapsed2 = (timezone.now() - req_locked.phase_started_at).total_seconds()
-        if elapsed2 < PHASE_TIMEOUT_SECS:
+        if elapsed2 < settings.PHASE_TIMEOUT_SECS:
             return
 
         from apps.interventions.models import Intervention

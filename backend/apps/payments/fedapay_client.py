@@ -8,7 +8,8 @@ from django.conf import settings
 def create_transaction(
     amount, description,
     customer_name, customer_phone,
-    callback_url
+    callback_url,
+    breakdown_id=None,
 ):
     env = getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
 
@@ -24,11 +25,18 @@ def create_transaction(
         'Content-Type': 'application/json',
     }
 
+    frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:5173')
+
     payload = {
         'description': description,
         'amount': int(amount),
         'currency': {'iso': 'XOF'},
         'callback_url': callback_url,
+        'return_url': (
+            f'{frontend_base}?payment_return=1'
+            + (f'&breakdown_id={breakdown_id}' if breakdown_id else '')
+        ),
+        'cancel_url': f'{frontend_base}?payment_cancelled=1',
         'customer': {
             'firstname': customer_name or 'Conducteur',
             'lastname': '.',

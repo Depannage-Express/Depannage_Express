@@ -2,6 +2,7 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from cloudinary.models import CloudinaryField
 
 
 class UserManager(BaseUserManager):
@@ -41,7 +42,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_blocked = models.BooleanField(default=False)
     block_reason = models.TextField(blank=True)
 
-    avatar = models.FileField(upload_to='avatars/', null=True, blank=True)
+    avatar = CloudinaryField(
+        'avatar',
+        folder='depannage_express/avatars',
+        blank=True,
+        null=True,
+        resource_type='auto',
+    )
 
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     failed_login_attempts = models.PositiveSmallIntegerField(default=0)

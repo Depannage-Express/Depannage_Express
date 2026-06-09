@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { User, History, ArrowDownCircle, ArrowLeft, CheckCircle, MapPin, LocateFixed, TrendingUp, TrendingDown, Clock, AlertCircle, Phone, Edit2 } from 'lucide-react';
 import { fetchCurrentUser, fetchMechanicProfile, updateMyMechanicLocation, fetchMechanicWallet, createWithdrawalRequest, fetchMyMomoChangeRequests, createMomoChangeRequest } from '../lib/api';
+import SafeImage from './SafeImage';
 
 const MonCompte = ({onBack}) => {
   const [notifSucces, setNotifSucces] = useState(false);
@@ -170,10 +171,13 @@ const MonCompte = ({onBack}) => {
         {/* --- BLOC PROFIL --- */}
         <div className="space-y-6 mt-8">
           <div className="bg-white p-6 rounded-3xl shadow-lg border-t-4 border-[#608C27] flex flex-col items-center">
-            <div className="w-32 h-32 rounded-full mb-4 border-4 border-[#0D2B0D] overflow-hidden bg-gray-200 flex items-center justify-center">
-              {profileDetails?.profile_photo || profil?.mechanic_profile_photo
-                ? <img src={profileDetails?.profile_photo || profil?.mechanic_profile_photo} alt="Photo profil" className="w-full h-full object-cover" />
-                : <User size={64} className="text-[#0D2B0D]" />}
+            <div className="w-32 h-32 rounded-full mb-4 border-4 border-[#0D2B0D] overflow-hidden bg-gray-200">
+              <SafeImage
+                src={profileDetails?.profile_photo_url || profil?.mechanic_profile_photo}
+                alt="Photo profil"
+                name={profil?.full_name || '?'}
+                style={{ width: '100%', height: '100%', borderRadius: '50%' }}
+              />
             </div>
             <h3 className="text-xl font-bold text-[#0D2B0D]">Profil</h3>
           </div>

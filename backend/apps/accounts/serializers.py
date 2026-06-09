@@ -4,6 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
+import cloudinary
 
 from .models import User
 
@@ -49,8 +50,20 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
+def _cloudinary_url(field, **opts):
+    if not field:
+        return None
+    try:
+        return cloudinary.CloudinaryImage(str(field)).build_url(
+            quality='auto', fetch_format='auto', **opts
+        )
+    except Exception:
+        return None
+
+
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    avatar_url = serializers.SerializerMethodField()
     mechanic_profile_status = serializers.SerializerMethodField()
     mechanic_profile_id = serializers.SerializerMethodField()
     mechanic_short_id = serializers.SerializerMethodField()
@@ -63,12 +76,15 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
-            'phone', 'role', 'avatar', 'is_active', 'is_blocked',
+            'phone', 'role', 'avatar', 'avatar_url', 'is_active', 'is_blocked',
             'mechanic_profile_status', 'mechanic_profile_id', 'mechanic_short_id',
             'mechanic_profile_photo', 'mechanic_city', 'mechanic_department',
             'mechanic_neighborhood', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'role', 'is_blocked', 'created_at', 'updated_at']
+
+    def get_avatar_url(self, obj):
+        return _cloudinary_url(obj.avatar, width=200, height=200, crop='fill', gravity='face')
 
     def get_mechanic_profile_status(self, obj):
         if obj.role in ('mechanic_standard', 'mechanic_premium'):
@@ -97,10 +113,10 @@ class UserSerializer(serializers.ModelSerializer):
     def get_mechanic_profile_photo(self, obj):
         if obj.role in ('mechanic_standard', 'mechanic_premium'):
             try:
-                photo = obj.mechanic_profile.profile_photo
-                if photo:
-                    request = self.context.get('request')
-                    return request.build_absolute_uri(photo.url) if request else photo.url
+                return _cloudinary_url(
+                    obj.mechanic_profile.profile_photo,
+                    width=300, height=300, crop='fill', gravity='face',
+                )
             except Exception:
                 pass
         return None
@@ -131,9 +147,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserMiniSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'role', 'avatar']
+        fields = ['id', 'full_name', 'role', 'avatar', 'avatar_url']
+
+    def get_avatar_url(self, obj):
+        return _cloudinary_url(obj.avatar, width=200, height=200, crop='fill', gravity='face')
 
 
 class ChangePasswordSerializer(serializers.Serializer):

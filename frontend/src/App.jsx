@@ -103,16 +103,48 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isReturn = params.get('payment_return') === '1';
+    const isCancelled = params.get('payment_cancelled') === '1';
+
+    if (isReturn || isCancelled) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     const stored = sessionStorage.getItem('fedapay_return');
-    if (!stored) return;
-    sessionStorage.removeItem('fedapay_return');
-    try {
-      const { payment_id, breakdown_id, driver_token } = JSON.parse(stored);
+    if (stored) sessionStorage.removeItem('fedapay_return');
+
+    let payment_id = null, breakdown_id = null, driver_token = null;
+    if (stored) {
+      try {
+        ({ payment_id, breakdown_id, driver_token } = JSON.parse(stored));
+      } catch {
+        // session corrompue, on ignore
+      }
+    }
+
+    if (isReturn) {
+      const urlBreakdownId = params.get('breakdown_id');
+      if (urlBreakdownId) breakdown_id = urlBreakdownId;
+      if (!driver_token) driver_token = sessionStorage.getItem('driver_token');
+      setCurrentPayment(payment_id ? { id: payment_id } : null);
+      setCurrentBreakdown({ id: breakdown_id, driver_token });
+      setScreen(SCREENS.PAYMENT_CONFIRMATION);
+      return;
+    }
+
+    if (isCancelled) {
+      if (breakdown_id) {
+        setCurrentBreakdown({ id: breakdown_id, driver_token });
+        setScreen(SCREENS.BREAKDOWN_TRACKING);
+      }
+      return;
+    }
+
+    if (payment_id && breakdown_id) {
       setCurrentPayment({ id: payment_id });
       setCurrentBreakdown({ id: breakdown_id, driver_token });
       setScreen(SCREENS.PAYMENT_CONFIRMATION);
-    } catch {
-      // session corrompue, on ignore
     }
   }, []);
 

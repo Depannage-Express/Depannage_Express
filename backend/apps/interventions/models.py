@@ -1,6 +1,7 @@
 # apps/interventions/models.py
 from django.db import models
 from apps.core.models import TimestampedModel
+from cloudinary.models import CloudinaryField
 
 
 class Intervention(TimestampedModel):
@@ -47,8 +48,18 @@ class Intervention(TimestampedModel):
     final_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # Proof
-    before_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
-    after_photo = models.FileField(upload_to='interventions/photos/', null=True, blank=True)
+    before_photo = CloudinaryField(
+        'before_photo',
+        folder='depannage_express/interventions',
+        blank=True, null=True,
+        resource_type='auto',
+    )
+    after_photo = CloudinaryField(
+        'after_photo',
+        folder='depannage_express/interventions',
+        blank=True, null=True,
+        resource_type='auto',
+    )
 
     # Driver confirmation (conservé pour compatibilité frontend)
     driver_confirmed = models.BooleanField(default=False)

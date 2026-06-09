@@ -6,6 +6,7 @@ Clean production-ready configuration
 import os
 from datetime import timedelta
 from pathlib import Path
+import cloudinary
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -44,6 +45,8 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    'cloudinary_storage',
+    'cloudinary',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -215,6 +218,25 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ─────────────────────────────────────────
+# CLOUDINARY
+# ─────────────────────────────────────────
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY':    os.getenv('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+}
+
+cloudinary.config(
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    api_key    = os.getenv('CLOUDINARY_API_KEY', ''),
+    api_secret = os.getenv('CLOUDINARY_API_SECRET', ''),
+    secure     = True,
+)
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# ─────────────────────────────────────────
 # LOCALISATION
 # ─────────────────────────────────────────
 
@@ -274,6 +296,7 @@ FEDAPAY_SECRET_KEY = os.getenv('FEDAPAY_SECRET_KEY', '')
 FEDAPAY_ENVIRONMENT = os.getenv('FEDAPAY_ENVIRONMENT', 'sandbox')
 FEDAPAY_WEBHOOK_SECRET = os.getenv('FEDAPAY_WEBHOOK_SECRET', '')
 BACKEND_BASE_URL = os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')
 NOMINATIM_BASE_URL = os.getenv('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org')
 PREMIUM_SUBSCRIPTION_AMOUNT = os.getenv('PREMIUM_SUBSCRIPTION_AMOUNT', '5000.00')
 
@@ -290,3 +313,4 @@ BREAKDOWN_PRICING = {
 }
 
 SEARCH_RADII_KM = {1: 10, 2: 20, 3: 50}
+PHASE_TIMEOUT_SECS = int(os.getenv('PHASE_TIMEOUT_SECS', '120'))

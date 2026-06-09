@@ -2,6 +2,7 @@
 import uuid
 from django.db import models
 from apps.core.models import TimestampedModel
+from cloudinary.models import CloudinaryField
 
 
 class BreakdownRequest(TimestampedModel):
@@ -18,8 +19,16 @@ class BreakdownRequest(TimestampedModel):
     driver_phone = models.CharField(max_length=15)
     # Jeton opaque remis au conducteur à la création — requis pour toute action driver
     driver_token = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
-    driver_id_card = models.FileField(upload_to='breakdowns/id_cards/')
-    driver_selfie = models.FileField(upload_to='breakdowns/selfies/')
+    driver_id_card = CloudinaryField(
+        'driver_id_card',
+        folder='depannage_express/breakdowns',
+        resource_type='auto',
+    )
+    driver_selfie = CloudinaryField(
+        'driver_selfie',
+        folder='depannage_express/breakdowns',
+        resource_type='auto',
+    )
 
     # Linked account (optional)
     driver_account = models.ForeignKey(
@@ -41,7 +50,11 @@ class BreakdownRequest(TimestampedModel):
     vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES, blank=True)
     vehicle_brand = models.CharField(max_length=100, blank=True)
     vehicle_description = models.CharField(max_length=200)
-    vehicle_photo = models.FileField(upload_to='breakdowns/vehicles/')
+    vehicle_photo = CloudinaryField(
+        'vehicle_photo',
+        folder='depannage_express/breakdowns',
+        resource_type='auto',
+    )
     breakdown_description = models.TextField()
     breakdown_type = models.CharField(max_length=500, blank=True)
     specialty_requested = models.ForeignKey(

@@ -99,6 +99,7 @@ def create_payment(request):
             customer_name=None,
             customer_phone=payment.payer_phone,
             callback_url=f"{settings.BACKEND_BASE_URL}/api/payments/callback/",
+            breakdown_id=str(breakdown.id),
         )
         transaction_id = result['transaction_id']
         payment_url = result['payment_url']

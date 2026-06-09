@@ -2,6 +2,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.core.models import TimestampedModel
+from cloudinary.models import CloudinaryField
 
 
 class Specialty(models.Model):
@@ -49,10 +50,30 @@ class MechanicProfile(TimestampedModel):
     works_weekends = models.BooleanField(default=True)
 
     # Documents
-    id_card_front = models.FileField(upload_to='mechanics/id_cards/', null=True, blank=True)
-    id_card_back = models.FileField(upload_to='mechanics/id_cards/', null=True, blank=True)
-    certification_doc = models.FileField(upload_to='mechanics/certifications/', null=True, blank=True)
-    profile_photo = models.FileField(upload_to='mechanics/photos/', null=True, blank=True)
+    id_card_front = CloudinaryField(
+        'id_card_front',
+        folder='depannage_express/documents',
+        blank=True, null=True,
+        resource_type='auto',
+    )
+    id_card_back = CloudinaryField(
+        'id_card_back',
+        folder='depannage_express/documents',
+        blank=True, null=True,
+        resource_type='auto',
+    )
+    certification_doc = CloudinaryField(
+        'certification_doc',
+        folder='depannage_express/documents',
+        blank=True, null=True,
+        resource_type='auto',
+    )
+    profile_photo = CloudinaryField(
+        'profile_photo',
+        folder='depannage_express/mechanics',
+        blank=True, null=True,
+        resource_type='auto',
+    )
 
     # Validation admin
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

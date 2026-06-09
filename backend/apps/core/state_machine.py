@@ -8,6 +8,7 @@ import logging
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -104,18 +105,30 @@ def _apply_side_effects(intervention, action: str, data: dict):
 
     if action == 'accept':
         intervention.accepted_at = now
-        br = intervention.breakdown_request
 
         # Mode broadcast : annuler les autres interventions en attente pour ce dépannage
         from apps.interventions.models import Intervention
-        Intervention.objects.filter(
-            breakdown_request=br,
-            status='pending_acceptance',
-        ).exclude(pk=intervention.pk).update(status='cancelled')
+        from apps.breakdowns.models import BreakdownRequest
 
-        br.status = 'in_progress'
-        br.assigned_mechanic = intervention.mechanic
-        br.save(update_fields=['status', 'assigned_mechanic'])
+        with transaction.atomic():
+            # Verrouiller la demande
+            br = BreakdownRequest.objects.select_for_update().get(pk=intervention.breakdown_request_id)
+
+            # Vérifier qu'elle n'est pas déjà accepted
+            if br.status in ['in_progress', 'completed', 'paid', 'reviewed']:
+                raise InvalidTransition(
+                    "Demande déjà prise en charge"
+                )
+
+            # Annuler les autres interventions pending
+            Intervention.objects.filter(
+                breakdown_request=br,
+                status='pending_acceptance',
+            ).exclude(pk=intervention.pk).update(status='cancelled')
+
+            br.status = 'in_progress'
+            br.assigned_mechanic = intervention.mechanic
+            br.save(update_fields=['status', 'assigned_mechanic'])
 
     elif action == 'refuse':
         intervention.refused_at = now
@@ -231,7 +244,13 @@ def _reassign_after_refusal(breakdown_request):
     specialty_id = breakdown_request.specialty_requested_id
     excluded = list(breakdown_request.refused_mechanic_ids or [])
 
-    for radius in list(settings.SEARCH_RADII_KM.values()):
+    current_phase = breakdown_request.search_phase
+    all_radii = settings.SEARCH_RADII_KM
+
+    # Partir depuis la phase courante
+    phases_to_try = {k: v for k, v in all_radii.items() if k >= current_phase}
+
+    for phase, radius in phases_to_try.items():
         mechanic, distance = find_mechanic_at_radius(lat, lon, radius, specialty_id, excluded)
         if mechanic:
             breakdown_request.assigned_mechanic = mechanic
