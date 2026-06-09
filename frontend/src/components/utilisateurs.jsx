@@ -38,12 +38,15 @@ const EMPTY_FORM = {
   profile_photo: null,
 };
 
+const POLL_INTERVAL_MS = 4_000;
+
 const Utilisateurs = ({ onBack }) => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState('');
   const [query, setQuery] = useState('');
+  const pollRef = useRef(null);
 
   // Modal refus
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -72,20 +75,24 @@ const Utilisateurs = ({ onBack }) => {
   const [completeError, setCompleteError] = useState('');
   const photoInputRef = useRef(null);
 
-  const loadUsers = async () => {
-    setError('');
-    setIsLoading(true);
+  const loadUsers = async ({ silent = false } = {}) => {
+    if (!silent) setError('');
+    if (!silent) setIsLoading(true);
     try {
       const allUsers = await fetchAdminUsers();
-      setUsers(Array.isArray(allUsers) ? allUsers : []);
+      setUsers(Array.isArray(allUsers) ? allUsers : (allUsers?.results ?? []));
     } catch (requestError) {
-      setError(requestError.message);
+      if (!silent) setError(requestError.message);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => {
+    loadUsers();
+    pollRef.current = setInterval(() => loadUsers({ silent: true }), POLL_INTERVAL_MS);
+    return () => clearInterval(pollRef.current);
+  }, []);
 
   const q = query.trim().toLowerCase();
 

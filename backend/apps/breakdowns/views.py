@@ -293,7 +293,17 @@ def my_breakdown_requests(request):
     except Exception:
         return Response({'error': 'Profil mécanicien introuvable.'}, status=404)
 
-    qs = BreakdownRequest.objects.filter(assigned_mechanic=profile).order_by('-created_at')
+    # En mode broadcast, plusieurs mécaniciens reçoivent une intervention mais
+    # seul le premier est assigned_mechanic. On filtre via les interventions actives
+    # pour inclure tous les mécaniciens notifiés, pas seulement assigned_mechanic.
+    from apps.interventions.models import Intervention
+    active_statuses = ['pending_acceptance', 'accepted', 'in_progress', 'completed', 'paid', 'reviewed']
+    bd_ids = Intervention.objects.filter(
+        mechanic=profile,
+        status__in=active_statuses,
+    ).values_list('breakdown_request_id', flat=True)
+
+    qs = BreakdownRequest.objects.filter(id__in=bd_ids).order_by('-created_at')
     status_filter = request.query_params.get('status')
     if status_filter:
         qs = qs.filter(status=status_filter)
