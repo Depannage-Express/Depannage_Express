@@ -1,4 +1,5 @@
 # apps/accounts/views.py
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
@@ -177,6 +178,12 @@ def delete_user_view(request, pk):
 
     name = user.full_name
     email = user.email
-    user.delete()
+    try:
+        user.delete()
+    except ProtectedError:
+        return Response(
+            {'error': 'Impossible de supprimer cet utilisateur : des interventions sont associées à son profil.'},
+            status=409,
+        )
     log_security_event(request, request.user, 'DELETE_USER', f'Suppression de {email}')
     return Response({'success': True, 'message': f'{name} supprimé définitivement.'})

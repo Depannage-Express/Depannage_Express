@@ -1,7 +1,11 @@
 # apps/interventions/views.py
+import logging
+
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
 
 from apps.core.permissions import IsAdmin, IsApprovedMechanic, IsValidDriverTokenForIntervention
 from apps.core.state_machine import (
@@ -38,6 +42,11 @@ def _transition_response(intervention, action, actor_role, **kwargs):
         return Response({'error': msg}, status=400)
     except UnauthorizedTransition as exc:
         return Response({'error': str(exc.detail)}, status=403)
+    except Exception:
+        logger.exception(
+            "Erreur inattendue — transition '%s' sur intervention %s", action, intervention.pk
+        )
+        return Response({'error': 'Erreur interne. Veuillez réessayer.'}, status=500)
     return Response({'success': True, 'status': intervention.status})
 
 

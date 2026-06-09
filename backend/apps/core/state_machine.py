@@ -3,9 +3,13 @@
 State machine centralisée pour les Interventions.
 TOUTE modification de statut doit passer par transition_intervention().
 """
+import logging
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 # Graphe des transitions valides : état actuel → {action → nouvel état}
@@ -133,7 +137,10 @@ def _apply_side_effects(intervention, action: str, data: dict):
             'phase_started_at',
         ])
 
-        _reassign_after_refusal(br)
+        try:
+            _reassign_after_refusal(br)
+        except Exception:
+            logger.exception("_reassign_after_refusal a échoué pour breakdown_request=%s", br.pk)
 
     elif action == 'start':
         intervention.started_at = now
@@ -211,6 +218,13 @@ def _reassign_after_refusal(breakdown_request):
     from apps.geolocation.utils import find_mechanic_at_radius, find_all_available_for_broadcast, haversine_distance
     from apps.interventions.models import Intervention
     from apps.notifications.utils import send_notification
+
+    if breakdown_request.latitude is None or breakdown_request.longitude is None:
+        logger.error(
+            "Réassignation impossible : latitude/longitude manquante pour breakdown_request=%s",
+            breakdown_request.pk,
+        )
+        return
 
     lat = float(breakdown_request.latitude)
     lon = float(breakdown_request.longitude)
