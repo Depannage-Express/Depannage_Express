@@ -25,6 +25,8 @@ import EnAttenteValidation from './components/en_attente_validation';
 import HistoriqueOTP from './components/historique_otp';
 import './index.css';
 
+// Estimation affichage uniquement.
+// Le montant réel est calculé et validé côté serveur.
 const BREAKDOWN_PRICING = {
   demarrage: 10000,
   batterie: 12000,
@@ -98,6 +100,20 @@ function App() {
 
   useEffect(() => {
     pingBackend();
+  }, []);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('fedapay_return');
+    if (!stored) return;
+    sessionStorage.removeItem('fedapay_return');
+    try {
+      const { payment_id, breakdown_id, driver_token } = JSON.parse(stored);
+      setCurrentPayment({ id: payment_id });
+      setCurrentBreakdown({ id: breakdown_id, driver_token });
+      setScreen(SCREENS.PAYMENT_CONFIRMATION);
+    } catch {
+      // session corrompue, on ignore
+    }
   }, []);
 
   useEffect(() => {
@@ -321,6 +337,7 @@ function App() {
             breakdownId={currentBreakdown?.id}
             driverLat={currentBreakdown?.latitude}
             driverLon={currentBreakdown?.longitude}
+            driverToken={currentBreakdown?.driver_token}
           />
         );
       case SCREENS.PAYMENT:

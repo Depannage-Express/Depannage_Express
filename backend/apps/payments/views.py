@@ -1,6 +1,9 @@
 # apps/payments/views.py
+import json as stdlib_json
 from decimal import Decimal, ROUND_DOWN
 
+from django.conf import settings
+from django.db import transaction as db_transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import generics
@@ -11,6 +14,7 @@ from rest_framework.response import Response
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
+from .fedapay_client import create_transaction, verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
 from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer
 
@@ -59,30 +63,62 @@ def create_payment(request):
             status=400,
         )
 
-    # Idempotence : refuser si un paiement validé existe déjà
-    if PaymentTransaction.objects.filter(breakdown_request=breakdown, status='paid').exists():
-        return Response({'error': 'Cette intervention a déjà été payée.'}, status=400)
+    with db_transaction.atomic():
+        # Idempotence protégée contre les doubles créations concurrentes
+        existing = PaymentTransaction.objects.select_for_update().filter(
+            breakdown_request=breakdown,
+            status__in=['pending', 'authorized', 'paid'],
+        ).first()
+        if existing:
+            if existing.status == 'paid':
+                return Response({'error': 'Cette intervention a déjà été payée.'}, status=400)
+            return Response({'error': 'Un paiement est déjà en cours pour cette intervention.'}, status=400)
 
-    # Construire les données sans le driver_token (non stocké dans PaymentTransaction)
-    payment_data = {k: v for k, v in request.data.items() if k != 'driver_token'}
-    payment_data['intervention'] = str(intervention.id)
-    payment_data['mechanic'] = str(intervention.mechanic_id)
+        # Montant calculé côté serveur — le champ 'amount' du frontend est ignoré
+        amount = settings.BREAKDOWN_PRICING.get(
+            breakdown.breakdown_type,
+            settings.BREAKDOWN_PRICING['general'],
+        )
 
-    serializer = PaymentTransactionSerializer(data=payment_data)
-    serializer.is_valid(raise_exception=True)
-    payment = serializer.save(
-        status='authorized',
-        provider_reference=f"PAY-{timezone.now().strftime('%Y%m%d%H%M%S')}",
-    )
+        payment_data = {
+            k: v for k, v in request.data.items()
+            if k not in ('driver_token', 'amount', 'breakdown_request')
+        }
+        payment_data['breakdown_request'] = str(breakdown.id)
+        payment_data['intervention'] = str(intervention.id)
+        payment_data['mechanic'] = str(intervention.mechanic_id)
+        payment_data['amount'] = str(amount)
 
-    log_security_event(
-        request,
-        None,
-        'PAYMENT_CREATED',
-        f'Paiement initialisé pour intervention {intervention.id} montant={payment.amount}',
-    )
+        serializer = PaymentTransactionSerializer(data=payment_data)
+        serializer.is_valid(raise_exception=True)
+        payment = serializer.save(status='pending', provider_reference='')
 
-    return Response(PaymentTransactionSerializer(payment).data, status=201)
+    try:
+        transaction_id, payment_url = create_transaction(
+            description=f"Dépannage #{breakdown_id}",
+            amount=int(payment.amount),
+            callback_url=f"{settings.BACKEND_BASE_URL}/api/payments/callback/",
+            payer_phone=payment.payer_phone,
+        )
+
+        payment.provider_reference = transaction_id
+        payment.status = 'authorized'
+        payment.save(update_fields=['provider_reference', 'status'])
+
+        log_security_event(
+            request, None, 'PAYMENT_CREATED',
+            f'Paiement FedaPay initié pour intervention {intervention.id} montant={payment.amount}',
+        )
+
+        return Response({
+            'payment_url': payment_url,
+            'transaction_id': transaction_id,
+            'payment_id': str(payment.id),
+        }, status=201)
+
+    except Exception as exc:
+        payment.delete()
+        return Response({'error': f'Erreur initialisation paiement : {exc}'}, status=502)
 
 
 @api_view(['POST'])
@@ -144,15 +180,67 @@ def confirm_payment(request, pk):
     return Response(PaymentStatusSerializer(payment).data)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def payment_callback(request):
+    """
+    Webhook FedaPay : met à jour le paiement et l'intervention après confirmation externe.
+    Protégé par vérification HMAC-SHA256 (header X-Fedapay-Signature: sha256=<hex>).
+    """
+    from apps.interventions.models import Intervention
+
+    signature = request.META.get('HTTP_X_FEDAPAY_SIGNATURE', '')
+    raw_body = request.body
+
+    if not verify_webhook_signature(raw_body, signature):
+        return Response({'error': 'Signature invalide.'}, status=400)
+
+    try:
+        payload = stdlib_json.loads(raw_body)
+    except (ValueError, KeyError):
+        return Response({'error': 'Payload invalide.'}, status=400)
+
+    transaction_obj = payload.get('object', {})
+    fedapay_id = str(transaction_obj.get('id', ''))
+    fedapay_status = transaction_obj.get('status', '')
+
+    if not fedapay_id:
+        return Response({'error': 'ID de transaction manquant.'}, status=400)
+
+    try:
+        payment = PaymentTransaction.objects.select_related('intervention').get(
+            provider_reference=fedapay_id
+        )
+    except PaymentTransaction.DoesNotExist:
+        return Response({'error': 'Paiement introuvable.'}, status=404)
+
+    # Idempotence
+    if payment.status == 'paid':
+        return Response({'status': 'already_paid'})
+
+    if fedapay_status in ('approved', 'transferred'):
+        with db_transaction.atomic():
+            payment.status = 'paid'
+            payment.paid_at = timezone.now()
+            payment.save(update_fields=['status', 'paid_at'])
+
+            if payment.intervention_id:
+                Intervention.objects.filter(pk=payment.intervention_id).update(status='paid')
+
+        log_security_event(
+            request, None, 'PAYMENT_CALLBACK_OK',
+            f'Callback FedaPay OK — transaction {fedapay_id} statut={fedapay_status}',
+        )
+
+    return Response({'status': 'ok'})
+
+
 class PaymentAdminListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = PaymentTransactionSerializer
     queryset = PaymentTransaction.objects.select_related(
         'mechanic__user'
     ).all().order_by('-created_at')
-
-
-SUBSCRIPTION_AMOUNT = '5000.00'
 
 
 @api_view(['POST'])
@@ -186,7 +274,7 @@ def create_subscription_payment(request):
     data = {
         'payer_name': payer_name,
         'payer_phone': payer_phone,
-        'amount': SUBSCRIPTION_AMOUNT,
+        'amount': settings.PREMIUM_SUBSCRIPTION_AMOUNT,
         'currency': 'XOF',
         'payment_method': payment_method,
         'payment_for': 'premium_subscription',

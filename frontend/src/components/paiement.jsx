@@ -38,6 +38,17 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
         breakdown_request: breakdownId || null,
         driver_token: driverToken || null,
       });
+
+      if (payment.payment_url) {
+        sessionStorage.setItem('fedapay_return', JSON.stringify({
+          payment_id: payment.payment_id,
+          breakdown_id: breakdownId,
+          driver_token: driverToken,
+        }));
+        window.location.href = payment.payment_url;
+        return;
+      }
+
       onPayerClick(payment);
     } catch (err) {
       setError(err.message || 'Erreur lors du paiement. Veuillez réessayer.');

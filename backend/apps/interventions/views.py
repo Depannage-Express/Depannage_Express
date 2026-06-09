@@ -9,7 +9,7 @@ from apps.core.state_machine import (
     InvalidTransition, UnauthorizedTransition,
 )
 from .models import Intervention
-from .serializers import InterventionSerializer
+from .serializers import InterventionSerializer, InterventionAcceptedSerializer
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ def my_interventions(request):
     if status_filter:
         qs = qs.filter(status=status_filter)
 
-    serializer = InterventionSerializer(qs, many=True)
+    serializer = InterventionAcceptedSerializer(qs, many=True)
     return Response({'count': qs.count(), 'results': serializer.data})
 
 

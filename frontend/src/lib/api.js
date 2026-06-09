@@ -1,15 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const ACCESS_TOKEN_KEY = 'depannage_express_access';
 const REFRESH_TOKEN_KEY = 'depannage_express_refresh';
-const REQUEST_TIMEOUT_MS = 65000;
+const REQUEST_TIMEOUT_MS = 8000;
 
 export function getAccessToken() {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY); // TODO: migrer vers httpOnly cookie en production
 }
 
 export function setAuthTokens({ access, refresh }) {
   if (access) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, access);
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, access); // TODO: migrer vers httpOnly cookie en production
   }
   if (refresh) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
@@ -17,7 +17,7 @@ export function setAuthTokens({ access, refresh }) {
 }
 
 export function clearAuthTokens() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY); // TODO: migrer vers httpOnly cookie en production
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
@@ -101,7 +101,7 @@ async function tryRefreshAndRetry(path, options) {
   }
 
   const tokens = await refreshResponse.json();
-  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access); // TODO: migrer vers httpOnly cookie en production
   if (tokens.refresh) {
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
   }
@@ -370,11 +370,11 @@ export async function createPayment(payload) {
   return parseResponse(response);
 }
 
-export async function confirmPayment(paymentId, breakdownRequestId) {
+export async function confirmPayment(paymentId, breakdownRequestId, driverToken) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/payments/${paymentId}/confirm/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ breakdown_request_id: breakdownRequestId }),
+    body: JSON.stringify({ breakdown_request_id: breakdownRequestId, driver_token: driverToken }),
   });
   return parseResponse(response);
 }
@@ -548,6 +548,8 @@ export function updateMyMechanicLocation(latitude, longitude) {
 const _geoCache = new Map();
 
 export async function reverseGeocode(lat, lon) {
+  // TODO production: proxifier via GET /api/geolocation/reverse/
+  // pour respecter la politique Nominatim
   if (!lat || !lon) return null;
   const key = `${lat},${lon}`;
   if (_geoCache.has(key)) return _geoCache.get(key);

@@ -1,4 +1,4 @@
-import random
+import secrets
 from datetime import timedelta
 
 from django.db import models
@@ -20,7 +20,7 @@ class DriverOTP(models.Model):
     @classmethod
     def create_for_phone(cls, phone):
         cls.objects.filter(phone=phone, is_used=False).update(is_used=True)
-        code = f"{random.randint(100000, 999999)}"
+        code = str(secrets.randbelow(900000) + 100000)
         return cls.objects.create(
             phone=phone,
             code=code,

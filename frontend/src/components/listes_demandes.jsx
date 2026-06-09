@@ -26,8 +26,12 @@ const ListesCommandes = ({ onBack }) => {
       setAllCommands(reqData.results || []);
       const map = {};
       (intervData.results || []).forEach((iv) => {
-        if (!map[iv.breakdown_request]) {
-          map[iv.breakdown_request] = iv;
+        const bdId = iv.breakdown_request;
+        if (!map[bdId]) {
+          map[bdId] = iv;
+        } else if (iv.status === 'pending_acceptance' && map[bdId].status !== 'pending_acceptance') {
+          // En mode broadcast : priorité à la mission en attente d'acceptation
+          map[bdId] = iv;
         }
       });
       setInterventionMap(map);

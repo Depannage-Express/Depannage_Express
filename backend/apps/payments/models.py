@@ -61,6 +61,13 @@ class PaymentTransaction(TimestampedModel):
             models.Index(fields=['payer_phone']),
             models.Index(fields=['provider_reference']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['breakdown_request', 'provider_reference'],
+                name='unique_breakdown_fedapay_transaction',
+                condition=models.Q(provider_reference__gt=''),
+            )
+        ]
 
     def __str__(self):
         return f"Paiement {self.id} - {self.payment_for} - {self.status}"

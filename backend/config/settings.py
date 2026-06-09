@@ -22,7 +22,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'change-me-in-production')
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
 
 # Render injecte automatiquement RENDER_EXTERNAL_HOSTNAME
 _render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
@@ -62,6 +62,8 @@ LOCAL_APPS = [
     'apps.otp',
 ]
 
+# Note : apps.notifications et apps.security sont des modules utilitaires sans modèles.
+# Ils ne nécessitent pas d'être dans INSTALLED_APPS.
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # ─────────────────────────────────────────
@@ -115,14 +117,22 @@ import dj_database_url
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=60)
-    }
+    _db_config = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+    _db_config['OPTIONS'] = {'sslmode': 'require'}
+    DATABASES = {'default': _db_config}
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': os.getenv('DB_ENGINE'),
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 
@@ -254,3 +264,28 @@ OTP_SHOW_CODE = os.getenv('OTP_SHOW_CODE', 'False') == 'True'
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
 TWILIO_FROM_NUMBER = os.getenv('TWILIO_FROM_NUMBER', '')
+
+# ─────────────────────────────────────────
+# FEDAPAY
+# ─────────────────────────────────────────
+
+FEDAPAY_SECRET_KEY = os.getenv('FEDAPAY_SECRET_KEY', '')
+FEDAPAY_ENVIRONMENT = os.getenv('FEDAPAY_ENVIRONMENT', 'sandbox')
+FEDAPAY_WEBHOOK_SECRET = os.getenv('FEDAPAY_WEBHOOK_SECRET', '')
+BACKEND_BASE_URL = os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')
+NOMINATIM_BASE_URL = os.getenv('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org')
+PREMIUM_SUBSCRIPTION_AMOUNT = os.getenv('PREMIUM_SUBSCRIPTION_AMOUNT', '5000.00')
+
+# ─────────────────────────────────────────
+# PRICING / SEARCH
+# ─────────────────────────────────────────
+
+BREAKDOWN_PRICING = {
+    'demarrage': 10000,
+    'batterie':  12000,
+    'moteur':    18000,
+    'pneu':       8000,
+    'general':   15000,
+}
+
+SEARCH_RADII_KM = {1: 10, 2: 20, 3: 50}

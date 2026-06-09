@@ -34,6 +34,20 @@ class MechanicProfileSerializer(serializers.ModelSerializer):
             'total_interventions', 'average_rating', 'total_reviews'
         ]
 
+    def validate_latitude(self, value):
+        if value is not None and not (-90 <= value <= 90):
+            raise serializers.ValidationError(
+                "La latitude doit être comprise entre -90 et 90."
+            )
+        return value
+
+    def validate_longitude(self, value):
+        if value is not None and not (-180 <= value <= 180):
+            raise serializers.ValidationError(
+                "La longitude doit être comprise entre -180 et 180."
+            )
+        return value
+
 
 class MechanicPublicSerializer(serializers.ModelSerializer):
     """Public profile — phone hidden for non-premium contact."""

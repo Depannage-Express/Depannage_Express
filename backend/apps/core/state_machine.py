@@ -3,6 +3,7 @@
 State machine centralisée pour les Interventions.
 TOUTE modification de statut doit passer par transition_intervention().
 """
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -23,9 +24,6 @@ TRANSITION_GRAPH = {
         'cancel': 'cancelled',
     },
     'completed': {
-        'pay': 'paid',
-    },
-    'ending_acceptance': {
         'pay': 'paid',
     },
     'paid': {
@@ -128,12 +126,11 @@ def _apply_side_effects(intervention, action: str, data: dict):
         br.assigned_at = None
         br.assignment_distance_km = None
         br.status = 'pending'
-        br.search_phase = 1
         br.phase_started_at = now
         br.save(update_fields=[
             'refused_mechanic_ids', 'refusal_count',
             'assigned_mechanic', 'assigned_at', 'assignment_distance_km', 'status',
-            'search_phase', 'phase_started_at',
+            'phase_started_at',
         ])
 
         _reassign_after_refusal(br)
@@ -220,8 +217,7 @@ def _reassign_after_refusal(breakdown_request):
     specialty_id = breakdown_request.specialty_requested_id
     excluded = list(breakdown_request.refused_mechanic_ids or [])
 
-    # Cercles concentriques : 10 km → 20 km → 50 km
-    for radius in [10, 20, 50]:
+    for radius in list(settings.SEARCH_RADII_KM.values()):
         mechanic, distance = find_mechanic_at_radius(lat, lon, radius, specialty_id, excluded)
         if mechanic:
             breakdown_request.assigned_mechanic = mechanic

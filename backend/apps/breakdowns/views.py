@@ -1,4 +1,5 @@
 # apps/breakdowns/views.py
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
@@ -15,10 +16,9 @@ from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
 from apps.payments.models import PaymentTransaction
 from .models import BreakdownRequest, Message
-from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer
+from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer
 
 PHASE_TIMEOUT_SECS = 120   # 2 minutes par phase
-PHASE_RADII_KM = {1: 10, 2: 20, 3: 50}  # phase 4 = broadcast
 
 
 def _assign_mechanic(req, mechanic, distance):
@@ -130,7 +130,7 @@ def _try_escalate(req):
         specialty_id = req_locked.specialty_requested_id
 
         if next_phase <= 3:
-            radius = PHASE_RADII_KM[next_phase]
+            radius = settings.SEARCH_RADII_KM[next_phase]
             mechanic, distance = find_nearest_mechanic(
                 latitude=lat, longitude=lon,
                 radius_km=radius,
@@ -298,7 +298,7 @@ def my_breakdown_requests(request):
     if status_filter:
         qs = qs.filter(status=status_filter)
 
-    serializer = BreakdownRequestSerializer(qs, many=True)
+    serializer = BreakdownRequestPublicSerializer(qs, many=True)
     return Response({'count': qs.count(), 'results': serializer.data})
 
 

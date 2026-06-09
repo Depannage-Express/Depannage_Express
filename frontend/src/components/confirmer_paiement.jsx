@@ -16,17 +16,18 @@ const InfoRow = ({ icon, label, value }) => {
   );
 };
 
-const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon }) => {
+const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon, driverToken }) => {
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!paymentId || !breakdownId) return;
-    confirmPayment(paymentId, breakdownId)
-      .catch(() => {})
+    confirmPayment(paymentId, breakdownId, driverToken)
+      .catch((err) => setError(err?.message || 'Erreur lors de la confirmation du paiement.'))
       .finally(() => {
         fetchInterventionForBreakdown(breakdownId).then(setData).catch(() => {});
       });
-  }, [paymentId, breakdownId]);
+  }, [paymentId, breakdownId, driverToken]);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
@@ -37,6 +38,12 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
           <p className="font-bold text-xl text-[#0D2B0D]">Paiement réussi</p>
           <p className="text-sm text-gray-500 mt-1">Votre mécanicien est en route</p>
         </div>
+
+        {error && (
+          <div className="w-full bg-red-50 border border-red-300 rounded-xl p-4 text-red-700 text-sm text-center">
+            {error}
+          </div>
+        )}
 
         {/* Carte mécanicien */}
         {data && (

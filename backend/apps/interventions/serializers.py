@@ -1,11 +1,11 @@
 # apps/interventions/serializers.py
 from rest_framework import serializers
 from .models import Intervention
-from apps.breakdowns.serializers import BreakdownRequestSerializer
+from apps.breakdowns.serializers import BreakdownRequestSerializer, BreakdownRequestPublicSerializer
 
 
 class InterventionSerializer(serializers.ModelSerializer):
-    breakdown_request_detail = BreakdownRequestSerializer(
+    breakdown_request_detail = BreakdownRequestPublicSerializer(
         source='breakdown_request', read_only=True
     )
 
@@ -26,4 +26,11 @@ class InterventionSerializer(serializers.ModelSerializer):
         ]
 
 
-# apps/interventions/views.py  (inline here for cohesion)
+class InterventionAcceptedSerializer(InterventionSerializer):
+    """Expose driver_phone uniquement quand l'intervention a été acceptée."""
+    breakdown_request_detail = serializers.SerializerMethodField()
+
+    def get_breakdown_request_detail(self, obj):
+        if obj.status == 'accepted':
+            return BreakdownRequestSerializer(obj.breakdown_request).data
+        return BreakdownRequestPublicSerializer(obj.breakdown_request).data

@@ -44,11 +44,18 @@ const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
   useEffect(() => {
     if (!requestId) return;
 
+    let intervalId;
+    const STATUTS_FINAUX = ['paid', 'cancelled', 'reviewed', 'canceled'];
+
     const poll = async () => {
       try {
         const result = await fetchBreakdownStatus(requestId, driverToken);
         setData(result);
         setError('');
+
+        if (STATUTS_FINAUX.includes(result.status)) {
+          window.clearInterval(intervalId);
+        }
 
         if (result.status === 'in_progress' && !assignedCalledRef.current && onMechanicAssigned) {
           assignedCalledRef.current = true;
@@ -60,8 +67,8 @@ const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
     };
 
     poll();
-    const interval = window.setInterval(poll, POLL_MS);
-    return () => window.clearInterval(interval);
+    intervalId = window.setInterval(poll, POLL_MS);
+    return () => window.clearInterval(intervalId);
   }, [requestId, onMechanicAssigned]);
 
   const statusInfo = getStatusInfo(data);
