@@ -55,6 +55,9 @@ class UserSerializer(serializers.ModelSerializer):
     mechanic_profile_id = serializers.SerializerMethodField()
     mechanic_short_id = serializers.SerializerMethodField()
     mechanic_profile_photo = serializers.SerializerMethodField()
+    mechanic_city = serializers.SerializerMethodField()
+    mechanic_department = serializers.SerializerMethodField()
+    mechanic_neighborhood = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -62,7 +65,8 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'phone', 'role', 'avatar', 'is_active', 'is_blocked',
             'mechanic_profile_status', 'mechanic_profile_id', 'mechanic_short_id',
-            'mechanic_profile_photo', 'created_at', 'updated_at'
+            'mechanic_profile_photo', 'mechanic_city', 'mechanic_department',
+            'mechanic_neighborhood', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'role', 'is_blocked', 'created_at', 'updated_at']
 
@@ -99,6 +103,30 @@ class UserSerializer(serializers.ModelSerializer):
                     return request.build_absolute_uri(photo.url) if request else photo.url
             except Exception:
                 pass
+        return None
+
+    def get_mechanic_city(self, obj):
+        if obj.role in ('mechanic_standard', 'mechanic_premium'):
+            try:
+                return obj.mechanic_profile.city or None
+            except Exception:
+                return None
+        return None
+
+    def get_mechanic_department(self, obj):
+        if obj.role in ('mechanic_standard', 'mechanic_premium'):
+            try:
+                return obj.mechanic_profile.department or None
+            except Exception:
+                return None
+        return None
+
+    def get_mechanic_neighborhood(self, obj):
+        if obj.role in ('mechanic_standard', 'mechanic_premium'):
+            try:
+                return obj.mechanic_profile.neighborhood or None
+            except Exception:
+                return None
         return None
 
 

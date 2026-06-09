@@ -32,6 +32,9 @@ urlpatterns = [
 
     # OTP Conducteur — historique sans compte
     path('api/otp/', include('apps.otp.urls')),
+
+    # Incidents / Signalements
+    path('api/incidents/', include('apps.incidents.urls')),
 ]
 
 # Fichiers uploadés servis localement (démo)

@@ -579,3 +579,28 @@ export async function reverseGeocode(lat, lon) {
     return null;
   }
 }
+
+// ─── Incidents / Signalements (admin) ─────────────────────────────────────────
+
+export function fetchAdminIncidents(params = {}) {
+  const q = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+  ).toString();
+  return apiRequest(`/incidents/${q ? '?' + q : ''}`);
+}
+
+export function fetchAdminIncidentStats() {
+  return apiRequest('/incidents/stats/');
+}
+
+export function resolveIncident(id) {
+  return apiRequest(`/incidents/${id}/resolve/`, { method: 'PATCH' });
+}
+
+export function rejectIncident(id) {
+  return apiRequest(`/incidents/${id}/reject/`, { method: 'PATCH' });
+}
+
+export function suspendIncident(id) {
+  return apiRequest(`/incidents/${id}/suspend/`, { method: 'PATCH' });
+}

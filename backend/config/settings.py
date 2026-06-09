@@ -60,6 +60,7 @@ LOCAL_APPS = [
     'apps.premium',
     'apps.geolocation',
     'apps.otp',
+    'apps.incidents',
 ]
 
 # Note : apps.notifications et apps.security sont des modules utilitaires sans modèles.

@@ -281,7 +281,7 @@ const SupervisionInterventions = ({ onBack }) => {
                               req.assigned_mechanic.user_name ||
                               `${req.assigned_mechanic.first_name || ''} ${req.assigned_mechanic.last_name || ''}`.trim()
                             } />
-                            <Row label="Ville" value={req.assigned_mechanic.city} />
+                            <Row label="Localisation" value={[req.assigned_mechanic.neighborhood, req.assigned_mechanic.city, req.assigned_mechanic.department].filter(Boolean).join(', ') || null} />
                             <Row label="Distance" value={req.assignment_distance_km ? `${req.assignment_distance_km} km` : null} />
                             <Row label="Assigné le" value={req.assigned_at ? new Date(req.assigned_at).toLocaleString('fr-FR') : null} />
                           </>

@@ -22,7 +22,7 @@ class MechanicProfileSerializer(serializers.ModelSerializer):
         model = MechanicProfile
         fields = [
             'id', 'short_id', 'user', 'bio', 'years_experience', 'specialties', 'specialty_ids',
-            'latitude', 'longitude', 'address', 'city', 'country',
+            'latitude', 'longitude', 'address', 'city', 'department', 'neighborhood', 'country',
             'is_available', 'available_from', 'available_to', 'works_weekends',
             'id_card_front', 'id_card_back', 'certification_doc', 'profile_photo',
             'status', 'validated_at', 'rejection_reason',
@@ -61,7 +61,7 @@ class MechanicPublicSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user_name', 'user_avatar', 'is_premium',
             'bio', 'years_experience', 'specialties',
-            'city', 'country',
+            'city', 'department', 'neighborhood', 'country',
             'is_available', 'available_from', 'available_to', 'works_weekends',
             'profile_photo', 'average_rating', 'total_reviews', 'total_interventions',
         ]

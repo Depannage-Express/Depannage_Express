@@ -38,6 +38,8 @@ class MechanicProfile(TimestampedModel):
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
+    department = models.CharField(max_length=100, blank=True, default='', verbose_name='Département')
+    neighborhood = models.CharField(max_length=100, blank=True, default='', verbose_name='Quartier')
     country = models.CharField(max_length=100, default='Bénin')
 
     # Disponibilité

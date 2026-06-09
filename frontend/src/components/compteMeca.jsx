@@ -185,7 +185,7 @@ const MonCompte = ({onBack}) => {
             <p className="text-black font-bold">Email: <span className="font-medium">{profil?.email || '-'}</span></p>
             <p className="text-black font-bold">Rôle: <span className="font-medium">{profil?.role || '-'}</span></p>
             <p className="text-black font-bold">Spécialité: <span className="font-medium">{profileDetails?.specialties?.map((item) => item.name).join(', ') || 'Non renseigné'}</span></p>
-            <p className="text-black font-bold">Ville: <span className="font-medium">{profileDetails?.city || '-'}</span></p>
+            <p className="text-black font-bold">Localisation: <span className="font-medium">{[profileDetails?.neighborhood, profileDetails?.city, profileDetails?.department].filter(Boolean).join(', ') || '-'}</span></p>
             <p className="text-black font-bold">Statut profil: <span className="font-medium">{profileDetails?.status || 'En attente de création'}</span></p>
             {profileDetails?.latitude && profileDetails?.longitude && (
               <p className="text-black font-bold text-xs">GPS: <span className="font-mono font-normal">{parseFloat(profileDetails.latitude).toFixed(4)}, {parseFloat(profileDetails.longitude).toFixed(4)}</span></p>

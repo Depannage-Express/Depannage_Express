@@ -294,6 +294,8 @@ const Utilisateurs = ({ onBack }) => {
     if (completeForm.bio)              fd.append('bio', completeForm.bio);
     if (completeForm.years_experience) fd.append('years_experience', completeForm.years_experience);
     if (completeForm.city)             fd.append('city', completeForm.city);
+    if (selectedDept)                  fd.append('department', selectedDept);
+    if (selectedQuartier)              fd.append('neighborhood', selectedQuartier);
     if (selectedQuartier)              fd.append('address', selectedQuartier);
     if (completeForm.latitude)         fd.append('latitude', completeForm.latitude);
     if (completeForm.longitude)        fd.append('longitude', completeForm.longitude);
@@ -398,6 +400,12 @@ const Utilisateurs = ({ onBack }) => {
             <div className="mt-1">
               <ProfileStatusBadge status={user.mechanic_profile_status} />
             </div>
+          )}
+          {(user.mechanic_city || user.mechanic_neighborhood || user.mechanic_department) && (
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+              <MapPin size={10} className="shrink-0" />
+              {[user.mechanic_neighborhood, user.mechanic_city, user.mechanic_department].filter(Boolean).join(', ')}
+            </p>
           )}
           </div>
         </div>

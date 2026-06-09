@@ -170,7 +170,7 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-[#0D2B0D] truncate">{m.user_name}</p>
-                      <p className="text-xs text-gray-500 truncate">{m.city || 'Localisation non renseignée'}</p>
+                      <p className="text-xs text-gray-500 truncate">{[m.neighborhood, m.city, m.department].filter(Boolean).join(', ') || 'Localisation non renseignée'}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Star size={12} className="text-yellow-500 fill-yellow-500 shrink-0" />
                         <span className="text-xs font-semibold">{m.average_rating ? Number(m.average_rating).toFixed(1) : '—'}</span>
@@ -205,7 +205,7 @@ const InfoMecanicien = ({ onBack, searchQuery = '', onClearSearch }) => {
                   </div>
                   <div>
                     <h3 className="font-black text-xl text-[#0D2B0D]">{selected.user_name}</h3>
-                    <p className="text-gray-500 text-sm">{selected.city}{selected.country ? `, ${selected.country}` : ''}</p>
+                    <p className="text-gray-500 text-sm">{[selected.neighborhood, selected.city, selected.department].filter(Boolean).join(', ') || '—'}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Star size={16} className="text-yellow-500 fill-yellow-500" />
                       <span className="font-bold">{selected.average_rating ? Number(selected.average_rating).toFixed(1) : '—'}</span>
