@@ -123,7 +123,7 @@ def _apply_side_effects(intervention, action: str, data: dict):
 
         br = intervention.breakdown_request
         refused_ids = list(br.refused_mechanic_ids or [])
-        refused_ids.append(intervention.mechanic_id)
+        refused_ids.append(str(intervention.mechanic_id))
         br.refused_mechanic_ids = refused_ids
         br.refusal_count = (br.refusal_count or 0) + 1
         br.assigned_mechanic = None
