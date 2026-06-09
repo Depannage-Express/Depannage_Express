@@ -6,7 +6,6 @@ from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.models import F
 from django.utils import timezone
-from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,7 +15,7 @@ from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
 from .fedapay_client import create_transaction, verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
-from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer
+from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer, PaymentAdminSerializer
 
 
 @api_view(['POST'])
@@ -235,12 +234,43 @@ def payment_callback(request):
     return Response({'status': 'ok'})
 
 
-class PaymentAdminListView(generics.ListAPIView):
-    permission_classes = [IsAdmin]
-    serializer_class = PaymentTransactionSerializer
-    queryset = PaymentTransaction.objects.select_related(
-        'mechanic__user'
-    ).all().order_by('-created_at')
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_list_payments(request):
+    from django.db import models as db_models
+
+    qs = PaymentTransaction.objects.select_related(
+        'breakdown_request', 'mechanic__user'
+    ).order_by('-created_at')
+
+    status = request.query_params.get('status')
+    if status and status != 'all':
+        qs = qs.filter(status=status)
+
+    search = request.query_params.get('search', '').strip()
+    if search:
+        qs = qs.filter(
+            db_models.Q(provider_reference__icontains=search) |
+            db_models.Q(payer_name__icontains=search) |
+            db_models.Q(breakdown_request__driver_name__icontains=search)
+        )
+
+    return Response(PaymentAdminSerializer(qs, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_payment_stats(request):
+    from django.db.models import Sum, Count, Q
+
+    stats = PaymentTransaction.objects.aggregate(
+        total_paid=Sum('amount', filter=Q(status='paid')),
+        count_paid=Count('id', filter=Q(status='paid')),
+        count_pending=Count('id', filter=Q(status__in=['pending', 'authorized'])),
+        count_failed=Count('id', filter=Q(status='failed')),
+        count_total=Count('id'),
+    )
+    return Response(stats)
 
 
 @api_view(['POST'])

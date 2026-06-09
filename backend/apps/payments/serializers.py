@@ -37,6 +37,35 @@ class PaymentStatusSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'provider_reference', 'paid_at']
 
 
+class PaymentAdminSerializer(serializers.ModelSerializer):
+    driver_name = serializers.SerializerMethodField()
+    breakdown_type = serializers.SerializerMethodField()
+    mechanic_name = serializers.SerializerMethodField()
+
+    def get_driver_name(self, obj):
+        if obj.breakdown_request:
+            return obj.breakdown_request.driver_name
+        return obj.payer_name
+
+    def get_breakdown_type(self, obj):
+        if obj.breakdown_request:
+            return obj.breakdown_request.breakdown_type
+        return None
+
+    def get_mechanic_name(self, obj):
+        if obj.mechanic and obj.mechanic.user:
+            return obj.mechanic.user.full_name
+        return None
+
+    class Meta:
+        model = PaymentTransaction
+        fields = [
+            'id', 'amount', 'status', 'provider_reference', 'payment_for',
+            'driver_name', 'breakdown_type', 'mechanic_name',
+            'payer_name', 'created_at', 'paid_at',
+        ]
+
+
 class WithdrawalRequestSerializer(serializers.ModelSerializer):
     mechanic_name = serializers.SerializerMethodField()
     processed_by_name = serializers.SerializerMethodField()

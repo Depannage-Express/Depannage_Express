@@ -381,8 +381,15 @@ export async function confirmPayment(paymentId, breakdownRequestId, driverToken)
   return parseResponse(response);
 }
 
-export function fetchAdminPayments() {
-  return apiRequest('/payments/admin/');
+export function fetchAdminPayments(params = {}) {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== ''))
+  ).toString();
+  return apiRequest(`/payments/admin/${qs ? '?' + qs : ''}`);
+}
+
+export function fetchAdminPaymentStats() {
+  return apiRequest('/payments/admin/stats/');
 }
 
 export async function fetchInterventionForBreakdown(breakdownId) {

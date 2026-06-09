@@ -7,7 +7,8 @@ urlpatterns = [
     path('', views.create_payment, name='payment-create'),
     path('<uuid:pk>/confirm/', views.confirm_payment, name='payment-confirm'),
     path('callback/', views.payment_callback, name='payment-callback'),
-    path('admin/', views.PaymentAdminListView.as_view(), name='payment-admin-list'),
+    path('admin/', views.admin_list_payments, name='payment-admin-list'),
+    path('admin/stats/', views.admin_payment_stats, name='payment-admin-stats'),
     path('subscription/', views.create_subscription_payment, name='subscription-create'),
     path('subscription/<uuid:pk>/confirm/', views.confirm_subscription_payment, name='subscription-confirm'),
 
