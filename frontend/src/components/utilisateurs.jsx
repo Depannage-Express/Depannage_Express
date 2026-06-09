@@ -11,7 +11,9 @@ import {
   adminCompleteAndApproveMechanic,
   adminFixMechanicLocation,
 } from '../lib/api';
-import { DEPARTMENTS, getCitiesForDept, getQuartiersForCity, getCoordsForQuartier } from '../lib/benin_locations';
+import { getCoordsForQuartier } from '../lib/benin_locations';
+import SearchableSelect from './SearchableSelect';
+import { DEPARTEMENTS, getCommunes, getQuartiers } from '../data/benin_localisation';
 
 const STATUS_BADGE = {
   approved: 'bg-green-100 text-green-700 border-green-400',
@@ -279,9 +281,7 @@ const Utilisateurs = ({ onBack }) => {
     if (!selectedQuartier)                missingFields.push('Quartier / Zone');
     if (!completeForm.latitude.trim())    missingFields.push('Latitude');
     if (!completeForm.longitude.trim())   missingFields.push('Longitude');
-    if (specialties.length > 0 && completeForm.specialty_ids.length === 0) {
-      missingFields.push('au moins une Spécialité');
-    }
+
     if (missingFields.length > 0) {
       setCompleteError(`Champs obligatoires manquants : ${missingFields.join(', ')}.`);
       return;
@@ -683,7 +683,7 @@ const Utilisateurs = ({ onBack }) => {
               {/* Spécialités */}
               <div>
                 <label className="block text-xs font-bold uppercase text-gray-500 mb-2">
-                  Spécialités {specialties.length > 0 && <span className="text-red-500">*</span>}
+                  Spécialités
                 </label>
                 {!specialtiesLoaded ? (
                   <p className="text-xs text-gray-400 italic">Chargement des spécialités…</p>
@@ -709,6 +709,9 @@ const Utilisateurs = ({ onBack }) => {
                     ))}
                   </div>
                 )}
+                <p style={{fontSize: '0.75rem', color: '#888', marginTop: '4px'}}>
+                  Optionnel — peut être complété plus tard
+                </p>
               </div>
 
               {/* Localisation — cascade Département → Commune */}
@@ -721,26 +724,22 @@ const Utilisateurs = ({ onBack }) => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1">Département</label>
-                    <select
+                    <SearchableSelect
+                      options={DEPARTEMENTS}
                       value={selectedDept}
-                      onChange={e => handleDeptChange(e.target.value)}
-                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white"
-                    >
-                      <option value="">— Choisir —</option>
-                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                      onChange={handleDeptChange}
+                      placeholder="— Choisir un département —"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1">Commune / Ville <span className="text-red-500">*</span></label>
-                    <select
+                    <SearchableSelect
+                      options={getCommunes(selectedDept)}
                       value={selectedCity}
-                      onChange={e => handleCityChange(e.target.value)}
+                      onChange={handleCityChange}
+                      placeholder="— Choisir une commune —"
                       disabled={!selectedDept}
-                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white disabled:opacity-50"
-                    >
-                      <option value="">— Choisir —</option>
-                      {getCitiesForDept(selectedDept).map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    />
                   </div>
                 </div>
 
@@ -749,17 +748,13 @@ const Utilisateurs = ({ onBack }) => {
                   <label className="block text-xs font-bold text-gray-500 mb-1">
                     Quartier / Zone <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
+                    options={getQuartiers(selectedDept, selectedCity)}
                     value={selectedQuartier}
-                    onChange={e => handleQuartierChange(e.target.value)}
+                    onChange={handleQuartierChange}
+                    placeholder="— Choisir un quartier —"
                     disabled={!selectedCity}
-                    className="w-full border-2 border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white disabled:opacity-50"
-                  >
-                    <option value="">— Choisir un quartier —</option>
-                    {Object.keys(getQuartiersForCity(selectedDept, selectedCity)).map(q => (
-                      <option key={q} value={q}>{q}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Coordonnées — auto-remplies, modifiables manuellement */}
