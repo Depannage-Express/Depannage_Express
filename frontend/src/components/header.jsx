@@ -44,7 +44,9 @@ const Header = ({
   };
 
   return (
-    <header className="w-full bg-white py-2 px-4 md:px-8 grid grid-cols-3 md:flex md:items-center md:justify-between shadow-sm relative z-50">
+    <header className="w-full bg-white shadow-sm relative z-50">
+
+      <div className="max-w-screen-2xl mx-auto py-2 px-4 md:px-8 grid grid-cols-3 md:flex md:items-center md:justify-between">
 
       {/* 1. Logo */}
       <div className="flex items-center gap-2 md:gap-3 my-1 justify-self-start md:justify-start shrink-0">
@@ -130,6 +132,8 @@ const Header = ({
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-800 p-2 hover:bg-slate-100 rounded-full transition-colors focus:outline-none">
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
+      </div>
+
       </div>
 
       {/* Barre de recherche mobile — sous le header */}

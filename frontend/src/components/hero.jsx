@@ -33,9 +33,9 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
   return (
 <section className="flex flex-col md:flex-row bg-[#608C27] border-t-4 border-[#608C27]">
       {/* PARTIE GAUCHE : STATISTIQUES */}
-      <div className="w-full md:w-1/3 bg-white flex flex-col  lg:flex-col items-center justify-center py-4 lg:py-6 gap-8">
+      <div className="w-full md:w-1/3 xl:w-1/4 bg-white flex flex-col lg:flex-col items-center justify-center py-4 lg:py-6 xl:py-10 gap-8 xl:gap-10">
 
-        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center">
+        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 xl:w-72 h-[70px] text-center flex flex-col justify-center">
           <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">
             {stats.total_interventions !== null ? `${stats.total_interventions}+` : '—'}
           </h3>
@@ -44,7 +44,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
           </p>
         </div>
 
-        <div className="bg-[#0D2B0D] rounded-2xl p-2 w-64  md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center shadow-lg">
+        <div className="bg-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 xl:w-72 h-[70px] text-center flex flex-col justify-center shadow-lg">
           <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-white">
             {stats.total_mechanics !== null ? `${stats.total_mechanics}+` : '—'}
           </h3>
@@ -53,7 +53,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
           </p>
         </div>
 
-        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 h-[70px] text-center flex flex-col justify-center">
+        <div className="border-2 border-[#0D2B0D] rounded-2xl p-2 w-64 md:w-52 lg:w-64 xl:w-72 h-[70px] text-center flex flex-col justify-center">
           <h3 className="lg:text-2xl md:text-2xl text-3xl font-bold text-[#0D2B0D]">
             {stats.total_requests !== null ? `${stats.total_requests}+` : '—'}
           </h3>
@@ -65,7 +65,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
       </div>
 
       {/* PARTIE DROITE : TECHNICIENS */}
-<div className="w-full md:w-2/3 bg-[#608C27] grid grid-cols-1 justify-items-center md:grid-cols-2 lg:grid-cols-3  gap-4 py-6 lg:py-8 px-4 max-h-[500px] overflow-y-auto">
+<div className="w-full md:w-2/3 xl:w-3/4 bg-[#608C27] grid grid-cols-1 justify-items-center md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-6 lg:py-8 xl:py-10 px-4 xl:px-8 max-h-[500px] xl:max-h-[600px] overflow-y-auto">
         {isLoading ? (
           <div className="col-span-full flex items-center justify-center py-8">
             <Loader className="text-white animate-spin" size={32} />
@@ -159,7 +159,8 @@ const Hero = ({ onStartClick, onVoir }) => {
   return (
     <>
       {/* HERO */}
-      <section className="bg-[#0D2B0D] flex flex-col md:flex-row items-center px-4 md:px-16 py-12 gap-10 mt-5">
+      <section className="bg-[#0D2B0D] mt-5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center px-4 md:px-16 py-12 gap-10">
 
         {/* TEXTE */}
         <div className="w-full md:w-1/2 space-y-6 text-center md:text-left flex flex-col items-center md:items-start">
@@ -194,6 +195,7 @@ const Hero = ({ onStartClick, onVoir }) => {
             />
 
           </div>
+        </div>
         </div>
       </section>
 

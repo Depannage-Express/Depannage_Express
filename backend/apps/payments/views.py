@@ -88,6 +88,14 @@ def create_payment(request):
         payment_data['mechanic'] = str(intervention.mechanic_id)
         payment_data['amount'] = str(amount)
 
+        is_premium = intervention.mechanic.user.role == 'mechanic_premium'
+        if is_premium:
+            payment_data['net_amount'] = str(amount)
+            payment_data['commission_amount'] = '0'
+        else:
+            payment_data['net_amount'] = '0'
+            payment_data['commission_amount'] = '0'
+
         serializer = PaymentTransactionSerializer(data=payment_data)
         serializer.is_valid(raise_exception=True)
         payment = serializer.save(status='pending', provider_reference='')
