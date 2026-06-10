@@ -77,7 +77,6 @@ const MonCompte = ({onBack}) => {
     if (isLocked) { setWError('Retrait bloqué 72h après changement de numéro.'); return; }
     const feeCalc = Math.floor(amount * 0.0075);
     if (amount + feeCalc > balance) { setWError('Solde insuffisant (montant + frais).'); return; }
-    if (!wMomoNumber.trim()) { setWError('Numéro MoMo obligatoire.'); return; }
     setWLoading(true);
     try {
       await createWithdrawalRequest({
@@ -87,7 +86,6 @@ const MonCompte = ({onBack}) => {
       });
       setNotifSucces(true);
       setWAmount('');
-      setWMomoNumber('');
       setWReason('');
       setTimeout(() => setNotifSucces(false), 4000);
       const updated = await fetchMechanicWallet();
