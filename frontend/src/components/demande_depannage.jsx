@@ -53,6 +53,40 @@ const Demande = ({ onConfirm }) => {
     const [selfieFile, setSelfieFile] = useState(null);
     const [idCardFile, setIdCardFile] = useState(null);
 
+    const requestLocation = (onSuccess) => {
+        setError('');
+        if (!('geolocation' in navigator)) {
+            setError('La géolocalisation n\'est pas supportée par votre navigateur.');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocationEnabled(true);
+                setPosition(pos.coords);
+                setError('');
+                if (typeof onSuccess === 'function') {
+                    onSuccess();
+                }
+            },
+            () => setError('Activez la géolocalisation pour continuer.')
+        );
+    };
+
+    const handleSelfieClick = () => {
+        if (!locationEnabled) {
+            requestLocation(() => {
+                selfieInputRef.current?.click();
+            });
+        } else {
+            selfieInputRef.current.click();
+        }
+    };
+
+    const handleLocationClick = () => {
+        requestLocation();
+    };
+
     // Refs vers les inputs cachés — toujours dans le DOM, compatibles tous navigateurs
     const vehicleInputRef = useRef(null);
     const selfieInputRef = useRef(null);
@@ -84,27 +118,7 @@ const Demande = ({ onConfirm }) => {
         e.target.value = '';
     };
 
-    // Pour le selfie : on demande d'abord la localisation, puis le clic sur l'input
-    // se fait directement depuis le bouton (geste utilisateur) une fois la position obtenue
-    const handleSelfieClick = () => {
-        if (!locationEnabled) {
-            if (!("geolocation" in navigator)) {
-                setError("La géolocalisation n'est pas supportée par votre navigateur.");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setLocationEnabled(true);
-                    setPosition(pos.coords);
-                },
-                () => setError("Activez la géolocalisation pour continuer.")
-            );
-        } else {
-            selfieInputRef.current.click();
-        }
-    };
-
-   const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -251,6 +265,32 @@ const Demande = ({ onConfirm }) => {
                                 className={inputClass}
                             />
                         </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-[#608C27] bg-white/5 p-4 text-sm text-white/90 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.24em] text-white/80 font-bold">Localisation requise</p>
+                                <p className="text-[13px] text-white/70 mt-1">
+                                    Votre position est nécessaire pour trouver un mécanicien proche.
+                                </p>
+                            </div>
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${locationEnabled ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/80'}`}>
+                                {locationEnabled ? 'Partagée' : 'À activer'}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleLocationClick}
+                            className="w-full rounded-2xl bg-[#608C27] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#4f6e25]"
+                        >
+                            {locationEnabled ? 'Mettre à jour ma position' : 'Autoriser la localisation'}
+                        </button>
+                        {position && (
+                            <p className="text-xs text-white/60">
+                                Position capturée : {position.latitude.toFixed(5)}, {position.longitude.toFixed(5)}
+                            </p>
+                        )}
                     </div>
 
                     {/* Type de panne */}

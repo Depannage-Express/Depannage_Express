@@ -148,6 +148,9 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
           ))
         )}
       </div>
+      <div className="w-full bg-white/10 border-t border-white/20 px-4 py-4 text-center text-xs text-white/80">
+        Contacter un mécanicien premium lance le même processus de demande que votre première intervention, et il fonctionne de la même façon pour vos prochaines demandes.
+      </div>
     </section>
   );
 };

@@ -98,6 +98,18 @@ function App() {
   const [currentIntervention, setCurrentIntervention] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const saveDriverSession = (breakdown) => {
+    if (breakdown?.id && breakdown?.driver_token) {
+      sessionStorage.setItem('breakdown_id', breakdown.id);
+      sessionStorage.setItem('driver_token', breakdown.driver_token);
+    }
+  };
+
+  const clearDriverSession = () => {
+    sessionStorage.removeItem('breakdown_id');
+    sessionStorage.removeItem('driver_token');
+  };
+
   useEffect(() => {
     pingBackend();
   }, []);
@@ -145,6 +157,14 @@ function App() {
       setCurrentPayment({ id: payment_id });
       setCurrentBreakdown({ id: breakdown_id, driver_token });
       setScreen(SCREENS.PAYMENT_CONFIRMATION);
+      return;
+    }
+
+    const storedBreakdownId = sessionStorage.getItem('breakdown_id');
+    const storedDriverToken = sessionStorage.getItem('driver_token');
+    if (storedBreakdownId && storedDriverToken) {
+      setCurrentBreakdown({ id: storedBreakdownId, driver_token: storedDriverToken });
+      setScreen(SCREENS.BREAKDOWN_TRACKING);
     }
   }, []);
 
@@ -176,6 +196,7 @@ function App() {
     setCurrentBreakdown(null);
     setCurrentPayment(null);
     setCurrentIntervention(null);
+    clearDriverSession();
   };
 
   const handleLogout = async () => {
@@ -185,6 +206,7 @@ function App() {
       // ignore logout errors
     } finally {
       clearAuthTokens();
+      clearDriverSession();
       localStorage.removeItem('meca_dashboard_view');
       setCurrentUser(null);
       setSearchQuery('');
@@ -255,6 +277,7 @@ function App() {
   };
 
   const handleBreakdownCreated = (breakdown) => {
+    saveDriverSession(breakdown);
     setCurrentBreakdown(breakdown);
     setScreen(SCREENS.BREAKDOWN_TRACKING);
   };
