@@ -14,7 +14,7 @@ from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics, fi
 from apps.mechanics.models import MechanicProfile
 from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
-from apps.payments.models import PaymentTransaction
+from apps.payments.models import PaymentTransaction, WithdrawalRequest
 from .models import BreakdownRequest, Message
 from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer
 
@@ -271,6 +271,12 @@ def admin_stats(request):
             'total_revenue_xof': int(pay['revenue'] or 0),
             'paid_count': pay['paid_count'],
             'pending_count': pay['pending_count'],
+        },
+        'withdrawals': {
+            'pending_count': WithdrawalRequest.objects.filter(status='pending').count(),
+            'pending_amount_xof': float(
+                WithdrawalRequest.objects.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+            ),
         },
         'users': {
             'total': User.objects.count(),

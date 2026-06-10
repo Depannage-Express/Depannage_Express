@@ -52,7 +52,13 @@ const DashboardAdmin = () => {
     { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]" },
     { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]" },
     { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]" },
-    { id: 'retraits', title: "Retraits", icon: <ArrowDownCircle size={40} />, color: "bg-[#608C27]" },
+    {
+      id: 'retraits',
+      title: "Retraits",
+      icon: <ArrowDownCircle size={40} />,
+      color: "bg-[#608C27]",
+      badge: stats?.withdrawals?.pending_count || 0,
+    },
   ];
 
 
@@ -127,7 +133,7 @@ const DashboardAdmin = () => {
                 <StatCard label="Demandes assignées" value={stats.breakdowns.by_status.assigned || 0} />
                 <StatCard label="Terminées" value={stats.breakdowns.by_status.completed || 0} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard
                   label="Revenus encaissés"
                   value={`${stats.payments.total_revenue_xof.toLocaleString('fr-FR')} XOF`}
@@ -135,6 +141,11 @@ const DashboardAdmin = () => {
                 />
                 <StatCard label="Paiements confirmés" value={stats.payments.paid_count} />
                 <StatCard label="Paiements en attente" value={stats.payments.pending_count} />
+                <StatCard
+                  label="Retraits en attente"
+                  value={stats.withdrawals?.pending_count || 0}
+                  highlight={(stats.withdrawals?.pending_count || 0) > 0}
+                />
               </div>
             </>
           ) : null}
@@ -203,14 +214,20 @@ const StatCard = ({ label, value, highlight = false }) => (
 // Sous-composant pour les cartes du menu pour éviter la répétition
 const MenuCard = ({ item, isLarge = false , onClick}) => {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={`
-      ${item.color} p-4 rounded-3xl shadow-lg border-4 border-[#608C27]
+      relative ${item.color} p-4 rounded-3xl shadow-lg border-4 border-[#608C27]
       transform transition-all hover:scale-105 active:scale-95
       flex flex-col items-center justify-center text-white
       ${isLarge ? 'w-56 h-72' : 'w-48 h-40'}
-    `}>
+    `}
+    >
+      {item.badge > 0 ? (
+        <span className="absolute top-4 right-4 bg-white text-[#0D2B0D] text-xs font-black px-2 py-1 rounded-full border border-[#608C27]">
+          {item.badge}
+        </span>
+      ) : null}
       <div className="bg-[#0D2B0D] p-4 rounded-xl mb-4 shadow-inner">
         {item.icon}
       </div>
