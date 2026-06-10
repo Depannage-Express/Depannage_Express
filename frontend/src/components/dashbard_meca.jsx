@@ -7,6 +7,7 @@ import MonCompte from './compteMeca';
 import Abonnement from './abonnement';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown, ArrowLeft } from 'lucide-react';
 import { fetchMechanicRequests, fetchMyInterventions, fetchMechanicAdminMessages, fetchMechanicWallet, fetchMyMomoChangeRequests } from '../lib/api';
+import Badge from './Badge';
 
 const POLL_MS = 4_000;
 const LAST_DISCUTER_KEY = 'meca_last_discuter_ts';
@@ -78,6 +79,17 @@ const DashboardMecanicien = ({ currentUser }) => {
     pollRef.current = setInterval(loadCounts, POLL_MS);
     return () => clearInterval(pollRef.current);
   }, []);
+
+  useEffect(() => {
+    const total = pendingCount + notifCount + newMsgCount + pendingWithdrawCount + pendingMomoChangeCount;
+    if (typeof document !== 'undefined') {
+      if (total > 0) {
+        document.title = `(${total}) Dépannage Express`;
+      } else {
+        document.title = 'Dépannage Express';
+      }
+    }
+  }, [pendingCount, notifCount, newMsgCount, pendingWithdrawCount, pendingMomoChangeCount]);
 
   const handleSetView = (newView) => {
     if (newView === 'discuter') {
@@ -208,11 +220,7 @@ const MenuCard = ({ item, isLarge = false, onClick }) => {
       flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-white w-full
       ${isLarge ? 'md:w-56 md:h-72' : 'md:w-48 md:h-40'}
     `}>
-      {item.badge > 0 && (
-        <span className="absolute -top-2.5 -right-2.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center px-1.5 shadow-lg border-2 border-white z-10">
-          {item.badge > 99 ? '99+' : item.badge}
-        </span>
-      )}
+      <Badge count={item.badge} className="-top-2.5 -right-2.5 min-w-[24px] h-6 px-1.5" />
       <div className="bg-[#0D2B0D] p-4 rounded-xl md:mb-4 shadow-inner shrink-0">
         {item.icon}
       </div>

@@ -8,7 +8,8 @@ import GestionAvis from './gestion_avis';
 import AdminMessages from './admin_messages';
 import RetraitsAdmin from './retraits_admin';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText, ArrowDownCircle, ArrowLeft } from 'lucide-react';
-import { fetchAdminStats } from '../lib/api';
+import { fetchAdminStats, fetchAdminIncidentStats } from '../lib/api';
+import Badge from './Badge';
 
 const POLL_INTERVAL_MS = 4_000;
 
@@ -29,7 +30,16 @@ const DashboardAdmin = () => {
     if (silent && viewRef.current !== 'menu') return;
     if (!silent) setIsLoading(true);
     try {
-      const data = await fetchAdminStats();
+      const [statsRes, incidentRes] = await Promise.allSettled([
+        fetchAdminStats(),
+        fetchAdminIncidentStats(),
+      ]);
+
+      let data = statsRes.status === 'fulfilled' ? statsRes.value : null;
+      if (incidentRes.status === 'fulfilled') {
+        data = { ...(data || {}), reports: { pending_count: incidentRes.value.pending || 0 } };
+      }
+
       setStats(data);
     } catch (requestError) {
       if (!silent) setError(requestError.message);
@@ -228,11 +238,7 @@ const MenuCard = ({ item, isLarge = false , onClick}) => {
       ${isLarge ? 'w-full h-full md:w-56 md:h-72' : 'w-full h-full md:w-48 md:h-40'}
     `}
     >
-      {item.badge > 0 ? (
-        <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full border border-white/20 shadow-lg">
-          {item.badge > 99 ? '99+' : item.badge}
-        </span>
-      ) : null}
+      <Badge count={item.badge} className="top-4 right-4 px-2 py-1 text-xs" />
       <div className="bg-[#0D2B0D] p-4 rounded-xl mb-4 shadow-inner">
         {item.icon}
       </div>
