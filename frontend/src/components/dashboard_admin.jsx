@@ -45,13 +45,13 @@ const DashboardAdmin = () => {
   }, []);
 
   const menuItems = [
-    { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={40} />, color: "bg-[#608C27]" },
-    { id: 'interve', title: "Interventions", icon: <Bell size={40} />, color: "bg-[#608C27]" },
-    { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={40} />, color: "bg-[#608C27]" },
-    { id: 'paieadmin', title: "Paiements", icon: <Activity size={40} />, color: "bg-[#608C27]" },
-    { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]" },
-    { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]" },
-    { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]" },
+    { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={40} />, color: "bg-[#608C27]", badge: stats?.mechanics?.by_status?.pending || 0 },
+    { id: 'interve', title: "Interventions", icon: <Bell size={40} />, color: "bg-[#608C27]", badge: stats?.breakdowns?.by_status?.pending || stats?.breakdowns?.by_status?.authorized || 0 },
+    { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={40} />, color: "bg-[#608C27]", badge: stats?.subscriptions?.pending_count || 0 },
+    { id: 'paieadmin', title: "Paiements", icon: <Activity size={40} />, color: "bg-[#608C27]", badge: stats?.payments?.pending_count || 0 },
+    { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]", badge: stats?.reports?.pending_count || 0 },
+    { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]", badge: 0 },
+    { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]", badge: 0 },
     {
       id: 'retraits',
       title: "Retraits",
@@ -229,8 +229,8 @@ const MenuCard = ({ item, isLarge = false , onClick}) => {
     `}
     >
       {item.badge > 0 ? (
-        <span className="absolute top-4 right-4 bg-white text-[#0D2B0D] text-xs font-black px-2 py-1 rounded-full border border-[#608C27]">
-          {item.badge}
+        <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full border border-white/20 shadow-lg">
+          {item.badge > 99 ? '99+' : item.badge}
         </span>
       ) : null}
       <div className="bg-[#0D2B0D] p-4 rounded-xl mb-4 shadow-inner">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, ArrowRight } from 'lucide-react';
+import { Upload, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { registerMechanic, setAuthTokens } from '../lib/api';
 
 const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
@@ -15,6 +15,8 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -132,28 +134,44 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
               />
             </div>
 
-            <div>
+            <div className="relative">
               <label className={labelClass}>Mot de passe</label>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} pr-12`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700"
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
-            <div>
+            <div className="relative">
               <label className={labelClass}>Confirmer le mot de passe</label>
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 name="password_confirm"
                 value={form.password_confirm}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} pr-12`}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((current) => !current)}
+                className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700"
+                aria-label={showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             <div>

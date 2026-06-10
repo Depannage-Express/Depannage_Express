@@ -1,6 +1,16 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 const ConnexionAdmin = ({ onInscriptionClickAd, onLoginClickAd}) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (onLoginClickAd) {
+      onLoginClickAd({ email, password });
+    }
+  };
   return (
 <div className="flex items-center justify-center min-h-[calc(100vh-80px)] w-full py-12 px-4">      <div className="bg-[#0D2B0D] w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/10">
         
@@ -11,23 +21,35 @@ const ConnexionAdmin = ({ onInscriptionClickAd, onLoginClickAd}) => {
           </h2>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Champ ID */}
           <div>
             <input 
               type="text" 
-              placeholder="id:" 
+              placeholder="Email ou identifiant" 
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
             />
           </div>
           
           {/* Champ Mot de passe */}
-          <div>
+          <div className="relative">
             <input 
-              type="password" 
+              type={showPassword ? 'text' : 'password'} 
               placeholder="Mot de passe:" 
-              className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full p-4 rounded-xl bg-gray-200 text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#608C27] font-semibold pr-12"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
           {/* Zone de notification d'erreur */}
@@ -40,7 +62,6 @@ const ConnexionAdmin = ({ onInscriptionClickAd, onLoginClickAd}) => {
           <div className="flex justify-end mt-6">
             <button 
               type="submit" 
-              onClick={onLoginClickAd}
               className="bg-[#608C27] text-white font-bold py-3 px-8 rounded-2xl hover:bg-black transition-all shadow-lg"
             >
               Connexion

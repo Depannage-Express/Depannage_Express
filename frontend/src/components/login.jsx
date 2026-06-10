@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { loginMechanic, setAuthTokens } from '../lib/api';
 
 const Connexion = ({
@@ -13,6 +13,7 @@ const Connexion = ({
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,15 +62,23 @@ const Connexion = ({
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className={labelClass}>Mot de passe</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className={inputClass}
+              className={`${inputClass} pr-12`}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-3 top-[37px] text-gray-500 hover:text-gray-700"
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
           {error && (
