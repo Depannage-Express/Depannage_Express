@@ -41,14 +41,14 @@ const MechanicCard = ({ tech, index, onVoir, onContact }) => {
           <h4 className={`font-bold leading-tight text-xs md:text-sm truncate ${isDark ? 'text-white' : 'text-[#0D2B0D]'}`}>
             {tech.user_name}
           </h4>
-          <p className="text-[10px] font-medium inline-flex items-center gap-1">
+          <p className="text-xs md:text-sm font-medium inline-flex items-center gap-1">
             ({tech.average_rating ? Number(tech.average_rating).toFixed(1) : '—'}{' '}
-            <Star size={10} className="text-yellow-500 fill-yellow-500" />)
+            <Star size={12} className="text-yellow-500 fill-yellow-500" />)
           </p>
         </div>
       </div>
 
-      <div className="space-y-1 mb-3 text-[10px] md:text-xs">
+      <div className="space-y-1 mb-3 text-xs md:text-sm">
         <p className="truncate">
           <span className="font-bold">Spécialité:</span>{' '}
           {tech.specialties?.length > 0 ? tech.specialties[0].name : 'Mécanicien auto'}
