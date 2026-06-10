@@ -144,8 +144,22 @@ def driver_confirm_intervention(request, pk):
     # Les deux parties ont confirmé : on crédite maintenant le compte virtuel du mécanicien
     if response.status_code == 200 and payment.mechanic_id and payment.payment_for == 'intervention':
         from apps.mechanics.models import MechanicProfile
+        from decimal import Decimal, ROUND_DOWN
+        from django.conf import settings
+
+        if payment.net_amount == Decimal('0'):
+            commission = (payment.amount * settings.PLATFORM_COMMISSION_RATE).quantize(
+                Decimal('0.01'), rounding=ROUND_DOWN
+            )
+            net_amount = payment.amount - commission
+            payment.commission_amount = commission
+            payment.net_amount = net_amount
+            payment.save(update_fields=['commission_amount', 'net_amount'])
+        else:
+            net_amount = payment.net_amount
+
         MechanicProfile.objects.filter(pk=payment.mechanic_id).update(
-            balance=DbF('balance') + payment.amount
+            balance=DbF('balance') + net_amount
         )
 
     return response

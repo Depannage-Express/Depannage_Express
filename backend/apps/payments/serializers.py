@@ -17,11 +17,12 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             'id', 'payer_name', 'payer_phone', 'amount', 'currency',
             'payment_method', 'payment_for', 'status', 'mechanic_name',
             'breakdown_request', 'intervention', 'mechanic',
-            'provider_reference', 'paid_at', 'metadata',
-            'created_at', 'updated_at',
+            'provider_reference', 'paid_at', 'commission_amount', 'net_amount',
+            'metadata', 'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'status', 'provider_reference', 'paid_at', 'created_at', 'updated_at'
+            'id', 'status', 'provider_reference', 'paid_at', 'commission_amount', 'net_amount',
+            'created_at', 'updated_at'
         ]
 
     def validate_payer_phone(self, value):
@@ -60,7 +61,7 @@ class PaymentAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTransaction
         fields = [
-            'id', 'amount', 'status', 'provider_reference', 'payment_for',
+            'id', 'amount', 'commission_amount', 'net_amount', 'status', 'provider_reference', 'payment_for',
             'driver_name', 'breakdown_type', 'mechanic_name',
             'payer_name', 'created_at', 'paid_at',
         ]

@@ -269,11 +269,18 @@ def admin_payment_stats(request):
 
     stats = PaymentTransaction.objects.aggregate(
         total_paid=Sum('amount', filter=Q(status='paid')),
+        total_commission=Sum('commission_amount', filter=Q(status='paid')),
+        total_net=Sum('net_amount', filter=Q(status='paid')),
         count_paid=Count('id', filter=Q(status='paid')),
         count_pending=Count('id', filter=Q(status__in=['pending', 'authorized'])),
         count_failed=Count('id', filter=Q(status='failed')),
         count_total=Count('id'),
     )
+    stats['platform_commission_rate'] = float(settings.PLATFORM_COMMISSION_RATE)
+    stats['withdrawal_fee_rate'] = float(settings.WITHDRAWAL_FEE_RATE)
+    stats['total_paid'] = float(stats['total_paid'] or 0)
+    stats['total_commission'] = float(stats['total_commission'] or 0)
+    stats['total_net'] = float(stats['total_net'] or 0)
     return Response(stats)
 
 
@@ -471,7 +478,7 @@ def mechanic_withdraw(request):
                 'error': f'Retrait bloqué 72h après changement de numéro. Encore {remaining_h}h à attendre.'
             }, status=400)
 
-    fee = (amount * Decimal('0.0075')).quantize(Decimal('1'), rounding=ROUND_DOWN)
+    fee = (amount * settings.WITHDRAWAL_FEE_RATE).quantize(Decimal('1'), rounding=ROUND_DOWN)
     net_amount = amount
     total_deducted = amount + fee
 

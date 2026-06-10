@@ -50,6 +50,8 @@ class PaymentTransaction(TimestampedModel):
 
     provider_reference = models.CharField(max_length=120, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
+    commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:

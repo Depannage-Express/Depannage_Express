@@ -5,6 +5,7 @@ Clean production-ready configuration
 
 import os
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 import cloudinary
 
@@ -313,4 +314,6 @@ BREAKDOWN_PRICING = {
 }
 
 SEARCH_RADII_KM = {1: 10, 2: 20, 3: 50}
+PLATFORM_COMMISSION_RATE = Decimal('0.15')
+WITHDRAWAL_FEE_RATE = Decimal('0.0075')
 PHASE_TIMEOUT_SECS = int(os.getenv('PHASE_TIMEOUT_SECS', '120'))
