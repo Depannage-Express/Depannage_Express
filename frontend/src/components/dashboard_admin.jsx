@@ -57,7 +57,7 @@ const DashboardAdmin = () => {
       title: "Retraits",
       icon: <ArrowDownCircle size={40} />,
       color: "bg-[#608C27]",
-      badge: stats?.withdrawals?.pending_count || 0,
+      badge: (stats?.withdrawals?.pending_count || 0) + (stats?.momo_changes?.pending_count || 0),
     },
   ];
 
@@ -145,6 +145,11 @@ const DashboardAdmin = () => {
                   label="Retraits en attente"
                   value={stats.withdrawals?.pending_count || 0}
                   highlight={(stats.withdrawals?.pending_count || 0) > 0}
+                />
+                <StatCard
+                  label="Changements MoMo en attente"
+                  value={stats.momo_changes?.pending_count || 0}
+                  highlight={(stats.momo_changes?.pending_count || 0) > 0}
                 />
               </div>
             </>

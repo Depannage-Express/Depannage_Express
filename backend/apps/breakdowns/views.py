@@ -14,6 +14,7 @@ from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics, fi
 from apps.mechanics.models import MechanicProfile
 from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
+from apps.mechanics.models import MomoNumberChangeRequest
 from apps.payments.models import PaymentTransaction, WithdrawalRequest
 from .models import BreakdownRequest, Message
 from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer
@@ -277,6 +278,9 @@ def admin_stats(request):
             'pending_amount_xof': float(
                 WithdrawalRequest.objects.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
             ),
+        },
+        'momo_changes': {
+            'pending_count': MomoNumberChangeRequest.objects.filter(status='pending').count(),
         },
         'users': {
             'total': User.objects.count(),
