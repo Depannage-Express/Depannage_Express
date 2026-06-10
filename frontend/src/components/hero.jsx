@@ -62,7 +62,7 @@ const MechanicCard = ({ tech, index, onVoir, onContact }) => {
       <div className="flex justify-between items-center gap-1">
         <button
           onClick={onVoir}
-          className="bg-[#608C27] text-white text-[9px] md:text-[10px] px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold hover:bg-black transition-colors"
+          className="bg-[#608C27] text-white text-xs md:text-sm px-3 md:px-4 py-2 md:py-2.5 rounded-lg font-bold hover:bg-black transition-colors"
         >
           Voir plus
         </button>
@@ -70,7 +70,7 @@ const MechanicCard = ({ tech, index, onVoir, onContact }) => {
           onClick={onContact}
           className={`${
             isDark ? 'bg-white text-[#0D2B0D]' : 'bg-black text-white'
-          } text-[9px] md:text-[10px] px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold hover:opacity-80 transition-colors`}
+          } text-xs md:text-sm px-3 md:px-4 py-2 md:py-2.5 rounded-lg font-bold hover:opacity-80 transition-colors`}
         >
           Contacter
         </button>
