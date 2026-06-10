@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { User, History, ArrowDownCircle, ArrowLeft, CheckCircle, MapPin, LocateFixed, TrendingUp, TrendingDown, Clock, AlertCircle, Phone, Edit2 } from 'lucide-react';
 import { fetchCurrentUser, fetchMechanicProfile, updateMyMechanicLocation, fetchMechanicWallet, createWithdrawalRequest, fetchMyMomoChangeRequests, createMomoChangeRequest } from '../lib/api';
 import SafeImage from './SafeImage';
+
+const POLL_INTERVAL_MS = 4_000;
 
 const MonCompte = ({onBack}) => {
   const [notifSucces, setNotifSucces] = useState(false);
@@ -29,6 +31,7 @@ const MonCompte = ({onBack}) => {
   const [momoChangeLoading, setMomoChangeLoading] = useState(false);
   const [momoChangeError, setMomoChangeError] = useState('');
   const [momoChangeSent, setMomoChangeSent] = useState(false);
+  const walletIntervalRef = useRef(null);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -47,17 +50,45 @@ const MonCompte = ({onBack}) => {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
+    const loadWalletData = async ({ silent = false } = {}) => {
+      if (!silent) setWalletLoading(true);
+      try {
+        const updatedWallet = await fetchMechanicWallet();
+        if (active) setWallet(updatedWallet);
+      } catch {
+        // ignore polling errors
+      } finally {
+        if (active && !silent) setWalletLoading(false);
+      }
+    };
+
+    const loadMomoRequests = async () => {
+      try {
+        const data = await fetchMyMomoChangeRequests();
+        if (active) setMomoRequests(Array.isArray(data) ? data : []);
+      } catch {
+        // ignore polling errors
+      }
+    };
+
     if (!profileDetails || profileDetails?.status !== 'approved') {
       setWalletLoading(false);
-      return;
+      return () => {};
     }
-    fetchMechanicWallet()
-      .then(data => setWallet(data))
-      .catch(() => {})
-      .finally(() => setWalletLoading(false));
-    fetchMyMomoChangeRequests()
-      .then(data => setMomoRequests(Array.isArray(data) ? data : []))
-      .catch(() => {});
+
+    loadWalletData();
+    loadMomoRequests();
+    walletIntervalRef.current = setInterval(() => {
+      loadWalletData({ silent: true });
+      loadMomoRequests();
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      clearInterval(walletIntervalRef.current);
+    };
   }, [profileDetails]);
 
   const balance = wallet ? parseFloat(wallet.balance) : 0;
@@ -69,6 +100,8 @@ const MonCompte = ({onBack}) => {
   const net = wAmount ? parseFloat(wAmount) : 0;
   const totalDeducted = net + fee;
   const hasPendingMomoChange = momoRequests.some(r => r.status === 'pending');
+  const pendingMomoChangeCount = momoRequests.filter(r => r.status === 'pending').length || 0;
+  const pendingWithdrawalsCount = wallet?.history?.filter(item => item.type === 'debit' && item.status === 'pending').length || 0;
 
   useEffect(() => {
     if (!lockoutUntil) {
@@ -254,6 +287,12 @@ const MonCompte = ({onBack}) => {
             )}
           </div>
 
+          {pendingWithdrawalsCount > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-3xl shadow-sm text-sm font-semibold">
+              Vous avez {pendingWithdrawalsCount} retrait{pendingWithdrawalsCount > 1 ? 's' : ''} en attente de validation admin.
+            </div>
+          )}
+
           {profileDetails?.status === 'approved' && (
             <>
               {/* Numéro MoMo enregistré */}
@@ -284,7 +323,7 @@ const MonCompte = ({onBack}) => {
                 )}
                 {hasPendingMomoChange && (
                   <p className="text-xs text-yellow-600 font-semibold mt-2 text-center flex items-center justify-center gap-1">
-                    <Clock size={12} /> Demande de changement en attente de validation admin
+                    <Clock size={12} /> {pendingMomoChangeCount > 1 ? `${pendingMomoChangeCount} demandes de changement` : 'Demande de changement'} en attente de validation admin
                   </p>
                 )}
                 {momoChangeSent && (

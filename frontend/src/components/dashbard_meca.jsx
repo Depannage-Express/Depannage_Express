@@ -6,9 +6,9 @@ import StatutMissions from './statut';
 import MonCompte from './compteMeca';
 import Abonnement from './abonnement';
 import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Crown, ArrowLeft } from 'lucide-react';
-import { fetchMechanicRequests, fetchMyInterventions, fetchMechanicAdminMessages } from '../lib/api';
+import { fetchMechanicRequests, fetchMyInterventions, fetchMechanicAdminMessages, fetchMechanicWallet, fetchMyMomoChangeRequests } from '../lib/api';
 
-const POLL_MS = 8_000;
+const POLL_MS = 4_000;
 const LAST_DISCUTER_KEY = 'meca_last_discuter_ts';
 
 const DashboardMecanicien = ({ currentUser }) => {
@@ -20,14 +20,18 @@ const DashboardMecanicien = ({ currentUser }) => {
   const [notifCount, setNotifCount] = useState(0);
   const [activeMissions, setActiveMissions] = useState(0);
   const [newMsgCount, setNewMsgCount] = useState(0);
+  const [pendingWithdrawCount, setPendingWithdrawCount] = useState(0);
+  const [pendingMomoChangeCount, setPendingMomoChangeCount] = useState(0);
   const pollRef = useRef(null);
 
   const loadCounts = async () => {
     try {
-      const [reqData, intervData, msgData] = await Promise.allSettled([
+      const [reqData, intervData, msgData, walletData, momoData] = await Promise.allSettled([
         fetchMechanicRequests(),
         fetchMyInterventions(),
         fetchMechanicAdminMessages(),
+        fetchMechanicWallet(),
+        fetchMyMomoChangeRequests(),
       ]);
 
       if (reqData.status === 'fulfilled') {
@@ -50,6 +54,19 @@ const DashboardMecanicien = ({ currentUser }) => {
         } else {
           setNewMsgCount(adminMsgs.length);
         }
+      }
+
+      if (walletData.status === 'fulfilled') {
+        const wallet = walletData.value || {};
+        const pending = Array.isArray(wallet.history)
+          ? wallet.history.filter(item => item.type === 'debit' && item.status === 'pending').length
+          : 0;
+        setPendingWithdrawCount(pending);
+      }
+
+      if (momoData.status === 'fulfilled') {
+        const requests = Array.isArray(momoData.value) ? momoData.value : [];
+        setPendingMomoChangeCount(requests.filter(r => r.status === 'pending').length);
       }
     } catch {
       // ignore polling errors
@@ -80,7 +97,13 @@ const DashboardMecanicien = ({ currentUser }) => {
   const menuItems = [
     { id: 'liste-commandes', title: "Listes des Demandes", icon: <ClipboardList size={40} />, color: "bg-[#608C27]", badge: pendingCount },
     { id: 'notif', title: "Notification", icon: <Bell size={40} />, color: "bg-[#608C27]", badge: notifCount },
-    { id: 'compte', title: "Mon compte", icon: <UserCircle size={40} />, color: "bg-[#608C27]", badge: 0 },
+    {
+      id: 'compte',
+      title: "Mon compte",
+      icon: <UserCircle size={40} />,
+      color: "bg-[#608C27]",
+      badge: pendingWithdrawCount + pendingMomoChangeCount,
+    },
     { id: 'statut', title: "Statut des missions", icon: <Activity size={40} />, color: "bg-[#608C27]", badge: activeMissions },
     { id: 'discuter', title: "Discuter", icon: <MessageCircle size={40} />, color: "bg-[#608C27]", badge: newMsgCount },
     {

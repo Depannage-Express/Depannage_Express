@@ -278,6 +278,10 @@ def admin_payment_stats(request):
     )
     stats['platform_commission_rate'] = float(settings.PLATFORM_COMMISSION_RATE)
     stats['withdrawal_fee_rate'] = float(settings.WITHDRAWAL_FEE_RATE)
+    stats['pending_withdrawals'] = WithdrawalRequest.objects.filter(status='pending').count()
+    stats['pending_withdrawal_amount'] = float(
+        WithdrawalRequest.objects.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+    )
     stats['total_paid'] = float(stats['total_paid'] or 0)
     stats['total_commission'] = float(stats['total_commission'] or 0)
     stats['total_net'] = float(stats['total_net'] or 0)

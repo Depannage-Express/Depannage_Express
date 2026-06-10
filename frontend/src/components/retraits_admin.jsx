@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, Clock, AlertCircle, TrendingDown, Phone } from 'lucide-react';
 import { fetchAdminWithdrawals, processWithdrawal, fetchAdminMomoChanges, processAdminMomoChange } from '../lib/api';
 
@@ -38,7 +38,17 @@ const RetraitsAdmin = ({ onBack }) => {
     }
   };
 
-  useEffect(() => { if (mainTab === 'withdrawals') load(activeTab); }, [activeTab, mainTab]);
+  const withdrawalsIntervalRef = useRef(null);
+  const momoIntervalRef = useRef(null);
+  const POLL_INTERVAL_MS = 4000;
+
+  useEffect(() => {
+    if (mainTab !== 'withdrawals') return;
+
+    load(activeTab);
+    withdrawalsIntervalRef.current = setInterval(() => load(activeTab), POLL_INTERVAL_MS);
+    return () => clearInterval(withdrawalsIntervalRef.current);
+  }, [activeTab, mainTab]);
 
   const handleProcess = async (id, action) => {
     setProcessing(id + '_' + action);
@@ -76,7 +86,13 @@ const RetraitsAdmin = ({ onBack }) => {
     }
   };
 
-  useEffect(() => { if (mainTab === 'momo_changes') loadMomo(momoTab); }, [momoTab, mainTab]);
+  useEffect(() => {
+    if (mainTab !== 'momo_changes') return;
+
+    loadMomo(momoTab);
+    momoIntervalRef.current = setInterval(() => loadMomo(momoTab), POLL_INTERVAL_MS);
+    return () => clearInterval(momoIntervalRef.current);
+  }, [momoTab, mainTab]);
 
   const handleMomoProcess = async (id, action) => {
     setMomoProcessing(id + '_' + action);
