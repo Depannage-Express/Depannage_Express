@@ -82,6 +82,17 @@ const GestionPaiements = ({ onBack }) => {
 
       <div className="bg-white rounded-b-[1.5rem] p-4 sm:p-6 lg:p-8 space-y-6">
 
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-500">
+              Revenus encaissés — Commission — Revenu net
+            </p>
+            <h3 className="text-lg sm:text-xl font-black text-gray-900">
+              Synthèse des paiements
+            </h3>
+          </div>
+        </div>
+
         {/* Cartes statistiques */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
