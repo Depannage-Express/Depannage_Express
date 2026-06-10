@@ -124,7 +124,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
         </div>
 
         {/* DROITE : cartes mécaniciens */}
-        <div className="w-full md:w-2/3 xl:w-3/4 bg-[#608C27] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-4 py-6 lg:py-8 xl:py-10 px-4 xl:px-8 max-h-[500px] xl:max-h-[600px] overflow-y-auto">
+        <div className="w-full md:w-2/3 xl:w-3/4 bg-[#608C27] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-4 py-6 lg:py-8 xl:py-10 px-3 md:px-4 max-h-[500px] xl:max-h-[600px] overflow-y-auto">
           {isLoading ? (
             <div className="col-span-full flex items-center justify-center py-8">
               <Loader className="text-white animate-spin" size={32} />
