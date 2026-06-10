@@ -63,11 +63,28 @@ const MonCompte = ({onBack}) => {
   const balance = wallet ? parseFloat(wallet.balance) : 0;
   const withdrawalNumber = wallet?.withdrawal_number || profil?.phone || '';
   const lockoutUntil = wallet?.lockout_until ? new Date(wallet.lockout_until) : null;
+  const [lockoutSeconds, setLockoutSeconds] = useState(null);
   const isLocked = lockoutUntil && lockoutUntil > new Date();
   const fee = wAmount ? Math.floor(parseFloat(wAmount) * 0.0075) : 0;
   const net = wAmount ? parseFloat(wAmount) : 0;
   const totalDeducted = net + fee;
   const hasPendingMomoChange = momoRequests.some(r => r.status === 'pending');
+
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setLockoutSeconds(null);
+      return;
+    }
+
+    const update = () => {
+      const seconds = Math.max(0, Math.floor((lockoutUntil.getTime() - Date.now()) / 1000));
+      setLockoutSeconds(seconds);
+    };
+
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutUntil]);
 
   const handleRetrait = async (e) => {
     e.preventDefault();
@@ -260,6 +277,9 @@ const MonCompte = ({onBack}) => {
                 {isLocked && (
                   <p className="text-xs text-orange-600 font-semibold mt-2 text-center">
                     Retraits bloqués jusqu'au {lockoutUntil.toLocaleString('fr-FR')} (72h après changement)
+                    {lockoutSeconds !== null ? (
+                      <> — Temps restant : {new Date(lockoutSeconds * 1000).toISOString().substr(11, 8)}</>
+                    ) : null}
                   </p>
                 )}
                 {hasPendingMomoChange && (
