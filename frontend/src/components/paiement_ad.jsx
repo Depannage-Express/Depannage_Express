@@ -83,20 +83,34 @@ const GestionPaiements = ({ onBack }) => {
       <div className="bg-white rounded-b-[1.5rem] p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Cartes statistiques */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
             <p className="text-[10px] font-black uppercase text-green-700 tracking-wide">Total encaissé</p>
             <p className="text-lg font-black text-green-800 mt-1">
               {fmt(stats?.total_paid)} <span className="text-xs">FCFA</span>
             </p>
           </div>
+          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase text-purple-700 tracking-wide">Commission plateforme</p>
+            <p className="text-lg font-black text-purple-800 mt-1">
+              {fmt(stats?.total_commission)} <span className="text-xs">FCFA</span>
+            </p>
+          </div>
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase text-blue-700 tracking-wide">Payées</p>
-            <p className="text-3xl font-black text-blue-800 mt-1">{stats?.count_paid ?? '—'}</p>
+            <p className="text-[10px] font-black uppercase text-blue-700 tracking-wide">Revenu net</p>
+            <p className="text-lg font-black text-blue-800 mt-1">
+              {fmt(stats?.total_net)} <span className="text-xs">FCFA</span>
+            </p>
           </div>
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase text-yellow-700 tracking-wide">En attente</p>
-            <p className="text-3xl font-black text-yellow-800 mt-1">{stats?.count_pending ?? '—'}</p>
+            <p className="text-[10px] font-black uppercase text-yellow-700 tracking-wide">Payées</p>
+            <p className="text-3xl font-black text-yellow-800 mt-1">{stats?.count_paid ?? '—'}</p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase text-gray-700 tracking-wide">Taux commission</p>
+            <p className="text-lg font-black text-gray-800 mt-1">
+              {stats?.platform_commission_rate ? `${(stats.platform_commission_rate * 100).toFixed(0)}%` : '—'}
+            </p>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
             <p className="text-[10px] font-black uppercase text-red-700 tracking-wide">Échouées</p>
@@ -206,6 +220,18 @@ const GestionPaiements = ({ onBack }) => {
                       <p className="font-black text-base text-black mt-2">
                         {fmt(t.amount)} FCFA
                       </p>
+                      {t.commission_amount != null && t.net_amount != null && (
+                        <div className="mt-2 space-y-1 text-xs text-gray-600">
+                          <p className="flex items-center justify-between gap-2">
+                            <span>Commission</span>
+                            <span className="font-bold">{fmt(t.commission_amount)} FCFA</span>
+                          </p>
+                          <p className="flex items-center justify-between gap-2">
+                            <span>Net reçu</span>
+                            <span className="font-black text-gray-900">{fmt(t.net_amount)} FCFA</span>
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="sm:text-right shrink-0 space-y-1">
                       <span
