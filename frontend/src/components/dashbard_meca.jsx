@@ -179,11 +179,11 @@ const DashboardMecanicien = ({ currentUser }) => {
           </button>
         </div>
 
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-center justify-items-center">
+        <div className="p-3 md:p-8 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 items-stretch md:items-center justify-items-center">
 
           <MenuCard item={menuItems[0]} onClick={() => handleSetView('liste-commandes')} />
 
-          <div className="lg:row-span-2 flex items-center">
+          <div className="lg:row-span-2 flex md:items-center w-full md:w-auto h-full">
             <MenuCard item={menuItems[2]} isLarge={true} onClick={() => handleSetView('compte')} />
           </div>
 
@@ -206,7 +206,7 @@ const MenuCard = ({ item, isLarge = false, onClick }) => {
       className={`relative ${item.color} p-4 rounded-3xl shadow-lg border-4 border-[#608C27]
       transform transition-all hover:scale-105 active:scale-95
       flex flex-col items-center justify-center text-white
-      ${isLarge ? 'w-56 h-72' : 'w-48 h-40'}
+      ${isLarge ? 'w-full h-full md:w-56 md:h-72' : 'w-full h-full md:w-48 md:h-40'}
     `}>
       {item.badge > 0 && (
         <span className="absolute -top-2.5 -right-2.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center px-1.5 shadow-lg border-2 border-white z-10">
