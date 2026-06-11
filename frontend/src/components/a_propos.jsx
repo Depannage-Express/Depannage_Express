@@ -174,21 +174,21 @@ const APropos = () => {
                 <div className="bg-[#608C27]/10 p-2 rounded-lg"><MapPin size={18} className="text-[#608C27]" /></div>
                 <div>
                   <p className="text-xs text-gray-400 font-semibold uppercase">Adresse</p>
-                  <p className="text-sm font-semibold text-[#0D2B0D]">Cotonou, Bénin</p>
+                  <p className="text-sm font-semibold text-[#0D2B0D]">Parakou, Bénin</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="bg-[#608C27]/10 p-2 rounded-lg"><Mail size={18} className="text-[#608C27]" /></div>
                 <div>
                   <p className="text-xs text-gray-400 font-semibold uppercase">Email</p>
-                  <p className="text-sm font-semibold text-[#0D2B0D]">contact@depannageexpress.bj</p>
+                  <p className="text-sm font-semibold text-[#0D2B0D]">contact.depannageexpress@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="bg-[#608C27]/10 p-2 rounded-lg"><Phone size={18} className="text-[#608C27]" /></div>
                 <div>
                   <p className="text-xs text-gray-400 font-semibold uppercase">Téléphone</p>
-                  <p className="text-sm font-semibold text-[#0D2B0D]">+229 97 00 00 00</p>
+                  <p className="text-sm font-semibold text-[#0D2B0D]">+2290161133224 / +2290199802214</p>
                 </div>
               </div>
             </div>
