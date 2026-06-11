@@ -13,6 +13,8 @@ const DiscussionMeca = ({ onBack, onBackClick, currentUser }) => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
   const pollRef = useRef(null);
 
   const loadMessages = async () => {
@@ -31,8 +33,15 @@ const DiscussionMeca = ({ onBack, onBackClick, currentUser }) => {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (el) isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   const handleSend = async () => {
     const text = newMessage.trim();
@@ -83,36 +92,45 @@ const DiscussionMeca = ({ onBack, onBackClick, currentUser }) => {
         </div>
 
         {/* ZONE DES MESSAGES */}
-        <div className="flex-1 p-6 space-y-4 overflow-y-auto bg-gray-50 flex flex-col">
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
-              <MessageSquareText size={64} className="opacity-40" />
-              <p className="text-xl font-medium">Discussion avec l'administration.</p>
-              <p className="text-sm text-gray-400">Posez vos questions sur vos interventions, votre compte ou toute autre demande.</p>
-            </div>
-          ) : (
-            messages.map((msg) => {
-              const sentAt = msg.sent_at || msg.created_at;
-              return (
-                <div key={msg.id} className={`flex ${msg.sender_type === 'mechanic' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-4 rounded-2xl relative whitespace-pre-wrap ${
-                    msg.sender_type === 'mechanic'
-                      ? 'bg-[#608C27] text-white rounded-br-none'
-                      : 'bg-[#D9D9D9] text-black rounded-bl-none'
-                  }`}>
-                    <p className="text-[10px] font-semibold mb-1 opacity-70">{msg.sender_name}</p>
-                    <p className="font-medium text-sm md:text-base">{msg.content}</p>
-                    <span className={`text-[10px] absolute bottom-1 right-2 ${
-                      msg.sender_type === 'mechanic' ? 'text-green-100' : 'text-gray-600'
-                    }`}>
-                      {sentAt ? new Date(sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto bg-gray-50"
+        >
+          <div className="flex flex-col min-h-full p-6 space-y-4">
+            {messages.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
+                <MessageSquareText size={64} className="opacity-40" />
+                <p className="text-xl font-medium">Discussion avec l'administration.</p>
+                <p className="text-sm text-gray-400">Posez vos questions sur vos interventions, votre compte ou toute autre demande.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1" />
+                {messages.map((msg) => {
+                  const sentAt = msg.sent_at || msg.created_at;
+                  return (
+                    <div key={msg.id} className={`flex ${msg.sender_type === 'mechanic' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] p-4 rounded-2xl relative whitespace-pre-wrap ${
+                        msg.sender_type === 'mechanic'
+                          ? 'bg-[#608C27] text-white rounded-br-none'
+                          : 'bg-[#D9D9D9] text-black rounded-bl-none'
+                      }`}>
+                        <p className="text-[10px] font-semibold mb-1 opacity-70">{msg.sender_name}</p>
+                        <p className="font-medium text-sm md:text-base">{msg.content}</p>
+                        <span className={`text-[10px] absolute bottom-1 right-2 ${
+                          msg.sender_type === 'mechanic' ? 'text-green-100' : 'text-gray-600'
+                        }`}>
+                          {sentAt ? new Date(sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {error ? (

@@ -10,6 +10,8 @@ const DiscussionCond = ({ onBackClick, breakdownRequestId, driverName, driverTok
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
   const pollRef = useRef(null);
 
   const loadMessages = async () => {
@@ -29,8 +31,15 @@ const DiscussionCond = ({ onBackClick, breakdownRequestId, driverName, driverTok
   }, [breakdownRequestId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (el) isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   const handleSend = async () => {
     const text = newMessage.trim();
@@ -103,40 +112,49 @@ const DiscussionCond = ({ onBackClick, breakdownRequestId, driverName, driverTok
         </div>
 
         {/* ZONE DES MESSAGES */}
-        <div className="flex-1 p-6 space-y-4 overflow-y-auto bg-gray-50 flex flex-col">
-          {!breakdownRequestId ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
-              <MessageSquareText size={64} className="opacity-40" />
-              <p className="text-xl font-medium">Aucune demande associée.</p>
-            </div>
-          ) : messages.filter(m => m.sender_type !== 'mechanic').length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
-              <MessageSquareText size={64} className="opacity-40" />
-              <p className="text-xl font-medium">Posez vos questions à l'administration.</p>
-              <p className="text-sm text-gray-400">Prix, délai, réclamation — notre équipe vous répond.</p>
-            </div>
-          ) : (
-            messages
-              .filter(m => m.sender_type !== 'mechanic')
-              .map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender_type === 'driver' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-4 rounded-2xl relative whitespace-pre-wrap ${
-                    msg.sender_type === 'driver'
-                      ? 'bg-[#608C27] text-white rounded-br-none'
-                      : 'bg-[#D9D9D9] text-black rounded-bl-none'
-                  }`}>
-                    <p className="text-[10px] font-semibold mb-1 opacity-70">{msg.sender_name}</p>
-                    <p className="font-medium text-sm md:text-base">{msg.content}</p>
-                    <span className={`text-[10px] absolute bottom-1 right-2 ${
-                      msg.sender_type === 'driver' ? 'text-green-100' : 'text-gray-600'
-                    }`}>
-                      {new Date(msg.sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              ))
-          )}
-          <div ref={messagesEndRef} />
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto bg-gray-50"
+        >
+          <div className="flex flex-col min-h-full p-6 space-y-4">
+            {!breakdownRequestId ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
+                <MessageSquareText size={64} className="opacity-40" />
+                <p className="text-xl font-medium">Aucune demande associée.</p>
+              </div>
+            ) : messages.filter(m => m.sender_type !== 'mechanic').length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-4">
+                <MessageSquareText size={64} className="opacity-40" />
+                <p className="text-xl font-medium">Posez vos questions à l'administration.</p>
+                <p className="text-sm text-gray-400">Prix, délai, réclamation — notre équipe vous répond.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1" />
+                {messages
+                  .filter(m => m.sender_type !== 'mechanic')
+                  .map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender_type === 'driver' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] p-4 rounded-2xl relative whitespace-pre-wrap ${
+                        msg.sender_type === 'driver'
+                          ? 'bg-[#608C27] text-white rounded-br-none'
+                          : 'bg-[#D9D9D9] text-black rounded-bl-none'
+                      }`}>
+                        <p className="text-[10px] font-semibold mb-1 opacity-70">{msg.sender_name}</p>
+                        <p className="font-medium text-sm md:text-base">{msg.content}</p>
+                        <span className={`text-[10px] absolute bottom-1 right-2 ${
+                          msg.sender_type === 'driver' ? 'text-green-100' : 'text-gray-600'
+                        }`}>
+                          {new Date(msg.sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {error ? (

@@ -18,10 +18,19 @@ const ConversationThread = ({ messages, onSend, senderLabel, isMechanicThread })
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (el) isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   const handleSend = async () => {
     const content = text.trim();
@@ -40,38 +49,47 @@ const ConversationThread = ({ messages, onSend, senderLabel, isMechanicThread })
 
   const myType = 'admin';
 
+  const filtered = messages.filter(m => !isMechanicThread || m.sender_type !== 'driver');
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
-            <MessageSquareText size={48} className="opacity-30" />
-            <p className="text-sm">Aucun message — démarrez la conversation.</p>
-          </div>
-        ) : (
-          messages
-            .filter(m => !isMechanicThread || m.sender_type !== 'driver')
-            .map((msg) => {
-              const isMe = msg.sender_type === myType;
-              const sentAt = msg.sent_at || msg.created_at;
-              return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-3 rounded-2xl relative whitespace-pre-wrap text-sm ${
-                    isMe
-                      ? 'bg-[#0D2B0D] text-white rounded-br-none'
-                      : 'bg-white text-black rounded-bl-none border border-gray-200 shadow-sm'
-                  }`}>
-                    <p className="text-[10px] font-semibold mb-1 opacity-60">{msg.sender_name}</p>
-                    <p>{msg.content}</p>
-                    <span className={`text-[9px] absolute bottom-1 right-2 ${isMe ? 'text-green-300' : 'text-gray-400'}`}>
-                      {sentAt ? new Date(sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto bg-gray-50"
+      >
+        <div className="flex flex-col min-h-full p-4 space-y-3">
+          {filtered.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
+              <MessageSquareText size={48} className="opacity-30" />
+              <p className="text-sm">Aucun message — démarrez la conversation.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1" />
+              {filtered.map((msg) => {
+                const isMe = msg.sender_type === myType;
+                const sentAt = msg.sent_at || msg.created_at;
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] p-3 rounded-2xl relative whitespace-pre-wrap text-sm ${
+                      isMe
+                        ? 'bg-[#0D2B0D] text-white rounded-br-none'
+                        : 'bg-white text-black rounded-bl-none border border-gray-200 shadow-sm'
+                    }`}>
+                      <p className="text-[10px] font-semibold mb-1 opacity-60">{msg.sender_name}</p>
+                      <p>{msg.content}</p>
+                      <span className={`text-[9px] absolute bottom-1 right-2 ${isMe ? 'text-green-300' : 'text-gray-400'}`}>
+                        {sentAt ? new Date(sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })
-        )}
-        <div ref={bottomRef} />
+                );
+              })}
+            </>
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
       {error && <p className="text-red-500 text-xs text-center px-3 pb-1">{error}</p>}
       <div className="bg-white border-t border-gray-200 p-3 flex gap-2 items-end">
