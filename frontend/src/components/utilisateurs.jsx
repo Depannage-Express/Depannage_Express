@@ -10,6 +10,7 @@ import {
   fetchSpecialties,
   adminCompleteAndApproveMechanic,
   adminFixMechanicLocation,
+  fetchAdminMechanicProfileDetail,
 } from '../lib/api';
 import { getCoordsForQuartier } from '../lib/benin_locations';
 import SearchableSelect from './SearchableSelect';
@@ -38,6 +39,9 @@ const EMPTY_FORM = {
   longitude: '',
   specialty_ids: [],
   profile_photo: null,
+  id_card_front: null,
+  id_card_back: null,
+  certification_doc: null,
 };
 
 const POLL_INTERVAL_MS = 4_000;
@@ -75,7 +79,11 @@ const Utilisateurs = ({ onBack }) => {
   const [specialties, setSpecialties] = useState([]);
   const [specialtiesLoaded, setSpecialtiesLoaded] = useState(false);
   const [completeError, setCompleteError] = useState('');
+  const [mechProfileDetails, setMechProfileDetails] = useState(null);
   const photoInputRef = useRef(null);
+  const idCardFrontRef = useRef(null);
+  const idCardBackRef = useRef(null);
+  const certDocRef = useRef(null);
 
   const loadUsers = async ({ silent = false } = {}) => {
     if (!silent) setError('');
@@ -185,11 +193,18 @@ const Utilisateurs = ({ onBack }) => {
     setSelectedQuartier('');
     setGpsSource('');
     setCompleteError('');
+    setMechProfileDetails(null);
     try {
-      const data = await fetchSpecialties();
-      const list = Array.isArray(data) ? data : (data.results || []);
+      const [specialtyData, profileData] = await Promise.all([
+        fetchSpecialties(),
+        user.mechanic_profile_id
+          ? fetchAdminMechanicProfileDetail(user.mechanic_profile_id).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      const list = Array.isArray(specialtyData) ? specialtyData : (specialtyData.results || []);
       setSpecialties(list);
       setSpecialtiesLoaded(true);
+      setMechProfileDetails(profileData);
     } catch {
       setSpecialties([]);
       setSpecialtiesLoaded(true);
@@ -301,6 +316,9 @@ const Utilisateurs = ({ onBack }) => {
     if (completeForm.longitude)        fd.append('longitude', completeForm.longitude);
     completeForm.specialty_ids.forEach(id => fd.append('specialty_ids', id));
     if (completeForm.profile_photo)    fd.append('profile_photo', completeForm.profile_photo);
+    if (completeForm.id_card_front)    fd.append('id_card_front', completeForm.id_card_front);
+    if (completeForm.id_card_back)     fd.append('id_card_back', completeForm.id_card_back);
+    if (completeForm.certification_doc) fd.append('certification_doc', completeForm.certification_doc);
 
     try {
       await adminCompleteAndApproveMechanic(completeTarget.id, fd);
@@ -678,6 +696,63 @@ const Utilisateurs = ({ onBack }) => {
                 {completeForm.profile_photo && (
                   <p className="text-xs text-green-700 mt-1.5 font-medium">✓ {completeForm.profile_photo.name}</p>
                 )}
+              </div>
+
+              {/* Documents d'identité et certification */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold uppercase text-gray-500">Documents mécanicien</label>
+
+                {/* Pièce d'identité recto */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Pièce d'identité — recto</label>
+                  {mechProfileDetails?.id_card_front_url && !completeForm.id_card_front && (
+                    <a href={mechProfileDetails.id_card_front_url} target="_blank" rel="noreferrer" className="block mb-1">
+                      <img src={mechProfileDetails.id_card_front_url} alt="CNI recto existante" className="w-full max-h-28 object-cover rounded-xl border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer" />
+                    </a>
+                  )}
+                  <button type="button" onClick={() => idCardFrontRef.current?.click()}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                    <Camera size={13} />
+                    {completeForm.id_card_front ? `✓ ${completeForm.id_card_front.name}` : (mechProfileDetails?.id_card_front_url ? 'Remplacer la photo' : 'Choisir une photo')}
+                  </button>
+                  <input ref={idCardFrontRef} type="file" accept="image/*,.pdf" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setCompleteForm(v => ({ ...v, id_card_front: f })); }} />
+                </div>
+
+                {/* Pièce d'identité verso */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Pièce d'identité — verso</label>
+                  {mechProfileDetails?.id_card_back_url && !completeForm.id_card_back && (
+                    <a href={mechProfileDetails.id_card_back_url} target="_blank" rel="noreferrer" className="block mb-1">
+                      <img src={mechProfileDetails.id_card_back_url} alt="CNI verso existante" className="w-full max-h-28 object-cover rounded-xl border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer" />
+                    </a>
+                  )}
+                  <button type="button" onClick={() => idCardBackRef.current?.click()}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                    <Camera size={13} />
+                    {completeForm.id_card_back ? `✓ ${completeForm.id_card_back.name}` : (mechProfileDetails?.id_card_back_url ? 'Remplacer la photo' : 'Choisir une photo')}
+                  </button>
+                  <input ref={idCardBackRef} type="file" accept="image/*,.pdf" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setCompleteForm(v => ({ ...v, id_card_back: f })); }} />
+                </div>
+
+                {/* Certificat / diplôme */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Certification / diplôme</label>
+                  {mechProfileDetails?.certification_doc_url && !completeForm.certification_doc && (
+                    <a href={mechProfileDetails.certification_doc_url} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[#608C27] underline mb-1">
+                      Voir le document existant ↗
+                    </a>
+                  )}
+                  <button type="button" onClick={() => certDocRef.current?.click()}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                    <Camera size={13} />
+                    {completeForm.certification_doc ? `✓ ${completeForm.certification_doc.name}` : (mechProfileDetails?.certification_doc_url ? 'Remplacer le document' : 'Choisir un fichier')}
+                  </button>
+                  <input ref={certDocRef} type="file" accept="image/*,.pdf" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setCompleteForm(v => ({ ...v, certification_doc: f })); }} />
+                </div>
               </div>
 
               {/* Spécialités */}

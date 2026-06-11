@@ -155,6 +155,16 @@ def validate_mechanic_view(request, pk):
     return Response({'success': True, 'status': profile.status})
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_mechanic_profile_detail(request, pk):
+    try:
+        profile = MechanicProfile.objects.select_related('user').prefetch_related('specialties').get(pk=pk)
+    except MechanicProfile.DoesNotExist:
+        return Response({'error': 'Profil introuvable.'}, status=404)
+    return Response(MechanicProfileSerializer(profile).data)
+
+
 @api_view(['PATCH'])
 @permission_classes([IsAdmin])
 def admin_fix_mechanic_location(request, pk):

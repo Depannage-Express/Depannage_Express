@@ -254,6 +254,10 @@ export function adminCompleteAndApproveMechanic(userId, formData) {
   });
 }
 
+export function fetchAdminMechanicProfileDetail(profileId) {
+  return apiRequest(`/mechanics/admin/${profileId}/detail/`);
+}
+
 export function fetchMyInterventions(statusFilter) {
   const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
   return apiRequest(`/interventions/my/${qs}`);

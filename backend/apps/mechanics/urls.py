@@ -13,6 +13,7 @@ urlpatterns = [
 
     # Admin
     path('admin/list/', views.MechanicListAdminView.as_view(), name='admin-mechanics-list'),
+    path('admin/<uuid:pk>/detail/', views.admin_mechanic_profile_detail, name='admin-mechanic-detail'),
     path('admin/<uuid:pk>/validate/', views.validate_mechanic_view, name='admin-validate-mechanic'),
     path('admin/<uuid:pk>/fix-location/', views.admin_fix_mechanic_location, name='admin-fix-location'),
     path('admin/complete-approve/<uuid:user_id>/', views.admin_complete_and_approve, name='admin-complete-approve'),
