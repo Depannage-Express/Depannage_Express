@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, Star, AlertTriangle } from 'lucide-react';
 import { submitReviewForIntervention, createSignalementAvis } from '../lib/api';
-import { detecterMotsInterdits } from '../data/mots_interdits';
+import { detecterMotsInterdits, getNiveauGravite } from '../data/mots_interdits';
 
 const Remerciement = ({ onRemerc, interventionId, reviewerName, driverToken }) => {
   const [rating, setRating] = useState(0);
@@ -55,6 +55,7 @@ const Remerciement = ({ onRemerc, interventionId, reviewerName, driverToken }) =
         explication,
         note: rating,
         mots_detectes: motsDetectes.join(', '),
+        gravity: getNiveauGravite(motsDetectes),
         driver_token: driverToken,
       });
       setSignalementEnvoye(true);

@@ -124,9 +124,12 @@ def report_avis(request):
     Il est créé comme Incident de type 'review'.
     """
     data = request.data
+    gravity = data.get('gravity', 'medium')
+    if gravity not in ('low', 'medium', 'high'):
+        gravity = 'medium'
     incident = Incident.objects.create(
         incident_type='review',
-        gravity='medium',
+        gravity=gravity,
         status='pending',
         emitter_type='driver',
         emitter_name=data.get('driver_name', 'Conducteur'),
