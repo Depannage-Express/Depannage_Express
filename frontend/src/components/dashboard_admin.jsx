@@ -79,68 +79,6 @@ const DashboardAdmin = ({ onLogout }) => {
     { id: 'retraits',    label: 'Retraits',          Icon: ArrowDownCircle,  badge: pendingRetraits },
   ];
 
-  const kpiCards = [
-    {
-      label: 'Utilisateurs',
-      value: stats?.users?.total ?? '—',
-      Icon: Users,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Mécaniciens actifs',
-      value: stats?.mechanics?.by_status?.approved ?? '—',
-      Icon: Wrench,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Profils en attente',
-      value: stats?.mechanics?.by_status?.pending ?? '—',
-      Icon: Clock,
-      color: 'text-amber-500',
-      bg: 'bg-amber-50',
-      alert: (stats?.mechanics?.by_status?.pending || 0) > 0,
-    },
-    {
-      label: 'Signalements en attente',
-      value: stats?.reports?.pending_count ?? '—',
-      Icon: AlertTriangle,
-      color: 'text-red-500',
-      bg: 'bg-red-50',
-      alert: (stats?.reports?.pending_count || 0) > 0,
-    },
-    {
-      label: 'Demandes totales',
-      value: stats?.breakdowns?.total ?? '—',
-      Icon: ClipboardList,
-      color: 'text-violet-500',
-      bg: 'bg-violet-50',
-    },
-    {
-      label: 'Interventions terminées',
-      value: stats?.breakdowns?.by_status?.completed ?? '—',
-      Icon: CheckCircle,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Paiements en attente',
-      value: stats?.payments?.pending_count ?? '—',
-      Icon: CreditCard,
-      color: 'text-orange-500',
-      bg: 'bg-orange-50',
-      alert: (stats?.payments?.pending_count || 0) > 0,
-    },
-    {
-      label: 'Revenus encaissés',
-      value: stats ? `${(stats.payments?.total_revenue_xof || 0).toLocaleString('fr-FR')} XOF` : '—',
-      Icon: TrendingUp,
-      color: 'text-[#608C27]',
-      bg: 'bg-green-50',
-    },
-  ];
-
   const pageTitles = {
     menu:         'Tableau de bord',
     utilisateurs: 'Utilisateurs',
@@ -277,7 +215,7 @@ const DashboardAdmin = ({ onLogout }) => {
         {/* ── PAGE CONTENT ── */}
         <main className="flex-1 p-5 min-w-0">
           {view === 'menu' ? (
-            <div className="space-y-7">
+            <div className="space-y-6">
 
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
@@ -285,67 +223,162 @@ const DashboardAdmin = ({ onLogout }) => {
                 </div>
               )}
 
-              {/* KPI Grid */}
-              <section>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">
-                  Vue d'ensemble
-                </p>
-                {isLoading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="bg-white rounded-xl p-5 h-[88px] animate-pulse" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {kpiCards.map((card) => (
-                      <KpiCard key={card.label} card={card} />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Quick actions */}
-              <section>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">
-                  Actions rapides
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {navItems.filter((i) => i.id !== 'menu').map(({ id, label, Icon, badge }) => (
-                    <button
-                      key={id}
-                      onClick={() => setViewSafe(id)}
-                      className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100 text-left"
-                    >
-                      <div className="w-9 h-9 bg-[#0D2B0D] rounded-lg flex items-center justify-center shrink-0">
-                        <Icon size={16} className="text-[#608C27]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[#1a1a2e] font-semibold text-xs truncate">{label}</p>
-                        {badge > 0 ? (
-                          <p className="text-red-500 text-[10px] font-bold">{badge} en attente</p>
-                        ) : (
-                          <p className="text-gray-400 text-[10px]">Gérer</p>
-                        )}
-                      </div>
-                    </button>
+              {isLoading ? (
+                <div className="space-y-6">
+                  {[4, 4, 3].map((cols, si) => (
+                    <div key={si} className={`grid grid-cols-2 lg:grid-cols-${cols} gap-4`}>
+                      {Array.from({ length: cols }).map((_, i) => (
+                        <div key={i} className="bg-white rounded-xl h-[88px] animate-pulse" />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              </section>
+              ) : (
+                <>
+                  {/* ── SECTION 1 : Finances & Alertes ── */}
+                  <section>
+                    <SectionLabel>Finances &amp; Alertes prioritaires</SectionLabel>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Revenue — occupe 2 colonnes desktop */}
+                      <div className="col-span-2">
+                        <KpiCard card={{
+                          label: 'Revenus encaissés',
+                          value: stats ? `${(stats.payments?.total_revenue_xof || 0).toLocaleString('fr-FR')} XOF` : '—',
+                          Icon: TrendingUp,
+                          color: 'text-white',
+                          bg: 'bg-[#608C27]/20',
+                          hero: true,
+                        }} />
+                      </div>
+                      <KpiCard card={{
+                        label: 'Signalements en attente',
+                        value: stats?.reports?.pending_count ?? '—',
+                        Icon: AlertTriangle,
+                        color: 'text-red-500',
+                        bg: 'bg-red-50',
+                        alert: (stats?.reports?.pending_count || 0) > 0,
+                      }} />
+                      <KpiCard card={{
+                        label: 'Retraits en attente',
+                        value: pendingRetraits,
+                        Icon: ArrowDownCircle,
+                        color: 'text-orange-500',
+                        bg: 'bg-orange-50',
+                        alert: pendingRetraits > 0,
+                      }} />
+                    </div>
+                  </section>
 
+                  {/* ── SECTION 2 : Communauté ── */}
+                  <section>
+                    <SectionLabel>Communauté</SectionLabel>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <KpiCard card={{
+                        label: 'Conducteurs inscrits',
+                        value: stats?.users?.total ?? '—',
+                        Icon: Users,
+                        color: 'text-blue-500',
+                        bg: 'bg-blue-50',
+                      }} />
+                      <KpiCard card={{
+                        label: 'Mécaniciens actifs',
+                        value: stats?.mechanics?.by_status?.approved ?? '—',
+                        Icon: Wrench,
+                        color: 'text-emerald-500',
+                        bg: 'bg-emerald-50',
+                      }} />
+                      <KpiCard card={{
+                        label: 'Profils en attente',
+                        value: stats?.mechanics?.by_status?.pending ?? '—',
+                        Icon: Clock,
+                        color: 'text-amber-500',
+                        bg: 'bg-amber-50',
+                        alert: (stats?.mechanics?.by_status?.pending || 0) > 0,
+                      }} />
+                      <KpiCard card={{
+                        label: 'Abonnements en attente',
+                        value: stats?.subscriptions?.pending_count ?? '—',
+                        Icon: UserCircle,
+                        color: 'text-violet-500',
+                        bg: 'bg-violet-50',
+                        alert: (stats?.subscriptions?.pending_count || 0) > 0,
+                      }} />
+                    </div>
+                  </section>
+
+                  {/* ── SECTION 3 : Activité ── */}
+                  <section>
+                    <SectionLabel>Activité</SectionLabel>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      <KpiCard card={{
+                        label: 'Demandes totales',
+                        value: stats?.breakdowns?.total ?? '—',
+                        Icon: ClipboardList,
+                        color: 'text-violet-500',
+                        bg: 'bg-violet-50',
+                      }} />
+                      <KpiCard card={{
+                        label: 'Interventions terminées',
+                        value: stats?.breakdowns?.by_status?.completed ?? '—',
+                        Icon: CheckCircle,
+                        color: 'text-emerald-600',
+                        bg: 'bg-emerald-50',
+                      }} />
+                      <KpiCard card={{
+                        label: 'Paiements en attente',
+                        value: stats?.payments?.pending_count ?? '—',
+                        Icon: CreditCard,
+                        color: 'text-orange-500',
+                        bg: 'bg-orange-50',
+                        alert: (stats?.payments?.pending_count || 0) > 0,
+                      }} />
+                    </div>
+                  </section>
+                </>
+              )}
             </div>
           ) : (
             renderSubview()
           )}
         </main>
 
+        {/* ── FOOTER ── */}
+        <footer className="bg-white border-t border-gray-200 px-5 py-3 mt-auto">
+          <p className="text-[11px] text-gray-400 text-center">
+            © {new Date().getFullYear()} Dépannage Express · Panneau d'administration
+          </p>
+        </footer>
+
       </div>
     </div>
   );
 };
 
+const SectionLabel = ({ children }) => (
+  <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">{children}</p>
+);
+
 const KpiCard = ({ card }) => {
-  const { Icon, label, value, color, bg, alert } = card;
+  const { Icon, label, value, color, bg, alert, hero } = card;
+
+  if (hero) {
+    return (
+      <div className="bg-[#0D2B0D] rounded-xl p-5 shadow-sm h-full flex items-center gap-4 border border-[#608C27]/30">
+        <div className="w-12 h-12 bg-[#608C27]/20 rounded-full flex items-center justify-center shrink-0">
+          <Icon size={22} className="text-[#608C27]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white/60 text-[11px] font-semibold uppercase tracking-wide leading-tight">
+            {label}
+          </p>
+          <p className="text-[#608C27] text-[28px] font-black mt-0.5 leading-none truncate">
+            {value}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-white rounded-xl p-5 shadow-sm border transition-shadow hover:shadow-md ${alert ? 'border-red-200' : 'border-gray-100'}`}>
       <div className="flex items-center gap-3">
