@@ -108,17 +108,17 @@ const DashboardAdmin = () => {
   // Si on n'est pas sur le menu, on exécute la fonction renderContent()
   if (view !== 'menu') {
     return (
-      <div className="min-h-screen bg-gray-200 flex flex-col items-center py-10 px-4">
-        <div className="w-full max-w-5xl">
+      <div className="min-h-screen bg-gray-200 flex flex-col items-center py-10">
+        <div className="w-[96%] mx-auto">
           {renderContent()} 
         </div>
       </div>
     );
   }
 
-  return (<div className="flex items-center justify-center w-full py-6 md:py-12 px-4">  {/* Conteneur Principal (Similaire à ton schéma) */}
+  return (<div className="flex items-center justify-center w-full py-6 md:py-12">  {/* Conteneur Principal (Similaire à ton schéma) */}
 
-      <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
+      <div className="w-[96%] mx-auto bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
         
         {/* En-tête du Menu */}
         <div className="bg-[#0D2B0D] py-4 text-center">
