@@ -76,7 +76,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
-            'phone', 'role', 'avatar', 'avatar_url', 'is_active', 'is_blocked',
+            'phone', 'role', 'avatar', 'avatar_url', 'is_active', 'is_blocked', 'block_reason',
             'mechanic_profile_status', 'mechanic_profile_id', 'mechanic_short_id',
             'mechanic_profile_photo', 'mechanic_city', 'mechanic_department',
             'mechanic_neighborhood', 'created_at', 'updated_at'
