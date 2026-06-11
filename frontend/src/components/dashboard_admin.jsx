@@ -139,8 +139,8 @@ const DashboardAdmin = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {/* Nav links — entièrement scrollable */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 flex flex-col gap-0.5">
           {navItems.map(({ id, label, Icon, badge }) => {
             const isActive = view === id;
             return (
@@ -164,20 +164,20 @@ const DashboardAdmin = ({ onLogout }) => {
               </button>
             );
           })}
-        </nav>
 
-        {/* Admin identity */}
-        <div className="px-4 py-4 border-t border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-[#608C27]/30 rounded-full flex items-center justify-center shrink-0">
-              <UserCircle size={15} className="text-[#608C27]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-semibold truncate">Administrateur</p>
-              <p className="text-white/40 text-[10px]">Super admin</p>
+          {/* Identité admin — dans le scroll, ne concurrence plus le footer */}
+          <div className="mt-auto pt-4 border-t border-white/10">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="w-7 h-7 bg-[#608C27]/30 rounded-full flex items-center justify-center shrink-0">
+                <UserCircle size={15} className="text-[#608C27]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-semibold truncate">Administrateur</p>
+                <p className="text-white/40 text-[10px]">Super admin</p>
+              </div>
             </div>
           </div>
-        </div>
+        </nav>
       </aside>
 
       {/* ── MAIN AREA ── */}
