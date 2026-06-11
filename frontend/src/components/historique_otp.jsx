@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { requestOTP, verifyOTP } from '../lib/api';
 
 const STATUS_LABELS = {
@@ -167,7 +167,10 @@ export default function HistoriqueOTP({ onBack }) {
     setLoading(true);
     try {
       const res = await requestOTP('+229' + phone.trim());
-      if (res.otp_code) setDevCode(res.otp_code);
+      if (res.otp_code) {
+        setDevCode(res.otp_code);
+        setCode(res.otp_code);
+      }
       setStep('code');
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'envoi du code.');
@@ -235,7 +238,10 @@ export default function HistoriqueOTP({ onBack }) {
             </div>
 
             {error && (
-              <p className="text-red-600 text-sm font-medium">{error}</p>
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <AlertTriangle size={16} className="text-amber-700 mt-0.5 shrink-0" />
+                <p className="text-amber-800 text-sm font-medium">{error}</p>
+              </div>
             )}
 
             <button
@@ -264,8 +270,19 @@ export default function HistoriqueOTP({ onBack }) {
             </div>
 
             {devCode && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 text-sm text-yellow-800">
-                <span className="font-bold">Mode démo —</span> votre code : <span className="font-mono font-bold">{devCode}</span>
+              <div className="bg-green-50 border border-green-300 rounded-xl px-4 py-3 flex items-start gap-3">
+                <CheckCircle size={18} className="text-green-700 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-green-800 mb-0.5">
+                    Code de vérification (démo) :
+                  </p>
+                  <p className="text-3xl font-black text-green-900 tracking-[0.3em] font-mono">
+                    {devCode}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Ce code a été automatiquement renseigné ci-dessous.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -275,10 +292,10 @@ export default function HistoriqueOTP({ onBack }) {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-[#608C27] text-white font-bold py-3 rounded-lg hover:bg-[#0D2B0D] transition-colors disabled:opacity-60"
+              disabled={loading || code.length !== 6}
+              className="w-full bg-[#608C27] text-white font-bold py-3 rounded-lg hover:bg-[#0D2B0D] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? 'Vérification...' : 'Voir mon historique'}
+              {loading ? 'Vérification...' : 'Voir mon historique →'}
             </button>
 
             <button
