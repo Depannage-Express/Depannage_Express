@@ -277,8 +277,9 @@ def admin_complete_and_approve(request, user_id):
         if raw:
             profile.__dict__[coord] = raw
 
-    if 'profile_photo' in request.FILES:
-        profile.profile_photo = request.FILES['profile_photo']
+    for photo_field in ('profile_photo', 'id_card_front', 'id_card_back', 'certification_doc'):
+        if photo_field in request.FILES:
+            setattr(profile, photo_field, request.FILES[photo_field])
 
     profile.status = 'approved'
     profile.validated_by = request.user

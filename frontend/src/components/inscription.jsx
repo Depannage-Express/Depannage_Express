@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Upload, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { registerMechanic, setAuthTokens } from '../lib/api';
+import { registerMechanic, setAuthTokens, createMechanicProfile } from '../lib/api';
 
 const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
   const [form, setForm] = useState({
@@ -15,6 +15,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [certFile, setCertFile] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -51,6 +52,17 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
     try {
       const authPayload = await registerMechanic({ ...form, phone: '+229' + form.phone, role: 'mechanic_standard' });
       setAuthTokens(authPayload);
+
+      if (certFile) {
+        const fd = new FormData();
+        fd.append('certification_doc', certFile);
+        try {
+          await createMechanicProfile(fd);
+        } catch {
+          // profil incomplet — admin complétera lors de la visite atelier
+        }
+      }
+
       setSuccess('Compte créé. Complétez ensuite le profil mécanicien et les justificatifs.');
       if (onRegisterSuccess) {
         onRegisterSuccess(authPayload);
@@ -190,7 +202,11 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
                   type="file"
                   accept="image/*,.pdf"
                   className="hidden"
-                  onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setCertFile(file);
+                    setFileName(file?.name || '');
+                  }}
                 />
               </label>
             </div>

@@ -170,6 +170,13 @@ export function fetchCurrentUser() {
   return apiRequest('/auth/profile/');
 }
 
+export function createMechanicProfile(formData) {
+  return apiRequest('/mechanics/profile/create/', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export function fetchMechanicRequests() {
   return apiRequest('/breakdowns/my-requests/');
 }
