@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Loader, Star, Info } from 'lucide-react';
 import logo from '../assets/arriere.jpeg';
 import { fetchPublicMechanics, fetchPlatformStats } from '../lib/api';
+import SafeImage from './SafeImage';
 
 const StatBox = ({ value, label, dark }) => (
   <div
@@ -31,10 +32,11 @@ const MechanicCard = ({ tech, index, onVoir, onContact }) => {
     >
       <div className="flex items-center gap-2 md:gap-3 mb-3">
         <div className="w-10 h-10 md:w-14 md:h-14 rounded-full overflow-hidden border-2 border-[#608C27] shrink-0">
-          <img
-            src={tech.profile_photo || tech.user_avatar || "/Male construction worker.jpeg"}
+          <SafeImage
+            src={tech.profile_photo_url || tech.user_avatar_url}
             alt={tech.user_name}
-            className="w-full h-full object-cover"
+            name={tech.user_name}
+            className="w-full h-full"
           />
         </div>
         <div className="min-w-0">
