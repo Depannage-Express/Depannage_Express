@@ -55,17 +55,17 @@ const DashboardAdmin = () => {
   }, []);
 
   const menuItems = [
-    { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={40} />, color: "bg-[#608C27]", badge: stats?.mechanics?.by_status?.pending || 0 },
-    { id: 'interve', title: "Interventions", icon: <Bell size={40} />, color: "bg-[#608C27]", badge: stats?.breakdowns?.by_status?.pending || stats?.breakdowns?.by_status?.authorized || 0 },
-    { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={40} />, color: "bg-[#608C27]", badge: stats?.subscriptions?.pending_count || 0 },
-    { id: 'paieadmin', title: "Paiements", icon: <Activity size={40} />, color: "bg-[#608C27]", badge: stats?.payments?.pending_count || 0 },
-    { id: 'signal', title: "Signalements", icon: <MessageCircle size={40} />, color: "bg-[#608C27]", badge: stats?.reports?.pending_count || 0 },
-    { id: 'avis', title: "Gestion des avis", icon: <Star size={40} />, color: "bg-[#608C27]", badge: 0 },
-    { id: 'messages', title: "Messages", icon: <MessageSquareText size={40} />, color: "bg-[#608C27]", badge: 0 },
+    { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={20} />, color: "bg-[#608C27]", badge: stats?.mechanics?.by_status?.pending || 0 },
+    { id: 'interve', title: "Interventions", icon: <Bell size={20} />, color: "bg-[#608C27]", badge: stats?.breakdowns?.by_status?.pending || stats?.breakdowns?.by_status?.authorized || 0 },
+    { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={20} />, color: "bg-[#608C27]", badge: stats?.subscriptions?.pending_count || 0 },
+    { id: 'paieadmin', title: "Paiements", icon: <Activity size={20} />, color: "bg-[#608C27]", badge: stats?.payments?.pending_count || 0 },
+    { id: 'signal', title: "Signalements", icon: <MessageCircle size={20} />, color: "bg-[#608C27]", badge: stats?.reports?.pending_count || 0 },
+    { id: 'avis', title: "Gestion des avis", icon: <Star size={20} />, color: "bg-[#608C27]", badge: 0 },
+    { id: 'messages', title: "Messages", icon: <MessageSquareText size={20} />, color: "bg-[#608C27]", badge: 0 },
     {
       id: 'retraits',
       title: "Retraits",
-      icon: <ArrowDownCircle size={40} />,
+      icon: <ArrowDownCircle size={20} />,
       color: "bg-[#608C27]",
       badge: (stats?.withdrawals?.pending_count || 0) + (stats?.momo_changes?.pending_count || 0),
     },
@@ -116,26 +116,26 @@ const DashboardAdmin = () => {
     );
   }
 
-  return (<div className="flex items-center justify-center w-full py-6 md:py-12">  {/* Conteneur Principal (Similaire à ton schéma) */}
+  return (<div className="flex items-center justify-center w-full py-3">
 
       <div className="w-[96%] mx-auto bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
-        
+
         {/* En-tête du Menu */}
-        <div className="bg-[#0D2B0D] py-4 text-center">
-          <h2 className="text-white text-2xl font-bold uppercase tracking-widest">
+        <div className="bg-[#0D2B0D] py-2 text-center">
+          <h2 className="text-white text-lg font-bold uppercase tracking-widest">
             Votre menu principal
           </h2>
-          {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
+          {error ? <p className="mt-1 text-sm text-red-200">{error}</p> : null}
         </div>
 
-        <div className="border-b border-slate-200 bg-slate-50 p-6">
+        <div className="border-b border-slate-200 bg-slate-50 p-3">
           {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader className="text-[#608C27] animate-spin" size={28} />
+            <div className="flex items-center justify-center py-4">
+              <Loader className="text-[#608C27] animate-spin" size={24} />
             </div>
           ) : stats ? (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
                 <StatCard label="Utilisateurs" value={stats.users.total} />
                 <StatCard label="Mécaniciens" value={(stats.mechanics.by_status.approved || 0) + (stats.mechanics.by_status.pending || 0)} />
                 <StatCard label="Profils en attente" value={stats.mechanics.by_status.pending || 0} />
@@ -143,7 +143,7 @@ const DashboardAdmin = () => {
                 <StatCard label="Demandes assignées" value={stats.breakdowns.by_status.assigned || 0} />
                 <StatCard label="Terminées" value={stats.breakdowns.by_status.completed || 0} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <StatCard
                   label="Revenus encaissés"
                   value={`${stats.payments.total_revenue_xof.toLocaleString('fr-FR')} XOF`}
@@ -167,52 +167,10 @@ const DashboardAdmin = () => {
         </div>
 
         {/* Grille des fonctionnalités */}
-        <div className="p-3 md:p-8 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 items-stretch md:items-center justify-items-center">
-          
-          {/* Listes des Utilisateurs  */}
-          <MenuCard 
-            item={menuItems[0]} 
-            onClick={() => setViewSafe('utilisateurs')}
-          />
-
-          {/* Mon Compte (Centre) - On le place au milieu dans la grille */}
-          <div className="lg:row-span-2 flex md:items-center w-full md:w-auto h-full">
-             <MenuCard item={menuItems[2]} isLarge={true} 
-                  onClick={() => setViewSafe('abonnements')}
-             />
-          </div>
-
-          {/* Notification (Droite Haut) */}
-          <MenuCard 
-            item={menuItems[1]} 
-            onClick={() => setViewSafe('interve')}
-          />
-
-          {/* Statut des missions (Gauche Bas) */}
-          <MenuCard item={menuItems[3]} 
-            onClick={() => setViewSafe('paieadmin')}
-          />
-
-          {/* Signalements (Droite Bas) */}
-          <MenuCard item={menuItems[4]}
-            onClick={() => setViewSafe('signal')}
-          />
-
-          {/* Gestion des avis */}
-          <MenuCard item={menuItems[5]}
-            onClick={() => setViewSafe('avis')}
-          />
-
-          {/* Messages conducteurs & mécaniciens */}
-          <MenuCard item={menuItems[6]}
-            onClick={() => setViewSafe('messages')}
-          />
-
-          {/* Retraits mécaniciens */}
-          <MenuCard item={menuItems[7]}
-            onClick={() => setViewSafe('retraits')}
-          />
-
+        <div className="p-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {menuItems.map((item) => (
+            <MenuCard key={item.id} item={item} onClick={() => setViewSafe(item.id)} />
+          ))}
         </div>
       </div>
     </div>
@@ -220,33 +178,29 @@ const DashboardAdmin = () => {
 };
 
 const StatCard = ({ label, value, highlight = false }) => (
-  <div className={`rounded-2xl p-4 text-center shadow-sm ${highlight ? 'bg-[#0D2B0D]' : 'bg-white'}`}>
-    <p className={`text-xs font-bold uppercase tracking-wide ${highlight ? 'text-[#608C27]' : 'text-slate-500'}`}>{label}</p>
-    <p className={`mt-2 text-xl font-black ${highlight ? 'text-white' : 'text-[#0D2B0D]'}`}>{value}</p>
+  <div className={`rounded-xl p-2.5 text-center shadow-sm ${highlight ? 'bg-[#0D2B0D]' : 'bg-white'}`}>
+    <p className={`text-xs font-bold uppercase tracking-wide leading-tight ${highlight ? 'text-[#608C27]' : 'text-slate-500'}`}>{label}</p>
+    <p className={`mt-0.5 text-base font-black ${highlight ? 'text-white' : 'text-[#0D2B0D]'}`}>{value}</p>
   </div>
 );
 
-// Sous-composant pour les cartes du menu pour éviter la répétition
-const MenuCard = ({ item, isLarge = false , onClick}) => {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-      relative ${item.color} p-4 rounded-3xl shadow-lg border-4 border-[#608C27]
+const MenuCard = ({ item, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`
+      relative ${item.color} px-3 py-2.5 rounded-2xl shadow-md border-2 border-[#608C27]
       transform transition-all hover:scale-105 active:scale-95
-      flex flex-col items-center justify-center text-white
-      ${isLarge ? 'w-full h-full md:w-56 md:h-72' : 'w-full h-full md:w-48 md:h-40'}
+      flex flex-row items-center text-white gap-2.5 w-full
     `}
-    >
-      <Badge count={item.badge} className="top-4 right-4 px-2 py-1 text-xs" />
-      <div className="bg-[#0D2B0D] p-4 rounded-xl mb-4 shadow-inner">
-        {item.icon}
-      </div>
-      <span className="text-center font-bold text-sm uppercase leading-tight">
-        {item.title}
-      </span>
-    </button>
-  );
-};
+  >
+    <Badge count={item.badge} className="top-1.5 right-1.5 px-1.5 py-0.5 text-xs" />
+    <div className="bg-[#0D2B0D] p-2 rounded-lg shadow-inner flex-shrink-0">
+      {item.icon}
+    </div>
+    <span className="text-left font-bold text-xs uppercase leading-tight">
+      {item.title}
+    </span>
+  </button>
+);
 
 export default DashboardAdmin;
