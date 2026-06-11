@@ -7,23 +7,36 @@ import SupervisionInterventions from './supervisions_interv';
 import GestionAvis from './gestion_avis';
 import AdminMessages from './admin_messages';
 import RetraitsAdmin from './retraits_admin';
-import { ClipboardList, Bell, UserCircle, Activity, MessageCircle, Star, Loader, MessageSquareText, ArrowDownCircle, ArrowLeft } from 'lucide-react';
+import {
+  LayoutDashboard, Users, Activity, UserCircle, CreditCard,
+  Bell, Star, MessageSquareText, ArrowDownCircle,
+  TrendingUp, AlertTriangle, CheckCircle, Clock,
+  LogOut, Menu, Wrench, ClipboardList,
+} from 'lucide-react';
 import { fetchAdminStats, fetchAdminIncidentStats } from '../lib/api';
-import Badge from './Badge';
 
 const POLL_INTERVAL_MS = 4_000;
 
-const DashboardAdmin = () => {
+const DashboardAdmin = ({ onLogout }) => {
   const [view, setView] = useState('menu');
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(new Date());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const intervalRef = useRef(null);
+  const clockRef = useRef(null);
   const viewRef = useRef('menu');
+
+  useEffect(() => {
+    clockRef.current = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(clockRef.current);
+  }, []);
 
   const setViewSafe = (v) => {
     viewRef.current = v;
     setView(v);
+    setSidebarOpen(false);
   };
 
   const loadDashboard = async ({ silent = false } = {}) => {
@@ -34,12 +47,10 @@ const DashboardAdmin = () => {
         fetchAdminStats(),
         fetchAdminIncidentStats(),
       ]);
-
       let data = statsRes.status === 'fulfilled' ? statsRes.value : null;
       if (incidentRes.status === 'fulfilled') {
         data = { ...(data || {}), reports: { pending_count: incidentRes.value.pending || 0 } };
       }
-
       setStats(data);
     } catch (requestError) {
       if (!silent) setError(requestError.message);
@@ -54,153 +65,304 @@ const DashboardAdmin = () => {
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  const menuItems = [
-    { id: 'utilisateurs', title: "Utilisateurs", icon: <ClipboardList size={20} />, color: "bg-[#608C27]", badge: stats?.mechanics?.by_status?.pending || 0 },
-    { id: 'interve', title: "Interventions", icon: <Bell size={20} />, color: "bg-[#608C27]", badge: stats?.breakdowns?.by_status?.pending || stats?.breakdowns?.by_status?.authorized || 0 },
-    { id: 'abonnements', title: "Abonnements premium", icon: <UserCircle size={20} />, color: "bg-[#608C27]", badge: stats?.subscriptions?.pending_count || 0 },
-    { id: 'paieadmin', title: "Paiements", icon: <Activity size={20} />, color: "bg-[#608C27]", badge: stats?.payments?.pending_count || 0 },
-    { id: 'signal', title: "Signalements", icon: <MessageCircle size={20} />, color: "bg-[#608C27]", badge: stats?.reports?.pending_count || 0 },
-    { id: 'avis', title: "Gestion des avis", icon: <Star size={20} />, color: "bg-[#608C27]", badge: 0 },
-    { id: 'messages', title: "Messages", icon: <MessageSquareText size={20} />, color: "bg-[#608C27]", badge: 0 },
+  const pendingRetraits = (stats?.withdrawals?.pending_count || 0) + (stats?.momo_changes?.pending_count || 0);
+
+  const navItems = [
+    { id: 'menu',        label: 'Tableau de bord',  Icon: LayoutDashboard,  badge: 0 },
+    { id: 'utilisateurs',label: 'Utilisateurs',      Icon: Users,            badge: stats?.mechanics?.by_status?.pending || 0 },
+    { id: 'interve',     label: 'Interventions',     Icon: Activity,         badge: stats?.breakdowns?.by_status?.pending || 0 },
+    { id: 'abonnements', label: 'Abonnements',       Icon: UserCircle,       badge: stats?.subscriptions?.pending_count || 0 },
+    { id: 'paieadmin',   label: 'Paiements',         Icon: CreditCard,       badge: stats?.payments?.pending_count || 0 },
+    { id: 'signal',      label: 'Signalements',      Icon: Bell,             badge: stats?.reports?.pending_count || 0 },
+    { id: 'avis',        label: 'Gestion des avis',  Icon: Star,             badge: 0 },
+    { id: 'messages',    label: 'Messages',          Icon: MessageSquareText,badge: 0 },
+    { id: 'retraits',    label: 'Retraits',          Icon: ArrowDownCircle,  badge: pendingRetraits },
+  ];
+
+  const kpiCards = [
     {
-      id: 'retraits',
-      title: "Retraits",
-      icon: <ArrowDownCircle size={20} />,
-      color: "bg-[#608C27]",
-      badge: (stats?.withdrawals?.pending_count || 0) + (stats?.momo_changes?.pending_count || 0),
+      label: 'Utilisateurs',
+      value: stats?.users?.total ?? '—',
+      Icon: Users,
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: 'Mécaniciens actifs',
+      value: stats?.mechanics?.by_status?.approved ?? '—',
+      Icon: Wrench,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-50',
+    },
+    {
+      label: 'Profils en attente',
+      value: stats?.mechanics?.by_status?.pending ?? '—',
+      Icon: Clock,
+      color: 'text-amber-500',
+      bg: 'bg-amber-50',
+      alert: (stats?.mechanics?.by_status?.pending || 0) > 0,
+    },
+    {
+      label: 'Signalements en attente',
+      value: stats?.reports?.pending_count ?? '—',
+      Icon: AlertTriangle,
+      color: 'text-red-500',
+      bg: 'bg-red-50',
+      alert: (stats?.reports?.pending_count || 0) > 0,
+    },
+    {
+      label: 'Demandes totales',
+      value: stats?.breakdowns?.total ?? '—',
+      Icon: ClipboardList,
+      color: 'text-violet-500',
+      bg: 'bg-violet-50',
+    },
+    {
+      label: 'Interventions terminées',
+      value: stats?.breakdowns?.by_status?.completed ?? '—',
+      Icon: CheckCircle,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+    },
+    {
+      label: 'Paiements en attente',
+      value: stats?.payments?.pending_count ?? '—',
+      Icon: CreditCard,
+      color: 'text-orange-500',
+      bg: 'bg-orange-50',
+      alert: (stats?.payments?.pending_count || 0) > 0,
+    },
+    {
+      label: 'Revenus encaissés',
+      value: stats ? `${(stats.payments?.total_revenue_xof || 0).toLocaleString('fr-FR')} XOF` : '—',
+      Icon: TrendingUp,
+      color: 'text-[#608C27]',
+      bg: 'bg-green-50',
     },
   ];
 
+  const pageTitles = {
+    menu:         'Tableau de bord',
+    utilisateurs: 'Utilisateurs',
+    interve:      'Interventions',
+    abonnements:  'Abonnements premium',
+    paieadmin:    'Paiements',
+    signal:       'Signalements',
+    avis:         'Gestion des avis',
+    messages:     'Messages',
+    retraits:     'Retraits',
+  };
 
-  const renderContent = () => {
+  const renderSubview = () => {
     switch (view) {
-      case 'utilisateurs':
-        return <Utilisateurs onBack={() => setViewSafe('menu')} />;
-      
-      // On peut ajouter les autres ici plus tard
-      case 'interve':
-                return <SupervisionInterventions onBack={() => setViewSafe('menu')} />;
-      case 'abonnements':
-                return <Abonnements onBack={() => setViewSafe('menu')} />;
-      case 'paieadmin':
-                return <GestionPaiements onBack={()=> setViewSafe('menu')}/>;
-      case 'signal':
-                return <Signalements onBack={() => setViewSafe('menu')} />;
-      case 'avis':
-                return <GestionAvis onBack={() => setViewSafe('menu')} />;
-      case 'messages':
-                return <AdminMessages onBack={() => setViewSafe('menu')} />;
-      case 'retraits':
-                return <RetraitsAdmin onBack={() => setViewSafe('menu')} />;
-      default:
-        return (
-          <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
-            <h2 className="text-2xl mb-4 font-bold text-[#0D2B0D]">Page "{view}" en construction...</h2>
-            <button onClick={() => setViewSafe('menu')} className="inline-flex items-center gap-2 bg-[#608C27] text-white px-6 py-2 rounded-lg font-bold hover:bg-[#0D2B0D]">
-              <ArrowLeft size={16} /> Retour au menu
-            </button>
-          </div>
-        );
-      
+      case 'utilisateurs': return <Utilisateurs onBack={() => setViewSafe('menu')} />;
+      case 'interve':      return <SupervisionInterventions onBack={() => setViewSafe('menu')} />;
+      case 'abonnements':  return <Abonnements onBack={() => setViewSafe('menu')} />;
+      case 'paieadmin':    return <GestionPaiements onBack={() => setViewSafe('menu')} />;
+      case 'signal':       return <Signalements onBack={() => setViewSafe('menu')} />;
+      case 'avis':         return <GestionAvis onBack={() => setViewSafe('menu')} />;
+      case 'messages':     return <AdminMessages onBack={() => setViewSafe('menu')} />;
+      case 'retraits':     return <RetraitsAdmin onBack={() => setViewSafe('menu')} />;
+      default:             return null;
     }
   };
 
-  // Si on n'est pas sur le menu, on exécute la fonction renderContent()
-  if (view !== 'menu') {
-    return (
-      <div className="min-h-screen bg-gray-200 flex flex-col items-center py-10">
-        <div className="w-[96%] mx-auto">
-          {renderContent()} 
-        </div>
-      </div>
-    );
-  }
+  const fmtTime = (d) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const fmtDate = (d) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  return (<div className="flex items-center justify-center w-full py-3">
+  return (
+    <div className="min-h-screen bg-[#f0f2f5] flex">
 
-      <div className="w-[96%] mx-auto bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-[#0D2B0D]">
+      {/* Overlay mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* En-tête du Menu */}
-        <div className="bg-[#0D2B0D] py-2 text-center">
-          <h2 className="text-white text-lg font-bold uppercase tracking-widest">
-            Votre menu principal
-          </h2>
-          {error ? <p className="mt-1 text-sm text-red-200">{error}</p> : null}
-        </div>
-
-        <div className="border-b border-slate-200 bg-slate-50 p-3">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader className="text-[#608C27] animate-spin" size={24} />
+      {/* ── SIDEBAR ── */}
+      <aside className={`
+        fixed top-0 left-0 h-screen w-[220px] bg-[#0D2B0D] flex flex-col z-30
+        transition-transform duration-300
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}>
+        {/* Logo */}
+        <div className="px-5 py-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#608C27] rounded-lg flex items-center justify-center shrink-0">
+              <Wrench size={15} className="text-white" />
             </div>
-          ) : stats ? (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
-                <StatCard label="Utilisateurs" value={stats.users.total} />
-                <StatCard label="Mécaniciens" value={(stats.mechanics.by_status.approved || 0) + (stats.mechanics.by_status.pending || 0)} />
-                <StatCard label="Profils en attente" value={stats.mechanics.by_status.pending || 0} />
-                <StatCard label="Demandes totales" value={stats.breakdowns.total} />
-                <StatCard label="Demandes assignées" value={stats.breakdowns.by_status.assigned || 0} />
-                <StatCard label="Terminées" value={stats.breakdowns.by_status.completed || 0} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <StatCard
-                  label="Revenus encaissés"
-                  value={`${stats.payments.total_revenue_xof.toLocaleString('fr-FR')} XOF`}
-                  highlight
-                />
-                <StatCard label="Paiements confirmés" value={stats.payments.paid_count} />
-                <StatCard label="Paiements en attente" value={stats.payments.pending_count} />
-                <StatCard
-                  label="Retraits en attente"
-                  value={stats.withdrawals?.pending_count || 0}
-                  highlight={(stats.withdrawals?.pending_count || 0) > 0}
-                />
-                <StatCard
-                  label="Changements MoMo en attente"
-                  value={stats.momo_changes?.pending_count || 0}
-                  highlight={(stats.momo_changes?.pending_count || 0) > 0}
-                />
-              </div>
-            </>
-          ) : null}
+            <div className="leading-none">
+              <p className="text-white font-black text-sm">Dépannage</p>
+              <p className="text-[#608C27] text-[11px] font-semibold">Express Admin</p>
+            </div>
+          </div>
         </div>
 
-        {/* Grille des fonctionnalités */}
-        <div className="p-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {menuItems.map((item) => (
-            <MenuCard key={item.id} item={item} onClick={() => setViewSafe(item.id)} />
-          ))}
+        {/* Nav links */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          {navItems.map(({ id, label, Icon, badge }) => {
+            const isActive = view === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setViewSafe(id)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all text-[13px] font-medium
+                  ${isActive
+                    ? 'bg-[#608C27] text-white'
+                    : 'text-white/65 hover:bg-white/10 hover:text-white'}
+                `}
+              >
+                <Icon size={15} className="shrink-0" />
+                <span className="flex-1 truncate">{label}</span>
+                {badge > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Admin identity */}
+        <div className="px-4 py-4 border-t border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-[#608C27]/30 rounded-full flex items-center justify-center shrink-0">
+              <UserCircle size={15} className="text-[#608C27]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-semibold truncate">Administrateur</p>
+              <p className="text-white/40 text-[10px]">Super admin</p>
+            </div>
+          </div>
         </div>
+      </aside>
+
+      {/* ── MAIN AREA ── */}
+      <div className="lg:ml-[220px] flex-1 flex flex-col min-w-0">
+
+        {/* ── HEADER ── */}
+        <header className="bg-white border-b border-gray-200 px-5 py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-gray-500 hover:text-gray-700 p-1"
+          >
+            <Menu size={20} />
+          </button>
+
+          <h1 className="text-[#1a1a2e] font-bold text-[15px] flex-1">
+            {pageTitles[view] ?? 'Tableau de bord'}
+          </h1>
+
+          <div className="hidden md:flex flex-col items-end leading-none gap-0.5">
+            <span className="text-[#1a1a2e] text-[13px] font-semibold tabular-nums">{fmtTime(now)}</span>
+            <span className="text-gray-400 text-[10px] capitalize">{fmtDate(now)}</span>
+          </div>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Déconnexion</span>
+            </button>
+          )}
+        </header>
+
+        {/* ── PAGE CONTENT ── */}
+        <main className="flex-1 p-5 min-w-0">
+          {view === 'menu' ? (
+            <div className="space-y-7">
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+                  {error}
+                </div>
+              )}
+
+              {/* KPI Grid */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">
+                  Vue d'ensemble
+                </p>
+                {isLoading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="bg-white rounded-xl p-5 h-[88px] animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {kpiCards.map((card) => (
+                      <KpiCard key={card.label} card={card} />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Quick actions */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">
+                  Actions rapides
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {navItems.filter((i) => i.id !== 'menu').map(({ id, label, Icon, badge }) => (
+                    <button
+                      key={id}
+                      onClick={() => setViewSafe(id)}
+                      className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100 text-left"
+                    >
+                      <div className="w-9 h-9 bg-[#0D2B0D] rounded-lg flex items-center justify-center shrink-0">
+                        <Icon size={16} className="text-[#608C27]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#1a1a2e] font-semibold text-xs truncate">{label}</p>
+                        {badge > 0 ? (
+                          <p className="text-red-500 text-[10px] font-bold">{badge} en attente</p>
+                        ) : (
+                          <p className="text-gray-400 text-[10px]">Gérer</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+            </div>
+          ) : (
+            renderSubview()
+          )}
+        </main>
+
       </div>
     </div>
   );
 };
 
-const StatCard = ({ label, value, highlight = false }) => (
-  <div className={`rounded-xl p-2.5 text-center shadow-sm ${highlight ? 'bg-[#0D2B0D]' : 'bg-white'}`}>
-    <p className={`text-xs font-bold uppercase tracking-wide leading-tight ${highlight ? 'text-[#608C27]' : 'text-slate-500'}`}>{label}</p>
-    <p className={`mt-0.5 text-base font-black ${highlight ? 'text-white' : 'text-[#0D2B0D]'}`}>{value}</p>
-  </div>
-);
-
-const MenuCard = ({ item, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`
-      relative ${item.color} px-3 py-2.5 rounded-2xl shadow-md border-2 border-[#608C27]
-      transform transition-all hover:scale-105 active:scale-95
-      flex flex-row items-center text-white gap-2.5 w-full
-    `}
-  >
-    <Badge count={item.badge} className="top-1.5 right-1.5 px-1.5 py-0.5 text-xs" />
-    <div className="bg-[#0D2B0D] p-2 rounded-lg shadow-inner flex-shrink-0">
-      {item.icon}
+const KpiCard = ({ card }) => {
+  const { Icon, label, value, color, bg, alert } = card;
+  return (
+    <div className={`bg-white rounded-xl p-5 shadow-sm border transition-shadow hover:shadow-md ${alert ? 'border-red-200' : 'border-gray-100'}`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center shrink-0`}>
+          <Icon size={18} className={color} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[#6b7280] text-[11px] font-semibold uppercase tracking-wide leading-tight">
+            {label}
+          </p>
+          <p className={`text-[26px] font-black mt-0.5 leading-none ${alert ? 'text-red-600' : 'text-[#1a1a2e]'}`}>
+            {value}
+          </p>
+        </div>
+      </div>
     </div>
-    <span className="text-left font-bold text-xs uppercase leading-tight">
-      {item.title}
-    </span>
-  </button>
-);
+  );
+};
 
 export default DashboardAdmin;

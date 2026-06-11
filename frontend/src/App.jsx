@@ -345,7 +345,7 @@ function App() {
           />
         );
       case SCREENS.ADMIN_DASHBOARD:
-        return <DashboardAdmin />;
+        return <DashboardAdmin onLogout={handleLogout} />;
       case SCREENS.MECHANIC_INFO:
         return (
           <InfoMecanicien
