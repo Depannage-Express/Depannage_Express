@@ -109,7 +109,7 @@ const DashboardAdmin = ({ onLogout }) => {
   const fmtDate = (d) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex">
+    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
 
       {/* Overlay mobile sidebar */}
       {sidebarOpen && (
@@ -119,13 +119,16 @@ const DashboardAdmin = ({ onLogout }) => {
         />
       )}
 
-      {/* ── SIDEBAR ── */}
-      <aside className={`
-        fixed top-0 left-0 h-screen w-[220px] bg-[#0D2B0D] flex flex-col z-30
-        transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
-      `}>
+      {/* ── BODY: Sidebar + Main Area ── */}
+      <div className="flex flex-1">
+
+        {/* ── SIDEBAR ── */}
+        <aside className={`
+          fixed lg:sticky top-0 left-0 h-screen w-[220px] bg-[#0D2B0D] flex flex-col z-30
+          transition-transform duration-300 overflow-y-auto flex-shrink-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}>
         {/* Logo */}
         <div className="px-5 py-4 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -180,8 +183,8 @@ const DashboardAdmin = ({ onLogout }) => {
         </div>
       </aside>
 
-      {/* ── MAIN AREA ── */}
-      <div className="lg:ml-[220px] flex-1 flex flex-col min-w-0">
+      {/* ── MAIN AREA: Header + Content ── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-0">
 
         {/* ── HEADER ── */}
         <header className="bg-white border-b border-gray-200 px-5 py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
@@ -342,15 +345,18 @@ const DashboardAdmin = ({ onLogout }) => {
           )}
         </main>
 
-        {/* ── FOOTER ── */}
-        <footer className="bg-white border-t border-gray-200 px-5 py-3 mt-auto">
-          <p className="text-[11px] text-gray-400 text-center">
-            © {new Date().getFullYear()} Dépannage Express · Panneau d'administration
-          </p>
-        </footer>
-
       </div>
-    </div>
+
+    </div>{/* ── /BODY ── */}
+
+    {/* ── FOOTER ── */}
+    <footer className="bg-white border-t border-gray-200 px-5 py-3 w-full">
+      <p className="text-[11px] text-gray-400 text-center">
+        © {new Date().getFullYear()} Dépannage Express · Panneau d'administration
+      </p>
+    </footer>
+
+  </div>
   );
 };
 
