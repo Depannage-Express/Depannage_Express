@@ -15,6 +15,7 @@ const TYPE_LABELS = {
   price:   'Problème de prix',
   fraud:   'Fraude',
   quality: 'Qualité du service',
+  review:  'Avis litigieux',
   other:   'Autre',
 };
 const STATUS_LABELS = {
@@ -23,6 +24,11 @@ const STATUS_LABELS = {
   rejected:  'Rejeté',
   suspended: 'Suspendu',
 };
+
+function typeBadge(type) {
+  if (type === 'review') return 'inline-block text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700';
+  return null;
+}
 
 function gravityBadge(gravity) {
   const base = 'inline-block text-xs font-bold px-2 py-0.5 rounded-full';
@@ -45,6 +51,43 @@ function formatDate(iso) {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+}
+
+function ReviewDescription({ raw }) {
+  const sections = {};
+  const commentaireMatch = raw.match(/COMMENTAIRE ORIGINAL :\n([\s\S]*?)\n\nNOTE/);
+  const noteMatch = raw.match(/NOTE DONNÉE : (.+?)\/5/);
+  const explicationMatch = raw.match(/EXPLICATION DU CONDUCTEUR :\n([\s\S]*?)\n\nMOTS/);
+  const motsMatch = raw.match(/MOTS DÉTECTÉS : (.+)/);
+  if (commentaireMatch) sections.commentaire = commentaireMatch[1].trim();
+  if (noteMatch) sections.note = noteMatch[1].trim();
+  if (explicationMatch) sections.explication = explicationMatch[1].trim();
+  if (motsMatch) sections.mots = motsMatch[1].trim();
+
+  return (
+    <div className="space-y-2 mt-1">
+      {sections.commentaire && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+          <p className="font-bold text-red-700 text-xs mb-1">Commentaire original :</p>
+          <p className="text-gray-700 text-xs italic">&laquo; {sections.commentaire} &raquo;</p>
+        </div>
+      )}
+      {sections.note && (
+        <p className="text-xs"><span className="font-bold">Note donnée&nbsp;:</span> {sections.note}/5</p>
+      )}
+      {sections.explication && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+          <p className="font-bold text-blue-700 text-xs mb-1">Explication du conducteur :</p>
+          <p className="text-gray-700 text-xs">{sections.explication}</p>
+        </div>
+      )}
+      {sections.mots && (
+        <p className="text-xs text-orange-600">
+          <span className="font-bold">Mots détectés&nbsp;:</span> {sections.mots}
+        </p>
+      )}
+    </div>
+  );
 }
 
 const Signalements = ({ onBack }) => {
@@ -232,9 +275,15 @@ const Signalements = ({ onBack }) => {
                       <span className={statusBadge(inc.status)}>
                         {STATUS_LABELS[inc.status] ?? inc.status}
                       </span>
-                      <h4 className="font-bold text-sm uppercase leading-tight">
-                        {TYPE_LABELS[inc.incident_type] ?? inc.incident_type}
-                      </h4>
+                      {typeBadge(inc.incident_type) ? (
+                        <span className={typeBadge(inc.incident_type)}>
+                          💬 {TYPE_LABELS[inc.incident_type]}
+                        </span>
+                      ) : (
+                        <h4 className="font-bold text-sm uppercase leading-tight">
+                          {TYPE_LABELS[inc.incident_type] ?? inc.incident_type}
+                        </h4>
+                      )}
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed">
                       Émetteur&nbsp;: <span className="font-bold">{inc.emitter_name}</span>
@@ -300,12 +349,14 @@ const Signalements = ({ onBack }) => {
                   <p>
                     <span className="font-bold">Date&nbsp;:</span> {formatDate(selected.created_at)}
                   </p>
-                  {selected.description && (
+                  {selected.incident_type === 'review' && selected.description ? (
+                    <ReviewDescription raw={selected.description} />
+                  ) : selected.description ? (
                     <p>
                       <span className="font-bold">Description&nbsp;:</span>{' '}
                       {selected.description}
                     </p>
-                  )}
+                  ) : null}
                   {selected.intervention && (
                     <p>
                       <span className="font-bold">Intervention liée&nbsp;:</span>{' '}

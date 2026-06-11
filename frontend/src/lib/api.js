@@ -439,6 +439,15 @@ export async function submitReviewForIntervention(interventionId, payload) {
   return parseResponse(response);
 }
 
+export async function createSignalementAvis(data) {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/incidents/report/avis/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return parseResponse(response);
+}
+
 export function createSubscriptionPayment(payload) {
   return apiRequest('/payments/subscription/', {
     method: 'POST',

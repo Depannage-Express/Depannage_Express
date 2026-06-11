@@ -117,6 +117,43 @@ def suspend_incident(request, pk):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def report_avis(request):
+    """
+    Reçoit un avis conducteur contenant des mots inappropriés.
+    L'avis N'est PAS publié chez le mécanicien.
+    Il est créé comme Incident de type 'review'.
+    """
+    data = request.data
+    incident = Incident.objects.create(
+        incident_type='review',
+        gravity='medium',
+        status='pending',
+        emitter_type='driver',
+        emitter_name=data.get('driver_name', 'Conducteur'),
+        target_name=data.get('mechanic_name', 'Mécanicien'),
+        description=(
+            f"COMMENTAIRE ORIGINAL :\n"
+            f"{data.get('commentaire_original', '')}\n\n"
+            f"NOTE DONNÉE : {data.get('note', '?')}/5\n\n"
+            f"EXPLICATION DU CONDUCTEUR :\n"
+            f"{data.get('explication', '')}\n\n"
+            f"MOTS DÉTECTÉS : {data.get('mots_detectes', '')}"
+        ),
+    )
+    intervention_id = data.get('intervention_id')
+    if intervention_id:
+        try:
+            from apps.interventions.models import Intervention
+            intervention = Intervention.objects.get(pk=intervention_id)
+            incident.intervention = intervention
+            incident.save(update_fields=['intervention'])
+        except Exception:
+            pass
+    return Response({'status': 'signalement enregistré', 'id': str(incident.id)}, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def create_incident(request):
     serializer = IncidentCreateSerializer(data=request.data)
     if not serializer.is_valid():

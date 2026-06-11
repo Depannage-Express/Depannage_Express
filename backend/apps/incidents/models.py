@@ -23,6 +23,7 @@ class Incident(models.Model):
         ('price',   'Problème de prix'),
         ('fraud',   'Fraude'),
         ('quality', 'Qualité du service'),
+        ('review',  'Avis litigieux'),
         ('other',   'Autre'),
     ]
 
