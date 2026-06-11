@@ -289,6 +289,13 @@ export async function fetchBreakdownStatus(id, driverToken) {
   return parseResponse(response);
 }
 
+export async function fetchBreakdownByPhone(phone) {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/breakdowns/recover/?phone=${encodeURIComponent(phone)}`
+  );
+  return parseResponse(response);
+}
+
 export async function fetchPublicMechanics(query = '') {
   const qs = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
   const response = await fetchWithTimeout(`${API_BASE_URL}/mechanics/public/${qs}`);

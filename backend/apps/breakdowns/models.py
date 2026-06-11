@@ -23,11 +23,13 @@ class BreakdownRequest(TimestampedModel):
         'driver_id_card',
         folder='depannage_express/breakdowns',
         resource_type='auto',
+        blank=True, null=True,
     )
     driver_selfie = CloudinaryField(
         'driver_selfie',
         folder='depannage_express/breakdowns',
         resource_type='auto',
+        blank=True, null=True,
     )
 
     # Linked account (optional)

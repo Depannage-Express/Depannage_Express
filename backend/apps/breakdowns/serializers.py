@@ -15,6 +15,10 @@ class BreakdownRequestCreateSerializer(serializers.ModelSerializer):
             'specialty_requested',
             'latitude', 'longitude', 'address_description',
         ]
+        extra_kwargs = {
+            'driver_id_card': {'required': False},
+            'driver_selfie': {'required': False},
+        }
 
     def validate_driver_phone(self, value):
         # Basic phone sanitization

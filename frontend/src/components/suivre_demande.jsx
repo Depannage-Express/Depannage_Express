@@ -36,10 +36,11 @@ function getStatusInfo(data) {
   return { text: data.status, color: 'text-white/60' };
 }
 
-const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
+const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned, onPaid }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const assignedCalledRef = useRef(false);
+  const paidCalledRef = useRef(false);
 
   useEffect(() => {
     if (!requestId) return;
@@ -60,6 +61,11 @@ const Suivre = ({ requestId, driverToken, onBack, onMechanicAssigned }) => {
         if (result.status === 'in_progress' && !assignedCalledRef.current && onMechanicAssigned) {
           assignedCalledRef.current = true;
           window.setTimeout(() => onMechanicAssigned(result), 1500);
+        }
+
+        if (result.status === 'paid' && !paidCalledRef.current && onPaid) {
+          paidCalledRef.current = true;
+          window.setTimeout(() => onPaid(result), 800);
         }
       } catch (e) {
         setError(e.message);

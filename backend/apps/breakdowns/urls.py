@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('request/', views.create_breakdown_request, name='breakdown-create'),
+    path('recover/', views.breakdown_recover, name='breakdown-recover'),
     path('my-requests/', views.my_breakdown_requests, name='breakdown-my-requests'),
     path('stats/', views.platform_stats, name='breakdown-stats'),
     path('admin/stats/', views.admin_stats, name='breakdown-admin-stats'),

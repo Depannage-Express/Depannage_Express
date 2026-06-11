@@ -1,4 +1,6 @@
 # apps/breakdowns/views.py
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
@@ -442,6 +444,45 @@ def get_intervention_by_breakdown(request, pk):
         'assignment_distance_km': str(breakdown.assignment_distance_km) if breakdown.assignment_distance_km is not None else None,
         'breakdown_type': breakdown.breakdown_type or None,
         'breakdown_description': breakdown.breakdown_description or None,
+    })
+
+
+# ─── Récupération de session conducteur (autre appareil) ─────────────────────
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def breakdown_recover(request):
+    """
+    Permet à un conducteur de retrouver sa demande active depuis un autre appareil.
+    Authentification implicite : numéro de téléphone + demande active récente.
+    Le driver_token est ré-exposé uniquement si la demande est active (< 48h).
+    """
+    phone = (request.query_params.get('phone') or '').strip()
+    if not phone:
+        return Response({'error': 'Numéro de téléphone requis.'}, status=400)
+
+    active_statuses = ['pending', 'assigned', 'in_progress', 'paid']
+    cutoff = timezone.now() - timedelta(hours=48)
+
+    req = BreakdownRequest.objects.filter(
+        driver_phone=phone,
+        status__in=active_statuses,
+        created_at__gte=cutoff,
+    ).order_by('-created_at').first()
+
+    if not req:
+        return Response(
+            {'error': 'Aucune demande active trouvée pour ce numéro.'},
+            status=404,
+        )
+
+    return Response({
+        'id': str(req.id),
+        'driver_token': str(req.driver_token),
+        'status': req.status,
+        'breakdown_type': req.breakdown_type,
+        'driver_name': req.driver_name,
+        'created_at': req.created_at,
     })
 
 

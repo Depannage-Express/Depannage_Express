@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Camera, FileText, MapPin, User, Phone, AlignLeft, Search, X,
   Wrench, Battery, Thermometer, Car, Zap, Wind, Fuel,
@@ -38,6 +38,17 @@ const Demande = ({ onConfirm }) => {
     const [position, setPosition] = useState(null);
     const [driverName, setDriverName] = useState('');
     const [phone, setPhone] = useState('01');
+    const [isReturningDriver, setIsReturningDriver] = useState(false);
+
+    useEffect(() => {
+        const savedName = localStorage.getItem('driver_name');
+        const savedPhone = localStorage.getItem('driver_phone');
+        if (savedName && savedPhone) {
+            setDriverName(savedName);
+            setPhone(savedPhone);
+            setIsReturningDriver(true);
+        }
+    }, []);
     const [vehicleType, setVehicleType] = useState('');
     const [vehicleBrand, setVehicleBrand] = useState('');
     const [breakdownTypes, setBreakdownTypes] = useState([]);
@@ -130,16 +141,20 @@ const Demande = ({ onConfirm }) => {
         setError('Renseignez votre nom, votre numéro, le type de véhicule et au moins un type de panne.');
         return;
     }
-    if (!vehicleFile || !selfieFile || !idCardFile) {
-        setError("Ajoutez la photo du véhicule, le selfie et la pièce d'identité.");
+    if (!vehicleFile) {
+        setError('Ajoutez la photo du véhicule.');
+        return;
+    }
+    if (!isReturningDriver && (!selfieFile || !idCardFile)) {
+        setError("Ajoutez le selfie et la pièce d'identité.");
         return;
     }
 
     const formData = new FormData();
     formData.append('driver_name', driverName);
     formData.append('driver_phone', '+229' + phone);
-    formData.append('driver_id_card', idCardFile);
-    formData.append('driver_selfie', selfieFile);
+    if (idCardFile) formData.append('driver_id_card', idCardFile);
+    if (selfieFile) formData.append('driver_selfie', selfieFile);
     formData.append('vehicle_type', vehicleType);
     formData.append('vehicle_brand', vehicleBrand);
     formData.append('vehicle_description', [vehicleType, vehicleBrand].filter(Boolean).join(' ') || 'Véhicule en panne');
@@ -154,6 +169,8 @@ const Demande = ({ onConfirm }) => {
     setIsSubmitting(true);
     try {
         const breakdown = await createBreakdownRequest(formData);
+        localStorage.setItem('driver_name', driverName);
+        localStorage.setItem('driver_phone', phone);
         onConfirm(breakdown);
     } catch (submitError) {
         setError(submitError.message);
@@ -195,11 +212,32 @@ const Demande = ({ onConfirm }) => {
                 />
 
                 {/* Titre */}
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-4">
                     <h2 className="bg-[#608C27] text-white text-xl font-bold px-10 py-2 rounded-full shadow-md tracking-wide">
                         Demande de dépannage
                     </h2>
                 </div>
+
+                {/* Bandeau conducteur connu */}
+                {isReturningDriver && (
+                    <div className="mb-5 bg-[#608C27]/20 border border-[#608C27]/40 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-[#608C27] font-bold text-sm">Bon retour, {driverName} !</p>
+                            <p className="text-white/50 text-xs mt-0.5">Vos informations ont été pré-remplies. Selfie et CNI optionnels.</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsReturningDriver(false);
+                                setDriverName('');
+                                setPhone('01');
+                            }}
+                            className="text-white/30 text-xs hover:text-white/60 transition-colors shrink-0"
+                        >
+                            Changer
+                        </button>
+                    </div>
+                )}
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
 
@@ -372,9 +410,9 @@ const Demande = ({ onConfirm }) => {
 
                     {/* Section Photos */}
                     <div className="space-y-3">
-                        <p className={labelClass}>Documents requis</p>
+                        <p className={labelClass}>Photo de la panne <span className="text-red-400">*</span></p>
 
-                        {/* Photo Véhicule */}
+                        {/* Photo Véhicule — toujours obligatoire */}
                         <button
                             type="button"
                             onClick={() => vehicleInputRef.current.click()}
@@ -383,50 +421,58 @@ const Demande = ({ onConfirm }) => {
                             <div className="flex items-center gap-3">
                                 <Camera size={16} className={photoVehicule ? 'text-[#608C27]' : 'text-gray-500'} />
                                 <span className={photoVehicule ? 'text-[#608C27]' : 'text-gray-700'}>
-                                    {photoVehicule ? '✓ Photo véhicule' : 'Photo du véhicule'}
+                                    {photoVehicule ? '✓ Photo du véhicule' : 'Photo du véhicule en panne'}
                                 </span>
                             </div>
                             {photoVehicule && <img src={photoVehicule} alt="Aperçu" className="w-10 h-10 rounded-lg object-cover" />}
                         </button>
 
-                        {/* Selfie + Géolocalisation — deux étapes séparées */}
-                        <button
-                            type="button"
-                            onClick={handleSelfieClick}
-                            className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between ${locationEnabled ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-200 hover:bg-gray-300'}`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <MapPin size={16} className={locationEnabled ? 'text-green-600' : 'text-gray-500'} />
-                                <span className={locationEnabled ? 'text-green-700' : 'text-gray-700'}>
-                                    {photoSelfie
-                                        ? '✓ Selfie + localisation'
-                                        : locationEnabled
-                                            ? 'Prendre le selfie'
-                                            : 'Selfie + géolocalisation'}
-                                </span>
-                            </div>
-                            {photoSelfie && <img src={photoSelfie} alt="Aperçu" className="w-10 h-10 rounded-full object-cover" />}
-                        </button>
+                        {/* Selfie + CNI : uniquement pour les nouveaux conducteurs */}
+                        {!isReturningDriver && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={handleSelfieClick}
+                                    className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between ${locationEnabled ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <MapPin size={16} className={locationEnabled ? 'text-green-600' : 'text-gray-500'} />
+                                        <span className={locationEnabled ? 'text-green-700' : 'text-gray-700'}>
+                                            {photoSelfie
+                                                ? '✓ Selfie + localisation'
+                                                : locationEnabled
+                                                    ? 'Prendre le selfie'
+                                                    : 'Selfie + géolocalisation'}
+                                        </span>
+                                    </div>
+                                    {photoSelfie && <img src={photoSelfie} alt="Aperçu" className="w-10 h-10 rounded-full object-cover" />}
+                                </button>
 
-                        {/* Pièce d'identité */}
-                        <button
-                            type="button"
-                            onClick={() => idCardInputRef.current.click()}
-                            className="w-full bg-gray-200 hover:bg-gray-300 rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-3">
-                                <FileText size={16} className={photoIdentite ? 'text-[#608C27]' : 'text-gray-500'} />
-                                <span className={photoIdentite ? 'text-[#608C27]' : 'text-gray-700'}>
-                                    {photoIdentite ? "✓ Pièce d'identité" : "Pièce d'identité"}
-                                </span>
-                            </div>
-                            {photoIdentite && <div className="w-10 h-10 bg-[#608C27] rounded-lg flex items-center justify-center text-[10px] text-white font-bold">DOC</div>}
-                        </button>
+                                <button
+                                    type="button"
+                                    onClick={() => idCardInputRef.current.click()}
+                                    className="w-full bg-gray-200 hover:bg-gray-300 rounded-xl px-4 py-3 text-sm font-semibold transition-all flex items-center justify-between"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileText size={16} className={photoIdentite ? 'text-[#608C27]' : 'text-gray-500'} />
+                                        <span className={photoIdentite ? 'text-[#608C27]' : 'text-gray-700'}>
+                                            {photoIdentite ? "✓ Pièce d'identité" : "Pièce d'identité"}
+                                        </span>
+                                    </div>
+                                    {photoIdentite && <div className="w-10 h-10 bg-[#608C27] rounded-lg flex items-center justify-center text-[10px] text-white font-bold">DOC</div>}
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Zone notification */}
                     <div className={`w-full rounded-xl px-4 py-3 text-sm font-medium text-center ${error ? 'bg-gray-400 text-[#0D2B0D]' : locationEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-400 text-[#0D2B0D] italic'}`}>
-                        {error || (locationEnabled ? '✓ Géolocalisation activée.' : 'La géolocalisation sera demandée pour sécuriser la demande.')}
+                        {error || (locationEnabled
+                            ? '✓ Position partagée.'
+                            : isReturningDriver
+                                ? 'Partagez votre position pour trouver un mécanicien proche.'
+                                : 'La géolocalisation sera demandée pour sécuriser la demande.'
+                        )}
                     </div>
 
                     <button

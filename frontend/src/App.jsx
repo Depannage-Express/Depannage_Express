@@ -23,6 +23,7 @@ import DashboardAdmin from './components/dashboard_admin';
 import APropos from './components/a_propos';
 import EnAttenteValidation from './components/en_attente_validation';
 import HistoriqueOTP from './components/historique_otp';
+import RecupererDemande from './components/recuperer_demande';
 import './index.css';
 
 // Estimation affichage uniquement.
@@ -58,6 +59,7 @@ const SCREENS = {
   THANK_YOU: 'thank_you',
   PENDING_VALIDATION: 'pending_validation',
   HISTORY_OTP: 'history_otp',
+  RECOVER_BREAKDOWN: 'recover_breakdown',
 };
 
 function getBreakdownAmount(breakdown) {
@@ -100,14 +102,14 @@ function App() {
 
   const saveDriverSession = (breakdown) => {
     if (breakdown?.id && breakdown?.driver_token) {
-      sessionStorage.setItem('breakdown_id', breakdown.id);
-      sessionStorage.setItem('driver_token', breakdown.driver_token);
+      localStorage.setItem('breakdown_id', breakdown.id);
+      localStorage.setItem('driver_token', breakdown.driver_token);
     }
   };
 
   const clearDriverSession = () => {
-    sessionStorage.removeItem('breakdown_id');
-    sessionStorage.removeItem('driver_token');
+    localStorage.removeItem('breakdown_id');
+    localStorage.removeItem('driver_token');
   };
 
   useEffect(() => {
@@ -138,7 +140,7 @@ function App() {
     if (isReturn) {
       const urlBreakdownId = params.get('breakdown_id');
       if (urlBreakdownId) breakdown_id = urlBreakdownId;
-      if (!driver_token) driver_token = sessionStorage.getItem('driver_token');
+      if (!driver_token) driver_token = localStorage.getItem('driver_token');
       setCurrentPayment(payment_id ? { id: payment_id } : null);
       setCurrentBreakdown({ id: breakdown_id, driver_token });
       setScreen(SCREENS.PAYMENT_CONFIRMATION);
@@ -160,8 +162,8 @@ function App() {
       return;
     }
 
-    const storedBreakdownId = sessionStorage.getItem('breakdown_id');
-    const storedDriverToken = sessionStorage.getItem('driver_token');
+    const storedBreakdownId = localStorage.getItem('breakdown_id');
+    const storedDriverToken = localStorage.getItem('driver_token');
     if (storedBreakdownId && storedDriverToken) {
       setCurrentBreakdown({ id: storedBreakdownId, driver_token: storedDriverToken });
       setScreen(SCREENS.BREAKDOWN_TRACKING);
@@ -423,6 +425,7 @@ function App() {
             driverToken={currentBreakdown?.driver_token}
             onBack={goHome}
             onMechanicAssigned={() => setScreen(SCREENS.BILLING)}
+            onPaid={() => setScreen(SCREENS.INTERVENTION)}
           />
         );
       case SCREENS.BREAKDOWN_CONFIRMATION:
@@ -440,9 +443,26 @@ function App() {
         );
       case SCREENS.HISTORY_OTP:
         return <HistoriqueOTP onBack={goHome} />;
+      case SCREENS.RECOVER_BREAKDOWN:
+        return (
+          <RecupererDemande
+            onFound={(breakdown) => {
+              saveDriverSession(breakdown);
+              setCurrentBreakdown(breakdown);
+              setScreen(SCREENS.BREAKDOWN_TRACKING);
+            }}
+            onBack={() => setScreen(SCREENS.HOME)}
+          />
+        );
       case SCREENS.HOME:
       default:
-        return <Hero onStartClick={() => setScreen(SCREENS.BREAKDOWN_FORM)} onVoir={() => setScreen(SCREENS.MECHANIC_INFO)} />;
+        return (
+          <Hero
+            onStartClick={() => setScreen(SCREENS.BREAKDOWN_FORM)}
+            onVoir={() => setScreen(SCREENS.MECHANIC_INFO)}
+            onRecoverClick={() => setScreen(SCREENS.RECOVER_BREAKDOWN)}
+          />
+        );
     }
   };
 

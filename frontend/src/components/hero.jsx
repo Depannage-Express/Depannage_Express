@@ -162,7 +162,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
   );
 };
 
-const Hero = ({ onStartClick, onVoir }) => {
+const Hero = ({ onStartClick, onVoir, onRecoverClick }) => {
   return (
     <>
       {/* HERO */}
@@ -185,6 +185,14 @@ const Hero = ({ onStartClick, onVoir }) => {
             >
               Demander un dépannage
             </button>
+            {onRecoverClick && (
+              <button
+                onClick={onRecoverClick}
+                className="text-white/50 text-xs hover:text-white/80 transition-colors underline underline-offset-2 w-fit"
+              >
+                Vous avez une demande en cours ? Retrouver ma demande
+              </button>
+            )}
           </div>
 
           {/* IMAGE */}
