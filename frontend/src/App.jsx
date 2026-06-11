@@ -466,17 +466,21 @@ function App() {
     }
   };
 
+  const isAdminDashboard = screen === SCREENS.ADMIN_DASHBOARD;
+
   return (
     <div className="flex flex-col min-h-screen bg-[#608C27]">
-      <Header
-        currentView={SCREEN_TO_NAV_MAP[screen] || 'accueil'}
-        onSignUpClick={openLogin}
-        onLogoutClick={handleLogout}
-        currentUser={currentUser}
-        onNavClick={handleNavClick}
-        onSearch={handleSearch}
-        searchQuery={searchQuery}
-      />
+      {!isAdminDashboard && (
+        <Header
+          currentView={SCREEN_TO_NAV_MAP[screen] || 'accueil'}
+          onSignUpClick={openLogin}
+          onLogoutClick={handleLogout}
+          currentUser={currentUser}
+          onNavClick={handleNavClick}
+          onSearch={handleSearch}
+          searchQuery={searchQuery}
+        />
+      )}
       <main className="flex-1">
         {isBootstrappingUser ? (
           <div className="flex items-center justify-center text-white font-bold">
@@ -487,7 +491,7 @@ function App() {
         )}
       </main>
 
-      {screen !== SCREENS.ADMIN_DASHBOARD && <Footer />}
+      {!isAdminDashboard && <Footer />}
     </div>
   );
 }
