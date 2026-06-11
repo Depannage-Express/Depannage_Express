@@ -217,7 +217,7 @@ const DashboardAdmin = ({ onLogout }) => {
         </header>
 
         {/* ── PAGE CONTENT ── */}
-        <main className="flex-1 p-5 min-w-0">
+        <main className="flex-1 p-5 min-w-0 min-h-0 flex flex-col">
           {view === 'menu' ? (
             <div className="space-y-6">
 
@@ -342,7 +342,7 @@ const DashboardAdmin = ({ onLogout }) => {
               )}
             </div>
           ) : (
-            renderSubview()
+            <div className="flex-1 min-h-0 h-full">{renderSubview()}</div>
           )}
         </main>
 

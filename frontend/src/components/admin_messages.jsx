@@ -206,7 +206,7 @@ const AdminMessages = ({ onBack }) => {
     : 'Messages';
 
   return (
-    <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col" style={{ minHeight: '80vh' }}>
+    <div className="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-full">
 
       {/* HEADER */}
       <div className="bg-[#0D2B0D] text-white p-4 flex items-center gap-4">
@@ -239,7 +239,7 @@ const AdminMessages = ({ onBack }) => {
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden min-h-0">
 
         {/* Vue liste conducteurs */}
         {!selectedBreakdown && !selectedMechanic && tab === 'drivers' && (
