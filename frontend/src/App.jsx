@@ -487,7 +487,7 @@ function App() {
         )}
       </main>
 
-      <Footer />
+      {screen !== SCREENS.ADMIN_DASHBOARD && <Footer />}
     </div>
   );
 }
