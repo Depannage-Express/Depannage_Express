@@ -8,6 +8,7 @@ Usage:
 """
 from decimal import Decimal
 from datetime import timedelta
+import math
 import random
 
 from django.core.management.base import BaseCommand
@@ -17,7 +18,7 @@ from apps.accounts.models import User
 from apps.breakdowns.models import BreakdownRequest, Message
 from apps.incidents.models import Incident
 from apps.interventions.models import Intervention
-from apps.mechanics.models import MechanicProfile, MechanicReview, Specialty
+from apps.mechanics.models import MechanicAdminMessage, MechanicProfile, MechanicReview, Specialty
 from apps.otp.models import DriverOTP
 from apps.payments.models import PaymentTransaction, WithdrawalRequest
 from apps.premium.models import PremiumContactRequest
@@ -35,6 +36,18 @@ def _rdate(jours_max=60):
         hours=random.randint(0, 23),
         minutes=random.randint(0, 59),
     )
+
+
+def _haversine(lat1, lon1, lat2, lon2):
+    """Distance en km entre deux points GPS (formule haversine)."""
+    R = 6371.0
+    dlat = math.radians(float(lat2) - float(lat1))
+    dlon = math.radians(float(lon2) - float(lon1))
+    a = (math.sin(dlat / 2) ** 2
+         + math.cos(math.radians(float(lat1)))
+         * math.cos(math.radians(float(lat2)))
+         * math.sin(dlon / 2) ** 2)
+    return round(R * 2 * math.asin(math.sqrt(a)), 2)
 
 
 # ── SPÉCIALITÉS (15) ──────────────────────────────────────────────────────────
@@ -311,6 +324,17 @@ BREAKDOWNS_DATA = [
     # 2 reviewed → BD completed, intervention reviewed
     ( 4, 'freins',       'reviewed',   7,  'Cotonou',       'Jéricho, carrefour PTT',                         'Kia Rio 2020 - Rouge',                 58),
     ( 5, 'moteur',       'reviewed',   0,  'Cotonou',       "Cadjehoun, derrière l'aéroport",                 'Toyota Corolla 2021 - Gris',           52),
+    # 9 compléments 'completed' pour garantir reviews ≤ interventions terminées par mécanicien
+    # indices 25-33
+    ( 6, 'moteur',       'completed',  0,  'Cotonou',       'Carrefour Fidjrossè, côté nord',                 'Ford Focus 2018 - Bleu',               20),
+    ( 7, 'electrique',   'completed',  1,  'Parakou',       'Rue du marché central, Parakou',                 'Mitsubishi Canter 2017 - Blanc',        18),
+    ( 8, 'freins',       'completed',  3,  'Abomey-Calavi', "Route de l'université, Abomey-Calavi",           'Toyota Wish 2019 - Argent',             16),
+    ( 9, 'general',      'completed',  4,  'Lokossa',       'Lokossa, carrefour principal',                   'Nissan Tiida 2016 - Gris',              14),
+    (10, 'climatisation','completed',  5,  'Kandi',         'Kandi, avenue de la gare',                       'Kia Cerato 2020 - Noir',                12),
+    (11, 'freins',       'completed',  7,  'Cotonou',       'Jéricho, rue du commerce',                       'Opel Corsa 2018 - Rouge',               10),
+    (12, 'moteur',       'completed',  8,  'Parakou',       'Marché Arzèkè nord, Parakou',                    'Peugeot 206 2015 - Beige',               8),
+    (13, 'general',      'completed',  9,  'Cotonou',       'Gbégamey, rue du lycée',                         'Toyota Auris 2017 - Bleu',               6),
+    (14, 'moteur',       'completed', 10,  'Bohicon',       'Bohicon, côté gare routière',                    'Land Rover Discovery 2016 - Noir',       4),
 ]
 
 # Mapping statut prompt → statut BD réel
@@ -332,65 +356,78 @@ EXTRA_REFUSED_INTERVENTIONS = [
     (14, 4, 3),   # bd moteur assigned : Toussaint Dossou avait refusé
 ]
 
-# ── MESSAGES (30) ─────────────────────────────────────────────────────────────
+# ── MESSAGES conducteur ↔ admin (32) ─────────────────────────────────────────
+# Mécanisme réel : conductor écrit à l'ADMIN via breakdown_messages.
+# sender_type valide : 'driver' ou 'admin' uniquement (vue breakdown_messages l.548).
 # (bd_idx, [(sender_type, content, minutes_offset), ...])
 MESSAGES_DATA = [
     (0, [
-        ('driver',   "Bonjour, ma Toyota est en panne moteur devant la station Total. Je suis bloqué.", 0),
-        ('mechanic', "Je suis en route, j'arrive dans 10 minutes.", 5),
-        ('driver',   "Merci, je vous attends au bord de la route.", 7),
+        ('driver', "Bonjour, ma Toyota est en panne moteur devant la station Total. Je suis bloqué.", 0),
+        ('admin',  "Votre demande est bien reçue. Un mécanicien vient d'être assigné, il arrive.", 5),
+        ('driver', "Merci, je vous attends au bord de la route.", 7),
     ]),
     (1, [
-        ('driver',   "Crevaison totale pneu arrière, je suis devant le marché Akpakpa.", 0),
-        ('mechanic', "Bonjour, quelle est votre position exacte ?", 3),
-        ('driver',   "Je suis garé devant le marché Dantokpa. Voiture blanche.", 5),
+        ('driver', "Crevaison totale pneu arrière, je suis devant le marché Akpakpa.", 0),
+        ('admin',  "Demande prise en charge. Le mécanicien est en route vers votre position.", 3),
+        ('driver', "Je suis garé devant le marché Dantokpa. Voiture blanche.", 5),
     ]),
     (2, [
-        ('driver',   "Panne électrique sur mon Renault. Je suis à Kpébié Parakou.", 0),
-        ('mechanic', "Bonjour, je suis disponible. J'arrive dans 15 minutes.", 8),
-        ('driver',   "D'accord, pas de problème. Je vous attends.", 10),
+        ('driver', "Panne électrique sur mon Renault. Je suis à Kpébié Parakou.", 0),
+        ('admin',  "Prise en charge confirmée, le technicien sera là dans 15 à 20 minutes.", 8),
+        ('driver', "D'accord, pas de problème. Je vous attends.", 10),
     ]),
     (3, [
-        ('driver',   "Panne sèche sur le boulevard, réservoir vide.", 0),
-        ('mechanic', "Je suis en route avec du carburant. Avez-vous les papiers du véhicule ?", 5),
-        ('driver',   "Oui, tout est dans la boîte à gants.", 7),
+        ('driver', "Panne sèche sur le boulevard, réservoir vide.", 0),
+        ('admin',  "Un mécanicien avec du carburant est en route. Restez près de votre véhicule.", 5),
+        ('driver', "Merci, j'attends votre mécanicien.", 7),
     ]),
     (4, [
-        ('driver',   "Voiture en panne générale à Godomey. Je ne sais pas ce qui se passe.", 0),
-        ('mechanic', "Décrivez les symptômes. Est-ce que le moteur démarre ?", 6),
-        ('driver',   "Non, plus rien. Le moteur est complètement mort.", 8),
+        ('driver', "Voiture en panne générale à Godomey. Je ne sais pas ce qui se passe.", 0),
+        ('admin',  "Nous avons envoyé un mécanicien polyvalent vers vous. Il arrive sous peu.", 6),
+        ('driver', "D'accord, le moteur ne démarre plus du tout.", 8),
     ]),
     (5, [
-        ('driver',   "Panne moteur à Albarika. Témoin moteur allumé depuis hier.", 0),
-        ('mechanic', "Je suis en route depuis Parakou. Je commence les réparations.", 12),
-        ('driver',   "Merci beaucoup pour votre aide.", 45),
+        ('driver', "Panne moteur à Albarika. Témoin moteur allumé depuis hier.", 0),
+        ('admin',  "Votre demande est traitée, le mécanicien est en cours d'intervention.", 12),
+        ('driver', "Merci beaucoup pour votre aide.", 45),
     ]),
     (6, [
-        ('driver',   "Crevaison à la rue des cheminots. Je suis coincé.", 0),
-        ('mechanic', "Je serai là dans 5 minutes.", 4),
+        ('driver', "Crevaison à la rue des cheminots. Je suis coincé.", 0),
+        ('admin',  "Intervention confirmée, le mécanicien sera là dans 5 minutes.", 4),
     ]),
     (7, [
-        ('driver',   "Problème de freins à Agla. Pédale molle.", 0),
-        ('mechanic', "Pouvez-vous m'envoyer votre position GPS ?", 3),
+        ('driver', "Problème de freins à Agla. Pédale molle.", 0),
+        ('admin',  "Demande reçue. Pouvez-vous nous confirmer votre adresse exacte ?", 3),
     ]),
     (9, [
-        ('driver',   "Panne électrique à Haie Vive. Les lumières clignotent.",   0),
-        ('mechanic', "Je commence les réparations. Le problème est plus sérieux que prévu.", 20),
-        ('driver',   "Est-ce que ça va prendre longtemps ?", 25),
+        ('driver', "Panne électrique à Haie Vive. Les lumières clignotent.", 0),
+        ('admin',  "Le mécanicien est en cours d'intervention. Le diagnostic révèle un problème complexe.", 20),
+        ('driver', "Est-ce que ça va prendre longtemps ?", 25),
     ]),
     (10, [
-        ('driver',   "Moteur qui cale sur Fidjrossè. Fumée blanche.",             0),
-        ('mechanic', "Intervention terminée, tout est en ordre. Vous pouvez démarrer.", 60),
-        ('driver',   "Merci, véhicule opérationnel.", 65),
+        ('driver', "Moteur qui cale sur Fidjrossè. Fumée blanche.", 0),
+        ('admin',  "L'intervention est terminée selon le rapport du mécanicien. Votre véhicule est prêt.", 60),
+        ('driver', "Merci, véhicule opérationnel.", 65),
     ]),
     (13, [
-        ('driver',   "Crevaison à Bohicon face à la mairie. Voiture rouge, plaque 1234 AB.", 0),
-        ('mechanic', "J'ai besoin d'une pièce, je reviens demain.", 15),
+        ('driver', "Crevaison à Bohicon face à la mairie. Voiture rouge, plaque 1234 AB.", 0),
+        ('admin',  "Mécanicien assigné. Une pièce supplémentaire pourrait être nécessaire.", 15),
     ]),
     (14, [
-        ('driver',   "Panne moteur au marché Arzèkè. Land Cruiser beige.",        0),
-        ('mechanic', "Combien de temps encore ?",                                  5),
+        ('driver', "Panne moteur au marché Arzèkè. Land Cruiser beige.", 0),
+        ('admin',  "Le mécanicien est en route. Durée estimée : 30 à 45 minutes.", 5),
     ]),
+]
+
+# ── MESSAGES mécanicien → admin (5) ──────────────────────────────────────────
+# Mécanisme réel : mécanicien écrit à l'admin via mechanics_admin_message.
+# (meca_idx, sender_type, content)
+MECH_ADMIN_MESSAGES_DATA = [
+    (0, 'mechanic', "Bonjour, je voudrais signaler un problème avec mon compte MoMo."),
+    (1, 'mechanic', "Je n'arrive pas à modifier ma disponibilité dans l'application."),
+    (2, 'mechanic', "Pouvez-vous valider mon profil premium s'il vous plaît ?"),
+    (3, 'mechanic', "J'ai un souci avec une intervention marquée non terminée."),
+    (5, 'mechanic', "Question concernant mes retraits : le dernier n'a pas été traité."),
 ]
 
 # ── AVIS (20) ─────────────────────────────────────────────────────────────────
@@ -536,6 +573,7 @@ class Command(BaseCommand):
         self._create_payments(breakdowns, interventions, extra_refused)
         self._create_reviews(mechanics, interventions)
         self._create_messages(breakdowns)
+        self._create_mechanic_admin_messages(mechanics)
         self._create_otps(drivers)
         self._create_incidents(interventions)
         self._create_premium_contacts(mechanics, drivers)
@@ -672,7 +710,10 @@ class Command(BaseCommand):
                     'status':                bd_status,
                     'assigned_mechanic':     meca,
                     'assigned_at':           created_date + timedelta(minutes=30) if meca else None,
-                    'assignment_distance_km':Decimal('3.50') if meca else None,
+                    'assignment_distance_km': (
+                        Decimal(str(_haversine(lat, lng, meca.latitude, meca.longitude)))
+                        if meca and meca.latitude and meca.longitude else None
+                    ),
                     'ip_address':            '41.202.220.1',
                     'user_agent':            'SeedSoutenance/1.0',
                 },
@@ -761,6 +802,27 @@ class Command(BaseCommand):
             self.stdout.write(f"  Intervention refused extra [{'+ créée' if created else '✓'}] : bd#{br.id} — {meca.user.full_name}")
 
         self.stdout.write(self.style.SUCCESS(f'  → {total_created} interventions créées.'))
+
+        # Mécaniciens en intervention in_progress → is_available=False
+        in_progress_meca_indices = set()
+        for _, _, prompt_status, meca_idx, *__ in BREAKDOWNS_DATA:
+            if prompt_status == 'in_progress' and meca_idx is not None:
+                in_progress_meca_indices.add(meca_idx)
+        for mi in in_progress_meca_indices:
+            profile = mechanics[mi]
+            MechanicProfile.objects.filter(pk=profile.pk).update(is_available=False)
+            profile.is_available = False
+            self.stdout.write(f'  is_available=False : {profile.user.full_name}')
+
+        # Mise à jour total_interventions (statuts terminés)
+        for profile in mechanics:
+            cnt = Intervention.objects.filter(
+                mechanic=profile,
+                status__in=['completed', 'paid', 'reviewed'],
+            ).count()
+            MechanicProfile.objects.filter(pk=profile.pk).update(total_interventions=cnt)
+            profile.total_interventions = cnt
+
         return interventions, extra_refused
 
     # ── PAIEMENTS ────────────────────────────────────────────────────────────
@@ -771,7 +833,7 @@ class Command(BaseCommand):
         intv_payment_map = {
             'paid':               ('paid',    'intervention'),
             'reviewed':           ('paid',    'intervention'),
-            'completed':          ('paid',    'intervention'),
+            'completed':          ('pending', 'intervention'),  # travail terminé mais pas encore payé
             'in_progress':        ('pending', 'intervention'),
             'accepted':           ('pending', 'intervention'),
             'pending_acceptance': ('pending', 'intervention'),
@@ -874,7 +936,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'  → {count} avis créés.'))
 
-    # ── MESSAGES ─────────────────────────────────────────────────────────────
+    # ── MESSAGES conducteur ↔ admin ──────────────────────────────────────────
     def _create_messages(self, breakdowns):
         count = 0
         for (bd_idx, exchanges) in MESSAGES_DATA:
@@ -883,9 +945,7 @@ class Command(BaseCommand):
                 continue
             base_time = br.created_at
             for (sender_type, content, minutes_offset) in exchanges:
-                sender_name = br.driver_name if sender_type == 'driver' else (
-                    br.assigned_mechanic.user.full_name if br.assigned_mechanic else 'Mécanicien'
-                )
+                sender_name = br.driver_name if sender_type == 'driver' else 'Administration'
                 msg = Message.objects.create(
                     breakdown_request=br,
                     sender_type=sender_type,
@@ -896,7 +956,23 @@ class Command(BaseCommand):
                     created_at=base_time + timedelta(minutes=minutes_offset)
                 )
                 count += 1
-        self.stdout.write(self.style.SUCCESS(f'  → {count} messages créés.'))
+        self.stdout.write(self.style.SUCCESS(f'  → {count} messages conducteur↔admin créés.'))
+
+    # ── MESSAGES mécanicien → admin ───────────────────────────────────────────
+    def _create_mechanic_admin_messages(self, mechanics):
+        count = 0
+        for (meca_idx, sender_type, content) in MECH_ADMIN_MESSAGES_DATA:
+            profile = mechanics[meca_idx]
+            sender_name = profile.user.full_name if sender_type == 'mechanic' else 'Administration'
+            _, created = MechanicAdminMessage.objects.get_or_create(
+                mechanic=profile,
+                sender_type=sender_type,
+                content=content,
+                defaults={'sender_name': sender_name},
+            )
+            if created:
+                count += 1
+        self.stdout.write(self.style.SUCCESS(f'  → {count} messages mécanicien→admin créés.'))
 
     # ── OTP ──────────────────────────────────────────────────────────────────
     def _create_otps(self, drivers):
@@ -1014,7 +1090,7 @@ class Command(BaseCommand):
 
     # ── RAPPORT FINAL ────────────────────────────────────────────────────────
     def _print_report(self):
-        from apps.mechanics.models import Specialty, MechanicProfile, MechanicReview
+        from apps.mechanics.models import Specialty, MechanicProfile, MechanicReview, MechanicAdminMessage
         from apps.breakdowns.models import BreakdownRequest, Message
         from apps.interventions.models import Intervention
         from apps.payments.models import PaymentTransaction, WithdrawalRequest
@@ -1027,24 +1103,26 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('  RAPPORT SEED SOUTENANCE'))
         self.stdout.write(sep)
         rows = [
-            ('mechanics_specialty',    Specialty.objects.count()),
-            ('accounts_user',          User.objects.count()),
-            ('mechanics_profile',      MechanicProfile.objects.count()),
-            ('breakdowns_request',     BreakdownRequest.objects.count()),
-            ('interventions_intervention', Intervention.objects.count()),
-            ('payments_transaction',   PaymentTransaction.objects.count()),
-            ('mechanics_review',       MechanicReview.objects.count()),
-            ('breakdowns_message',     Message.objects.count()),
-            ('otp_driver_otp',         DriverOTP.objects.count()),
-            ('incidents_incident',     Incident.objects.count()),
-            ('premium_contact_request',PremiumContactRequest.objects.count()),
-            ('payments_withdrawal',    WithdrawalRequest.objects.count()),
+            ('mechanics_specialty',       Specialty.objects.count()),
+            ('accounts_user',             User.objects.count()),
+            ('mechanics_profile',         MechanicProfile.objects.count()),
+            ('breakdowns_request',        BreakdownRequest.objects.count()),
+            ('interventions_intervention',Intervention.objects.count()),
+            ('payments_transaction',      PaymentTransaction.objects.count()),
+            ('mechanics_review',          MechanicReview.objects.count()),
+            ('breakdowns_message',        Message.objects.count()),
+            ('mechanics_admin_message',   MechanicAdminMessage.objects.count()),
+            ('otp_driver_otp',            DriverOTP.objects.count()),
+            ('incidents_incident',        Incident.objects.count()),
+            ('premium_contact_request',   PremiumContactRequest.objects.count()),
+            ('payments_withdrawal',       WithdrawalRequest.objects.count()),
         ]
-        minimums = [15, 35, 15, 25, 22, 20, 20, 30, 20, 20, 10, 10]
+        minimums = [15, 35, 15, 25, 22, 20, 20, 30, 5, 20, 20, 10, 10]
+        # NB: 34 breakdowns, 31 interventions, 29 paiements après ajout des 9 entrées de cohérence
         total = 0
         for (table, cnt), minimum in zip(rows, minimums):
             ok = '✅' if cnt >= minimum else '⚠️ '
-            self.stdout.write(f'  {ok}  {table:<32s} {cnt:>4d}  (min {minimum})')
+            self.stdout.write(f'  {ok}  {table:<34s} {cnt:>4d}  (min {minimum})')
             total += cnt
         self.stdout.write(sep)
         self.stdout.write(self.style.SUCCESS(f'  TOTAL entrées : {total}'))
