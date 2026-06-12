@@ -52,7 +52,10 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
         return;
       }
 
-      onPayerClick(payment);
+      onPayerClick(payment, {
+        payerPhone: `+229${phoneNumber.replace(/\D/g, '')}`,
+        paymentMethod: operator,
+      });
     } catch (err) {
       setError(err.message || 'Erreur lors du paiement. Veuillez réessayer.');
     } finally {

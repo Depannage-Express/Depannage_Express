@@ -15,6 +15,7 @@ import Facturation from './components/facturation';
 import Remerciement from './components/remerciement';
 import Paiement from './components/paiement';
 import ConfirmerPaiement from './components/confirmer_paiement';
+import FedaPaySimule from './components/fedapay_simule';
 import Intervention from './components/intervention';
 import Nofinish from './components/nofinish';
 import DiscussionCond from './components/discussion';
@@ -53,6 +54,7 @@ const SCREENS = {
   BREAKDOWN_TRACKING: 'breakdown_tracking',
   BILLING: 'billing',
   PAYMENT: 'payment',
+  FEDAPAY_SIMULE: 'fedapay_simule',
   PAYMENT_CONFIRMATION: 'payment_confirmation',
   INTERVENTION: 'intervention',
   NO_FINISH: 'no_finish',
@@ -98,6 +100,7 @@ function App() {
   const [currentBreakdown, setCurrentBreakdown] = useState(null);
   const [currentPayment, setCurrentPayment] = useState(null);
   const [currentIntervention, setCurrentIntervention] = useState(null);
+  const [pendingPaymentMeta, setPendingPaymentMeta] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const saveDriverSession = (breakdown) => {
@@ -400,14 +403,27 @@ function App() {
       case SCREENS.PAYMENT:
         return (
           <Paiement
-            onPayerClick={(payment) => {
-              setCurrentPayment(payment);
-              setScreen(SCREENS.PAYMENT_CONFIRMATION);
+            onPayerClick={(payment, meta) => {
+              setCurrentPayment({ id: payment.payment_id || payment.id });
+              setPendingPaymentMeta(meta || null);
+              setScreen(SCREENS.FEDAPAY_SIMULE);
             }}
             payerName={currentBreakdown?.driver_name}
             amount={currentAmount}
             breakdownId={currentBreakdown?.id}
             driverToken={currentBreakdown?.driver_token}
+          />
+        );
+      case SCREENS.FEDAPAY_SIMULE:
+        return (
+          <FedaPaySimule
+            paymentId={currentPayment?.id}
+            breakdownId={currentBreakdown?.id}
+            driverToken={currentBreakdown?.driver_token}
+            amount={currentAmount}
+            payerPhone={pendingPaymentMeta?.payerPhone}
+            paymentMethod={pendingPaymentMeta?.paymentMethod}
+            onSuccess={() => setScreen(SCREENS.PAYMENT_CONFIRMATION)}
           />
         );
       case SCREENS.BILLING:

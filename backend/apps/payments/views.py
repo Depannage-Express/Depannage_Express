@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
-from .fedapay_client import create_transaction, verify_webhook_signature
+from .fedapay_client import verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
 from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer, PaymentAdminSerializer
 
@@ -98,38 +98,17 @@ def create_payment(request):
 
         serializer = PaymentTransactionSerializer(data=payment_data)
         serializer.is_valid(raise_exception=True)
-        payment = serializer.save(status='pending', provider_reference='')
+        payment = serializer.save(status='authorized', provider_reference='')
 
-    try:
-        result = create_transaction(
-            amount=int(payment.amount),
-            description=f"Dépannage #{breakdown_id}",
-            customer_name=None,
-            customer_phone=payment.payer_phone,
-            callback_url=f"{settings.BACKEND_BASE_URL}/api/payments/callback/",
-            breakdown_id=str(breakdown.id),
-        )
-        transaction_id = result['transaction_id']
-        payment_url = result['payment_url']
+    payment.provider_reference = f'SIM-{payment.id}'
+    payment.save(update_fields=['provider_reference'])
 
-        payment.provider_reference = transaction_id
-        payment.status = 'authorized'
-        payment.save(update_fields=['provider_reference', 'status'])
+    log_security_event(
+        request, None, 'PAYMENT_CREATED',
+        f'Paiement simulé créé pour intervention {intervention.id} montant={payment.amount}',
+    )
 
-        log_security_event(
-            request, None, 'PAYMENT_CREATED',
-            f'Paiement FedaPay initié pour intervention {intervention.id} montant={payment.amount}',
-        )
-
-        return Response({
-            'payment_url': payment_url,
-            'transaction_id': transaction_id,
-            'payment_id': str(payment.id),
-        }, status=201)
-
-    except Exception as exc:
-        payment.delete()
-        return Response({'error': f'Erreur initialisation paiement : {exc}'}, status=502)
+    return Response({'payment_id': str(payment.id)}, status=201)
 
 
 @api_view(['POST'])
