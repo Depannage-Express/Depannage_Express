@@ -217,7 +217,7 @@ const DashboardAdmin = ({ onLogout }) => {
         </header>
 
         {/* ── PAGE CONTENT ── */}
-        <main className={`flex-1 min-h-0 min-w-0 ${view === 'menu' ? 'overflow-y-auto p-5' : 'overflow-hidden'}`}>
+        <main className={`flex-1 min-h-0 min-w-0 ${view === 'messages' ? 'overflow-hidden' : 'overflow-y-auto p-5'}`}>
           {view === 'menu' ? (
             <div className="space-y-6">
 
@@ -341,8 +341,10 @@ const DashboardAdmin = ({ onLogout }) => {
                 </>
               )}
             </div>
-          ) : (
+          ) : view === 'messages' ? (
             <div className="h-full">{renderSubview()}</div>
+          ) : (
+            renderSubview()
           )}
         </main>
 

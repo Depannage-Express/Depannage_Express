@@ -129,6 +129,7 @@ const AdminMessages = ({ onBack }) => {
   const [mechConversations, setMechConversations] = useState([]);
   const [selectedMechanic, setSelectedMechanic] = useState(null);
   const [mechMessages, setMechMessages] = useState([]);
+  const [mechLoadError, setMechLoadError] = useState('');
 
   const pollRef = useRef(null);
   const mechListPollRef = useRef(null);
@@ -167,10 +168,14 @@ const AdminMessages = ({ onBack }) => {
   // Poll messages mécanicien sélectionné
   useEffect(() => {
     clearInterval(pollRef.current);
-    if (!selectedMechanic) { setMechMessages([]); return; }
+    if (!selectedMechanic) { setMechMessages([]); setMechLoadError(''); return; }
+    setMechLoadError('');
     const load = () => fetchMechanicAdminMessages(selectedMechanic.mechanic_id)
-      .then(data => setMechMessages(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .then(data => {
+        setMechMessages(Array.isArray(data) ? data : (data?.results ?? []));
+        setMechLoadError('');
+      })
+      .catch(err => setMechLoadError(err?.message || 'Erreur de chargement des messages'));
     load();
     pollRef.current = setInterval(load, POLL_INTERVAL_MS);
     return () => clearInterval(pollRef.current);
@@ -247,7 +252,7 @@ const AdminMessages = ({ onBack }) => {
 
         {/* Vue liste conducteurs */}
         {!selectedBreakdown && !selectedMechanic && tab === 'drivers' && (
-          <div className="overflow-y-auto p-4 space-y-3">
+          <div className="h-full overflow-y-auto p-4 space-y-3">
             {breakdowns.length === 0 ? (
               <p className="text-center text-gray-400 py-8">Aucune demande de dépannage.</p>
             ) : (
@@ -270,7 +275,7 @@ const AdminMessages = ({ onBack }) => {
 
         {/* Vue liste mécaniciens */}
         {!selectedBreakdown && !selectedMechanic && tab === 'mechanics' && (
-          <div className="overflow-y-auto p-4 space-y-3">
+          <div className="h-full overflow-y-auto p-4 space-y-3">
             {mechConversations.length === 0 ? (
               <p className="text-center text-gray-400 py-8">Aucun mécanicien approuvé.</p>
             ) : (
@@ -305,12 +310,19 @@ const AdminMessages = ({ onBack }) => {
 
         {/* Conversation mécanicien */}
         {selectedMechanic && (
-          <ConversationThread
-            messages={mechMessages}
-            onSend={handleSendToMechanic}
-            senderLabel={selectedMechanic.name}
-            isMechanicThread={true}
-          />
+          mechLoadError ? (
+            <div className="h-full flex flex-col items-center justify-center gap-3 text-red-500 p-6 text-center">
+              <p className="font-semibold">Erreur de chargement</p>
+              <p className="text-sm text-gray-500">{mechLoadError}</p>
+            </div>
+          ) : (
+            <ConversationThread
+              messages={mechMessages}
+              onSend={handleSendToMechanic}
+              senderLabel={selectedMechanic.name}
+              isMechanicThread={true}
+            />
+          )
         )}
       </div>
     </div>
