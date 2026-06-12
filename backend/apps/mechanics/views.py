@@ -374,7 +374,7 @@ def mechanic_admin_messages(request):
 @permission_classes([IsAdmin])
 def mechanic_admin_conversations(request):
     """Liste tous les mécaniciens approuvés avec leur nombre de messages (pour l'interface admin)."""
-    from django.db.models import Count, Max
+    from django.db.models import Count, Max, F
     profiles = (
         MechanicProfile.objects
         .filter(status='approved')
@@ -383,7 +383,7 @@ def mechanic_admin_conversations(request):
             msg_count=Count('admin_messages'),
             last_msg_at=Max('admin_messages__created_at'),
         )
-        .order_by('-last_msg_at', '-created_at')
+        .order_by(F('last_msg_at').desc(nulls_last=True), '-created_at')
     )
     return Response([{
         'mechanic_id': str(p.id),

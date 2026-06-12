@@ -131,6 +131,7 @@ const AdminMessages = ({ onBack }) => {
   const [mechMessages, setMechMessages] = useState([]);
 
   const pollRef = useRef(null);
+  const mechListPollRef = useRef(null);
 
   // Charger les demandes de dépannage (conducteurs)
   useEffect(() => {
@@ -139,14 +140,17 @@ const AdminMessages = ({ onBack }) => {
       .catch(() => {});
   }, []);
 
-  // Charger les conversations mécaniciens
+  // Charger et poller la liste des conversations mécaniciens
   useEffect(() => {
-    if (tab !== 'mechanics') return;
+    clearInterval(mechListPollRef.current);
+    if (tab !== 'mechanics' || selectedMechanic) return;
     const load = () => fetchMechanicAdminConversations()
       .then(data => setMechConversations(Array.isArray(data) ? data : []))
       .catch(() => {});
     load();
-  }, [tab]);
+    mechListPollRef.current = setInterval(load, 8000);
+    return () => clearInterval(mechListPollRef.current);
+  }, [tab, selectedMechanic]);
 
   // Poll messages conducteur sélectionné
   useEffect(() => {
