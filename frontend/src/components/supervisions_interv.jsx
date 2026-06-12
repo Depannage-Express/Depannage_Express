@@ -222,30 +222,30 @@ const SupervisionInterventions = ({ onBack }) => {
                         <Row label="Téléphone" value={req.driver_phone} />
                         <Row label="Véhicule" value={req.vehicle_description} />
                         {/* Photos d'identité */}
-                        {(req.driver_id_card || req.driver_selfie) && (
+                        {(req.driver_id_card_url || req.driver_selfie_url) && (
                           <div className="mt-2 space-y-2">
-                            {req.driver_id_card && (
+                            {req.driver_id_card_url && (
                               <div>
                                 <p className="text-white/40 text-xs mb-1 flex items-center gap-1">
                                   <Eye size={11} /> Pièce d'identité
                                 </p>
-                                <a href={req.driver_id_card} target="_blank" rel="noreferrer">
+                                <a href={req.driver_id_card_url} target="_blank" rel="noreferrer">
                                   <img
-                                    src={req.driver_id_card}
+                                    src={req.driver_id_card_url}
                                     alt="Pièce d'identité conducteur"
                                     className="w-full rounded-lg max-h-36 object-cover border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer"
                                   />
                                 </a>
                               </div>
                             )}
-                            {req.driver_selfie && (
+                            {req.driver_selfie_url && (
                               <div>
                                 <p className="text-white/40 text-xs mb-1 flex items-center gap-1">
                                   <Eye size={11} /> Selfie conducteur
                                 </p>
-                                <a href={req.driver_selfie} target="_blank" rel="noreferrer">
+                                <a href={req.driver_selfie_url} target="_blank" rel="noreferrer">
                                   <img
-                                    src={req.driver_selfie}
+                                    src={req.driver_selfie_url}
                                     alt="Selfie conducteur"
                                     className="w-full rounded-lg max-h-36 object-cover border border-[#608C27]/40 hover:opacity-80 transition-opacity cursor-pointer"
                                   />
