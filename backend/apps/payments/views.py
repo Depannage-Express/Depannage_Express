@@ -90,11 +90,13 @@ def create_payment(request):
 
         is_premium = intervention.mechanic.user.role == 'mechanic_premium'
         if is_premium:
-            payment_data['net_amount'] = str(amount)
-            payment_data['commission_amount'] = '0'
+            commission = Decimal('0')
         else:
-            payment_data['net_amount'] = '0'
-            payment_data['commission_amount'] = '0'
+            commission = (Decimal(str(amount)) * settings.PLATFORM_COMMISSION_RATE).quantize(
+                Decimal('0.01'), rounding=ROUND_DOWN
+            )
+        payment_data['commission_amount'] = str(commission)
+        payment_data['net_amount'] = str(Decimal(str(amount)) - commission)
 
         serializer = PaymentTransactionSerializer(data=payment_data)
         serializer.is_valid(raise_exception=True)

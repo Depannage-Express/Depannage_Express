@@ -6,7 +6,7 @@ Au moins 20 entrées par table métier.
 Usage:
     python manage.py seed_soutenance
 """
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 from datetime import timedelta
 import math
 import random
@@ -826,9 +826,21 @@ class Command(BaseCommand):
         return interventions, extra_refused
 
     # ── PAIEMENTS ────────────────────────────────────────────────────────────
+    def _calc_commission(self, amount, mechanic):
+        """Retourne (commission, net_amount) selon le rôle du mécanicien."""
+        from django.conf import settings
+        if mechanic.user.role == 'mechanic_premium':
+            commission = Decimal('0')
+        else:
+            commission = (Decimal(str(amount)) * settings.PLATFORM_COMMISSION_RATE).quantize(
+                Decimal('0.01'), rounding=ROUND_DOWN
+            )
+        return commission, Decimal(str(amount)) - commission
+
     def _create_payments(self, breakdowns, interventions, extra_refused):
         now = timezone.now()
         count = 0
+        fixed = 0
 
         intv_payment_map = {
             'paid':               ('paid',    'intervention'),
@@ -850,6 +862,7 @@ class Command(BaseCommand):
             pay_status, pay_for = intv_payment_map.get(intv.status, ('pending', 'intervention'))
             ref = f'FEDA_SOUT_{pay_idx:04d}'
             paid_at = intv.paid_at if pay_status == 'paid' else None
+            commission, net = self._calc_commission(cost, intv.mechanic)
 
             payment, created = PaymentTransaction.objects.get_or_create(
                 provider_reference=ref,
@@ -864,12 +877,19 @@ class Command(BaseCommand):
                     'breakdown_request': bd,
                     'intervention':      intv,
                     'mechanic':          intv.mechanic,
+                    'commission_amount': commission,
+                    'net_amount':        net,
                     'paid_at':           paid_at,
                     'metadata':          {'source': 'seed_soutenance'},
                 },
             )
             if created:
                 count += 1
+            elif payment.commission_amount == Decimal('0') and payment.net_amount == Decimal('0'):
+                payment.commission_amount = commission
+                payment.net_amount = net
+                payment.save(update_fields=['commission_amount', 'net_amount'])
+                fixed += 1
             pay_idx += 1
 
         # +1 paiement pour la 1re intervention refused (assure le minimum 20)
@@ -877,12 +897,14 @@ class Command(BaseCommand):
             bd_idx, intv = extra_refused[0]
             bd = breakdowns[bd_idx]
             ref = f'FEDA_SOUT_{pay_idx:04d}'
+            cost = COSTS[BREAKDOWNS_DATA[bd_idx][1]]
+            commission, net = self._calc_commission(cost, intv.mechanic)
             payment, created = PaymentTransaction.objects.get_or_create(
                 provider_reference=ref,
                 defaults={
                     'payer_name':        bd.driver_name,
                     'payer_phone':       bd.driver_phone,
-                    'amount':            COSTS[BREAKDOWNS_DATA[bd_idx][1]],
+                    'amount':            cost,
                     'currency':          'XOF',
                     'payment_method':    'MTN Mobile Money',
                     'payment_for':       'intervention',
@@ -890,14 +912,38 @@ class Command(BaseCommand):
                     'breakdown_request': bd,
                     'intervention':      intv,
                     'mechanic':          intv.mechanic,
+                    'commission_amount': commission,
+                    'net_amount':        net,
                     'paid_at':           None,
                     'metadata':          {'source': 'seed_soutenance'},
                 },
             )
             if created:
                 count += 1
+            elif payment.commission_amount == Decimal('0') and payment.net_amount == Decimal('0'):
+                payment.commission_amount = commission
+                payment.net_amount = net
+                payment.save(update_fields=['commission_amount', 'net_amount'])
+                fixed += 1
 
-        self.stdout.write(self.style.SUCCESS(f'  → {count} paiements créés.'))
+        # Corriger tous les paiements orphelins (commission=0, net=0, non-premium)
+        from django.conf import settings
+        for p in PaymentTransaction.objects.filter(
+            payment_for='intervention',
+            commission_amount=Decimal('0'),
+            net_amount=Decimal('0'),
+            mechanic__isnull=False,
+        ).select_related('mechanic__user'):
+            if p.mechanic.user.role != 'mechanic_premium':
+                commission = (p.amount * settings.PLATFORM_COMMISSION_RATE).quantize(
+                    Decimal('0.01'), rounding=ROUND_DOWN
+                )
+                p.commission_amount = commission
+                p.net_amount = p.amount - commission
+                p.save(update_fields=['commission_amount', 'net_amount'])
+                fixed += 1
+
+        self.stdout.write(self.style.SUCCESS(f'  → {count} paiements créés, {fixed} corrigés (commission).'))
 
     # ── AVIS ─────────────────────────────────────────────────────────────────
     def _create_reviews(self, mechanics, interventions):
