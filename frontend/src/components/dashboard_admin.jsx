@@ -110,7 +110,7 @@ const DashboardAdmin = ({ onLogout }) => {
   const fmtDate = (d) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#f0f2f5]">
+    <div className="h-screen flex flex-col bg-[#f0f2f5]">
 
       {/* Overlay mobile sidebar */}
       {sidebarOpen && (
@@ -121,7 +121,7 @@ const DashboardAdmin = ({ onLogout }) => {
       )}
 
       {/* ── BODY: Sidebar + Main Area ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* ── SIDEBAR ── */}
         <aside className={`
@@ -185,7 +185,7 @@ const DashboardAdmin = ({ onLogout }) => {
       </aside>
 
       {/* ── MAIN AREA: Header + Content + Footer ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* ── HEADER ── */}
         <header className="bg-white border-b border-gray-200 px-5 py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
@@ -217,7 +217,7 @@ const DashboardAdmin = ({ onLogout }) => {
         </header>
 
         {/* ── PAGE CONTENT ── */}
-        <main className="flex-1 p-5 min-w-0 min-h-0 flex flex-col">
+        <main className={`flex-1 min-h-0 min-w-0 ${view === 'menu' ? 'overflow-y-auto p-5' : 'overflow-hidden'}`}>
           {view === 'menu' ? (
             <div className="space-y-6">
 
@@ -342,16 +342,15 @@ const DashboardAdmin = ({ onLogout }) => {
               )}
             </div>
           ) : (
-            <div className="flex-1 min-h-0 h-full">{renderSubview()}</div>
+            <div className="h-full">{renderSubview()}</div>
           )}
         </main>
-
-        {/* ── FOOTER (même que les autres pages) ── */}
-        <Footer />
 
       </div>
 
     </div>
+
+    <Footer />
 
   </div>
   );
