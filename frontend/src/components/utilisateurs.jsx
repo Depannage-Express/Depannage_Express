@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed, User, Phone, ArrowLeft, Star } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCcw, Search, X, AlertTriangle, UserCheck, MapPin, Camera, LocateFixed, User, Phone, ArrowLeft, Star, Wrench, Car } from 'lucide-react';
 import {
   blockAdminUser,
   fetchAdminUsers,
+  fetchAdminBreakdowns,
   unblockAdminUser,
   suspendAdminUser,
   deleteAdminUser,
@@ -46,12 +47,22 @@ const EMPTY_FORM = {
 
 const POLL_INTERVAL_MS = 4_000;
 
+const DRIVER_STATUS_LABEL = {
+  pending:     { text: 'En attente',   color: 'bg-yellow-100 text-yellow-700 border-yellow-400' },
+  assigned:    { text: 'Assignée',     color: 'bg-blue-100 text-blue-700 border-blue-400' },
+  in_progress: { text: 'En cours',     color: 'bg-orange-100 text-orange-700 border-orange-400' },
+  completed:   { text: 'Terminée',     color: 'bg-green-100 text-green-700 border-green-400' },
+  cancelled:   { text: 'Annulée',      color: 'bg-red-100 text-red-700 border-red-400' },
+};
+
 const Utilisateurs = ({ onBack }) => {
   const [users, setUsers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState('');
   const [query, setQuery] = useState('');
+  const [driverQuery, setDriverQuery] = useState('');
   const pollRef = useRef(null);
 
   // Modal refus
@@ -89,8 +100,13 @@ const Utilisateurs = ({ onBack }) => {
     if (!silent) setError('');
     if (!silent) setIsLoading(true);
     try {
-      const allUsers = await fetchAdminUsers();
+      const [allUsers, breakdownData] = await Promise.all([
+        fetchAdminUsers(),
+        fetchAdminBreakdowns(),
+      ]);
       setUsers(Array.isArray(allUsers) ? allUsers : (allUsers?.results ?? []));
+      const list = breakdownData?.results ?? (Array.isArray(breakdownData) ? breakdownData : []);
+      setDrivers(list);
     } catch (requestError) {
       if (!silent) setError(requestError.message);
     } finally {
@@ -581,17 +597,71 @@ const Utilisateurs = ({ onBack }) => {
 
           {/* CONDUCTEURS */}
           <section>
-            <div className="bg-[#0D2B0D] text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm">
-              CONDUCTEURS
+            <div className="bg-[#0D2B0D] text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm flex items-center justify-center gap-2">
+              <Car size={14} /> CONDUCTEURS ({drivers.length})
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-center shadow-sm">
-              <p className="text-xs font-bold text-blue-700 uppercase mb-2">Service anonyme</p>
-              <p className="text-xs text-blue-600 leading-relaxed">
-                Les conducteurs utilisent l'application <strong>sans créer de compte</strong>.
-                Chaque demande est identifiée par un UUID unique et le numéro de téléphone fourni.
-              </p>
-              <p className="text-xs text-blue-400 mt-3 italic">MVP — V2</p>
+
+            {/* Recherche conducteurs */}
+            <div className="relative mb-3">
+              <input
+                type="text"
+                value={driverQuery}
+                onChange={e => setDriverQuery(e.target.value)}
+                placeholder="Nom ou téléphone…"
+                className="w-full border border-gray-300 rounded-xl pl-8 pr-8 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#608C27] bg-white"
+              />
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              {driverQuery && (
+                <button onClick={() => setDriverQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                  <X size={12} />
+                </button>
+              )}
             </div>
+
+            {drivers.length === 0 ? (
+              <p className="text-center text-xs text-gray-400 py-4 italic">Aucune demande</p>
+            ) : (() => {
+              const dq = driverQuery.trim().toLowerCase();
+              const filtered = dq
+                ? drivers.filter(d =>
+                    (d.driver_name || '').toLowerCase().includes(dq) ||
+                    (d.driver_phone || '').toLowerCase().includes(dq)
+                  )
+                : drivers;
+              if (filtered.length === 0) return (
+                <p className="text-center text-xs text-gray-400 py-4 italic">Aucun résultat</p>
+              );
+              return filtered.map(d => {
+                const st = DRIVER_STATUS_LABEL[d.status] || { text: d.status, color: 'bg-gray-100 text-gray-600 border-gray-300' };
+                const date = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
+                return (
+                  <div key={d.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 mb-2">
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                        <User size={14} className="text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[#0D2B0D] text-xs truncate">{d.driver_name || '—'}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Phone size={10} /> {d.driver_phone || '—'}
+                        </p>
+                        {d.breakdown_type && (
+                          <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                            <Wrench size={9} /> {d.breakdown_type}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span className={`inline-block text-[10px] font-bold uppercase border rounded-full px-1.5 py-0.5 ${st.color}`}>
+                            {st.text}
+                          </span>
+                          {date && <span className="text-[10px] text-gray-400">{date}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </section>
 
           {/* MÉCANICIENS STANDARDS APPROUVÉS */}
