@@ -50,7 +50,7 @@ const Header = ({
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="fixed w-full top-0 left-0 bg-white shadow-sm z-50">
+    <header className="fixed w-full top-0 left-0 bg-white shadow-sm z-20">
 
       {/* Barre principale */}
       <div className="max-w-screen-2xl mx-auto py-2 px-4 md:px-8 grid grid-cols-3 md:flex md:items-center md:justify-between">
