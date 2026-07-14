@@ -390,15 +390,6 @@ export async function createPayment(payload) {
   return parseResponse(response);
 }
 
-export async function confirmPayment(paymentId, breakdownRequestId, driverToken) {
-  const response = await fetchWithTimeout(`${API_BASE_URL}/payments/${paymentId}/confirm/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ breakdown_request_id: breakdownRequestId, driver_token: driverToken }),
-  });
-  return parseResponse(response);
-}
-
 export function fetchAdminPayments(params = {}) {
   const qs = new URLSearchParams(
     Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== ''))
@@ -456,12 +447,6 @@ export function createSubscriptionPayment(payload) {
   });
 }
 
-export function confirmSubscriptionPayment(paymentId) {
-  return apiRequest(`/payments/subscription/${paymentId}/confirm/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
 
 export function fetchAdminReviews({ rating, mechanic } = {}) {
   const params = new URLSearchParams();

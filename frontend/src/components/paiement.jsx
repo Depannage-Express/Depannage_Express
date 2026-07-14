@@ -10,9 +10,9 @@ const OPERATORS = [
   { value: 'Carte Bancaire', label: 'Carte Bancaire' },
 ];
 
-const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken }) => {
+const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
   const [operator, setOperator] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('01');
+  const [phoneNumber, setPhoneNumber] = useState('64000001');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,22 +40,18 @@ const Paiement = ({ onPayerClick, payerName, amount, breakdownId, driverToken })
         driver_token: driverToken || null,
       });
 
-      if (payment.payment_url) {
-        sessionStorage.setItem('fedapay_return', JSON.stringify({
-          payment_id: payment.payment_id,
-          breakdown_id: breakdownId,
-          driver_token: driverToken,
-        }));
-        sessionStorage.setItem('driver_token', driverToken || '');
-        sessionStorage.setItem('breakdown_id', breakdownId || '');
-        window.location.href = payment.payment_url;
-        return;
+      if (!payment.payment_url) {
+        throw new Error("FedaPay n'a pas renvoyé de lien de paiement. Réessayez.");
       }
 
-      onPayerClick(payment, {
-        payerPhone: `+229${phoneNumber.replace(/\D/g, '')}`,
-        paymentMethod: operator,
-      });
+      sessionStorage.setItem('fedapay_return', JSON.stringify({
+        payment_id: payment.payment_id,
+        breakdown_id: breakdownId,
+        driver_token: driverToken,
+      }));
+      sessionStorage.setItem('driver_token', driverToken || '');
+      sessionStorage.setItem('breakdown_id', breakdownId || '');
+      window.location.href = payment.payment_url;
     } catch (err) {
       setError(err.message || 'Erreur lors du paiement. Veuillez réessayer.');
     } finally {

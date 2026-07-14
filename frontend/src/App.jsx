@@ -15,7 +15,6 @@ import Facturation from './components/facturation';
 import Remerciement from './components/remerciement';
 import Paiement from './components/paiement';
 import ConfirmerPaiement from './components/confirmer_paiement';
-import FedaPaySimule from './components/fedapay_simule';
 import Intervention from './components/intervention';
 import Nofinish from './components/nofinish';
 import DiscussionCond from './components/discussion';
@@ -54,7 +53,6 @@ const SCREENS = {
   BREAKDOWN_TRACKING: 'breakdown_tracking',
   BILLING: 'billing',
   PAYMENT: 'payment',
-  FEDAPAY_SIMULE: 'fedapay_simule',
   PAYMENT_CONFIRMATION: 'payment_confirmation',
   INTERVENTION: 'intervention',
   NO_FINISH: 'no_finish',
@@ -113,9 +111,7 @@ function App() {
   const [isBootstrappingUser, setIsBootstrappingUser] = useState(true);
   const [screen, setScreen] = useState(() => PATH_TO_SCREEN[window.location.pathname] ?? SCREENS.HOME);
   const [currentBreakdown, setCurrentBreakdown] = useState(null);
-  const [currentPayment, setCurrentPayment] = useState(null);
   const [currentIntervention, setCurrentIntervention] = useState(null);
-  const [pendingPaymentMeta, setPendingPaymentMeta] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const saveDriverSession = (breakdown) => {
@@ -178,7 +174,6 @@ function App() {
       const urlBreakdownId = params.get('breakdown_id');
       if (urlBreakdownId) breakdown_id = urlBreakdownId;
       if (!driver_token) driver_token = localStorage.getItem('driver_token');
-      setCurrentPayment(payment_id ? { id: payment_id } : null);
       setCurrentBreakdown({ id: breakdown_id, driver_token });
       setScreen(SCREENS.PAYMENT_CONFIRMATION);
       return;
@@ -193,7 +188,6 @@ function App() {
     }
 
     if (payment_id && breakdown_id) {
-      setCurrentPayment({ id: payment_id });
       setCurrentBreakdown({ id: breakdown_id, driver_token });
       setScreen(SCREENS.PAYMENT_CONFIRMATION);
       return;
@@ -233,7 +227,6 @@ function App() {
 
   const resetBreakdownFlow = () => {
     setCurrentBreakdown(null);
-    setCurrentPayment(null);
     setCurrentIntervention(null);
     clearDriverSession();
   };
@@ -427,37 +420,18 @@ function App() {
         return (
           <ConfirmerPaiement
             onabout={() => setScreen(SCREENS.INTERVENTION)}
-            paymentId={currentPayment?.id}
             breakdownId={currentBreakdown?.id}
             driverLat={currentBreakdown?.latitude}
             driverLon={currentBreakdown?.longitude}
-            driverToken={currentBreakdown?.driver_token}
           />
         );
       case SCREENS.PAYMENT:
         return (
           <Paiement
-            onPayerClick={(payment, meta) => {
-              setCurrentPayment({ id: payment.payment_id || payment.id });
-              setPendingPaymentMeta(meta || null);
-              setScreen(SCREENS.FEDAPAY_SIMULE);
-            }}
             payerName={currentBreakdown?.driver_name}
             amount={currentAmount}
             breakdownId={currentBreakdown?.id}
             driverToken={currentBreakdown?.driver_token}
-          />
-        );
-      case SCREENS.FEDAPAY_SIMULE:
-        return (
-          <FedaPaySimule
-            paymentId={currentPayment?.id}
-            breakdownId={currentBreakdown?.id}
-            driverToken={currentBreakdown?.driver_token}
-            amount={currentAmount}
-            payerPhone={pendingPaymentMeta?.payerPhone}
-            paymentMethod={pendingPaymentMeta?.paymentMethod}
-            onSuccess={() => setScreen(SCREENS.PAYMENT_CONFIRMATION)}
           />
         );
       case SCREENS.BILLING:

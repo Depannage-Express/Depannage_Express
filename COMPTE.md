@@ -1,121 +1,136 @@
 # Comptes de démonstration — DépannageExpress
 
-Généré par   : python manage.py seed_demo
-Réinitialiser : python manage.py seed_demo --flush
+Généré par   : python manage.py seed_soutenance
+Réinitialiser : rejouer la commande (idempotente — recrée seulement ce qui manque, pas de flag --flush)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ADMIN
-─────
+ADMIN  (mot de passe commun : Admin@2024!)
+───────────────────────────────────────────
+
 Email        : admin@depannage.bj
-Mot de passe : Admin2024!
+Nom          : Super Admin
+
+Email        : admin.soutenance@depannage.bj
+Nom          : Admin Soutenance
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MÉCANICIENS  (mot de passe commun : Demo2024!)
-──────────────────────────────────────────────
+MÉCANICIENS  (mot de passe commun : Mechanic@2024!)
+──────────────────────────────────────────────────
 
-── PREMIUM (6) ──
+── PREMIUM (5) ──
 
-[1] Kodjo Agbossou
-  Email       : kodjo.agbossou@depannage.bj
-  Téléphone   : +22997001001
-  Ville       : Cotonou Centre
-  Spécialités : Mécanique générale, Électricité automobile
-  Expérience  : 12 ans  —  Note : 4.80/5  —  120 interventions
+[1] Koffi Mensah
+  Email       : koffi.mensah@depannage.bj
+  Téléphone   : +22997100001
+  Ville       : Cotonou, Littoral
+  Spécialités : Panne moteur, Dépannage général
+  Expérience  : 8 ans  —  Note : 5.00/5  —  3 avis  —  3 interventions
 
-[2] Sara Hounkpatin
-  Email       : sara.hounkpatin@depannage.bj
-  Téléphone   : +22997002002
-  Ville       : Cotonou Est (Akpakpa)
-  Spécialités : Climatisation, Électricité automobile
-  Expérience  : 8 ans  —  Note : 4.60/5  —  85 interventions
+[2] Abdoulaye Idrissou
+  Email       : abdoulaye.idrissou@depannage.bj
+  Téléphone   : +22997100002
+  Ville       : Parakou, Borgou
+  Spécialités : Panne électrique, Diagnostic électronique
+  Expérience  : 12 ans  —  Note : 3.50/5  —  2 avis  —  2 interventions
 
-[3] Félix Kpodo
-  Email       : felix.kpodo@depannage.bj
-  Téléphone   : +22997003003
-  Ville       : Fidjrossè, Cotonou
-  Spécialités : Poids lourds & camions, Mécanique générale
-  Expérience  : 15 ans  —  Note : 4.90/5  —  145 interventions
+[3] Ibrahim Chabi
+  Email       : ibrahim.chabi@depannage.bj
+  Téléphone   : +22997100006
+  Ville       : Kandi, Alibori
+  Spécialités : Climatisation, Système de refroidissement
+  Expérience  : 6 ans  —  Note : 5.00/5  —  1 avis  —  1 intervention
 
-[4] Romuald Gnansounou
-  Email       : romuald.gnansounou@depannage.bj
-  Téléphone   : +22997004004
-  Ville       : Agla, Cotonou
-  Spécialités : Électricité automobile, Mécanique générale
-  Expérience  : 10 ans  —  Note : 4.75/5  —  98 interventions
+[4] Moussa Zakari
+  Email       : moussa.zakari@depannage.bj
+  Téléphone   : +22997100009
+  Ville       : Parakou, Borgou
+  Spécialités : Diagnostic électronique, Panne moteur
+  Expérience  : 15 ans  —  Note : 4.50/5  —  2 avis  —  2 interventions
 
-[5] Clarisse Azonhiho
-  Email       : clarisse.azonhiho@depannage.bj
-  Téléphone   : +22997005005
-  Ville       : Vèdoko, Cotonou
-  Spécialités : Climatisation, Mécanique générale
-  Expérience  : 9 ans  —  Note : 4.65/5  —  73 interventions
+[5] Stanislas Dèdènou
+  Email       : stanislas.dedenou@depannage.bj
+  Téléphone   : +22997100011
+  Ville       : Bohicon, Zou
+  Spécialités : Remorquage, Panne moteur
+  Expérience  : 11 ans  —  Note : 4.00/5  —  1 avis  —  1 intervention
 
-[6] Stéphane Kossou
-  Email       : stephane.kossou@depannage.bj
-  Téléphone   : +22997006006
-  Ville       : Abomey-Calavi Centre
-  Spécialités : Pneumatiques & pneus, Mécanique générale
-  Expérience  : 11 ans  —  Note : 4.55/5  —  89 interventions
+── STANDARD (10) ──
 
-── STANDARD (14) ──
+[6]  Marcellin Boffi      — marcellin.boffi@depannage.bj      — Cotonou, Littoral        — approuvé
+[7]  Séraphin Houessou    — seraphin.houessou@depannage.bj    — Abomey-Calavi, Atlantique — approuvé
+[8]  Toussaint Dossou     — toussaint.dossou@depannage.bj     — Lokossa, Mono            — approuvé
+[9]  Gérard Ahouansou     — gerard.ahouansou@depannage.bj     — Cotonou, Littoral        — approuvé
+[10] Patrice Lokossou     — patrice.lokossou@depannage.bj     — Cotonou, Littoral        — approuvé
+[11] Cyrille Gbaguidi     — cyrille.gbaguidi@depannage.bj     — Abomey-Calavi, Atlantique — approuvé
+[12] Félix Agbossou       — felix.agbossou@depannage.bj       — Cotonou, Littoral        — approuvé
+[13] Alphonse Sènou       —        — Cotonou, Littoral        — en attente de validation
+[14] Théodore Kpakpo      — theodore.kpakpo@depannage.bj      — Djougou, Donga           — en attente de validation
+[15] Lionel Assogba       — lionel.assogba@depannage.bj       — Cotonou, Littoral        — rejeté
 
-[7]  Marc Dossou           — marc.dossou@depannage.bj           — Cadjehoun, Cotonou
-[8]  Aline Gbedou          — aline.gbedou@depannage.bj          — Godomey, Abomey-Calavi
-[9]  Ibrahim Sanni         — ibrahim.sanni@depannage.bj         — Zogbo, Cotonou
-[10] Prudence Adossou      — prudence.adossou@depannage.bj      — Gbèdjromèdé, Cotonou
-[11] Thérèse Gandonou      — therese.gandonou@depannage.bj      — Avotrou, Cotonou
-[12] Oscar Tokpanou        — oscar.tokpanou@depannage.bj        — Bohicon Centre
-[13] Sylvie Houéha         — sylvie.houeha@depannage.bj         — Ouando, Porto-Novo
-[14] Bertrand Vigan        — bertrand.vigan@depannage.bj        — Kpankpan, Cotonou
-[15] Justin Azondekon      — justin.azondekon@depannage.bj      — Jéricho, Cotonou
-[16] Nadège Yèkpè          — nadege.yekpe@depannage.bj          — Jonquet, Cotonou
-[17] Aurélien Hounnou      — aurelien.hounnou@depannage.bj      — Togba, Abomey-Calavi
-[18] Patricia Daho         — patricia.daho@depannage.bj         — Sainte-Rita, Cotonou
-[19] Séverin Biaou         — severin.biaou@depannage.bj         — Marché Arzèkè, Parakou
-[20] Gilberte Codjo        — gilberte.codjo@depannage.bj        — Wologuèdè, Cotonou
+Note : les comptes "en attente" et "rejeté" se connectent normalement mais tombent
+sur l'écran de validation en attente, pas sur le dashboard mécanicien.
+
+Pour tester un mécanicien standard et approuvé (non premium) → utiliser [6] à [12].
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CONDUCTEURS  (sans compte — identifiés par téléphone)
-─────────────────────────────────────────────────────
+CONDUCTEURS  (comptes créés, mot de passe commun : Driver@2024!)
+─────────────────────────────────────────────────────────────
 
-Moussa Ahouannou    — +22996001001
-Aminata Kpêdékpo    — +22996002002
-Rodrigue Togbé      — +22996003003
-Céleste Houenou     — +22996004004
-Patrice Adanhounmè  — +22996005005
+Jean-Baptiste Agossa — jb.agossa@gmail.com       — +22961100001
+Fatima Orou          — fatima.orou@gmail.com     — +22961100002
+Rodrigue Sossou      — rodrigue.s@gmail.com      — +22961100003
+Clémentine Amoussou  — clementine.a@gmail.com    — +22961100004
+Prosper Gbèha        — prosper.g@gmail.com       — +22961100005
+Nadège Hounsa        — nadege.h@gmail.com        — +22961100006
+Firmin Tossou        — firmin.t@gmail.com        — +22961100007
+Raïssa Kpossou       — raissa.k@gmail.com        — +22961100008
+Valentin Adjovi      — valentin.a@gmail.com      — +22961100009
+Sandrine Azonhiho    — sandrine.az@gmail.com     — +22961100010
+Hervé Dansou         — herve.d@gmail.com         — +22961100011
+Mireille Hounto      — mireille.h@gmail.com      — +22961100012
+Théophile Gnancadja  — theophile.g@gmail.com     — +22961100013
+Vanessa Tokoudagba   — vanessa.t@gmail.com       — +22961100014
+Gildas Vodounou      — gildas.v@gmail.com        — +22961100015
+Edwige Bocovo        — edwige.b@gmail.com        — +22961100016
+Narcisse Agoli       — narcisse.a@gmail.com      — +22961100017
+Patience Houndji     — patience.h@gmail.com      — +22961100018
+Léonce Gbaguidi       — leonce.g@gmail.com        — +22961100019
+
++ 2 demandes de dépannage soumises sans compte (identifiées par téléphone uniquement).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 DONNÉES EN BASE
 ───────────────
 
-Demandes de dépannage : 10
-  - 2 en attente (pending)
-  - 2 assignées (assigned)
-  - 2 en cours (in_progress)
-  - 4 terminées (completed)
+Demandes de dépannage : 36
+  - 4 en attente (pending)
+  - 6 assignées (assigned)
+  - 4 en cours (in_progress)
+  - 20 terminées (completed)
+  - 2 annulées (cancelled)
 
-Interventions : 5
-  - 4 terminées
-  - 1 en cours
+Interventions : 35
+  - 4 en attente d'acceptation (pending_acceptance)
+  - 2 acceptées (accepted)
+  - 4 en cours (in_progress)
+  - 13 terminées (completed)
+  - 5 payées (paid)
+  - 2 avec avis laissé (reviewed)
+  - 3 refusées (refused)
+  - 2 annulées (cancelled)
 
-Paiements : 5  (tous status=paid)
-  - Moussa Ahouannou      22 000 XOF  — MTN Mobile Money
-  - Aminata Kpêdékpo      15 000 XOF  — Moov Money
-  - Patrice Adanhounmè   115 000 XOF  — MTN Mobile Money
-  - Moussa Ahouannou      32 000 XOF  — Carte bancaire
-  - Céleste Houenou        5 000 XOF  — MTN Mobile Money (abonnement premium)
+Paiements : 30  (8 payés / 22 en attente)
+  - Dont 1 abonnement premium payé : Stanislas Dèdènou — 5 000 XOF — MTN Mobile Money
+  - 7 paiements d'intervention payés (8 000 à 18 000 XOF), MTN/Moov Mobile Money
 
-Messagerie : 6 conversations actives (3 à 6 échanges chacune)
+Messagerie : 33 messages sur 12 conversations actives
 
-Spécialités : 5
-  - Mécanique générale
-  - Électricité automobile
-  - Pneumatiques & pneus
-  - Climatisation
-  - Poids lourds & camions
+Spécialités : 22 enregistrées (quelques doublons de libellé à nettoyer,
+ex. "Crevaison / pneus" vs "Crevaison / Pneus", "Transmission" vs
+"Transmission / Boîte de vitesses" — cosmétique, sans impact fonctionnel)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

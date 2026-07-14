@@ -1,5 +1,6 @@
 # apps/payments/views.py
 import json as stdlib_json
+from datetime import timedelta
 from decimal import Decimal, ROUND_DOWN
 
 from django.conf import settings
@@ -13,9 +14,13 @@ from rest_framework.response import Response
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
-from .fedapay_client import verify_webhook_signature
+from .fedapay_client import create_transaction, verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
 from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer, PaymentAdminSerializer
+
+# Au-delà de ce délai, un paiement FedaPay resté 'authorized'/'pending' est
+# considéré abandonné (checkout jamais terminé) et ne bloque plus les réessais.
+STALE_PAYMENT_MINUTES = 15
 
 
 @api_view(['POST'])
@@ -71,7 +76,12 @@ def create_payment(request):
         if existing:
             if existing.status == 'paid':
                 return Response({'error': 'Cette intervention a déjà été payée.'}, status=400)
-            return Response({'error': 'Un paiement est déjà en cours pour cette intervention.'}, status=400)
+            stale_before = timezone.now() - timedelta(minutes=STALE_PAYMENT_MINUTES)
+            if existing.created_at < stale_before:
+                existing.status = 'cancelled'
+                existing.save(update_fields=['status'])
+            else:
+                return Response({'error': 'Un paiement est déjà en cours pour cette intervention.'}, status=400)
 
         # Montant calculé côté serveur — le champ 'amount' du frontend est ignoré
         amount = settings.BREAKDOWN_PRICING.get(
@@ -102,15 +112,38 @@ def create_payment(request):
         serializer.is_valid(raise_exception=True)
         payment = serializer.save(status='authorized', provider_reference='')
 
-    payment.provider_reference = f'SIM-{payment.id}'
+    callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/callback/"
+    try:
+        fedapay_result = create_transaction(
+            amount=amount,
+            description=f"Dépannage Express — {breakdown.driver_name}",
+            customer_name=breakdown.driver_name,
+            customer_phone=breakdown.driver_phone,
+            callback_url=callback_url,
+            breakdown_id=str(breakdown.id),
+        )
+    except Exception as exc:
+        print('FedaPay create_transaction a échoué (create_payment):', repr(exc))
+        payment.status = 'failed'
+        payment.save(update_fields=['status'])
+        return Response(
+            {'error': "Impossible de contacter FedaPay pour le moment. Réessayez dans quelques instants."},
+            status=502,
+        )
+
+    payment.provider_reference = fedapay_result['transaction_id']
     payment.save(update_fields=['provider_reference'])
 
     log_security_event(
         request, None, 'PAYMENT_CREATED',
-        f'Paiement simulé créé pour intervention {intervention.id} montant={payment.amount}',
+        f'Paiement FedaPay créé pour intervention {intervention.id} montant={payment.amount} '
+        f'transaction={fedapay_result["transaction_id"]}',
     )
 
-    return Response({'payment_id': str(payment.id)}, status=201)
+    return Response({
+        'payment_id': str(payment.id),
+        'payment_url': fedapay_result['payment_url'],
+    }, status=201)
 
 
 @api_view(['POST'])
@@ -200,7 +233,7 @@ def payment_callback(request):
         return Response({'error': 'ID de transaction manquant.'}, status=400)
 
     try:
-        payment = PaymentTransaction.objects.select_related('intervention').get(
+        payment = PaymentTransaction.objects.select_related('intervention', 'mechanic__user').get(
             provider_reference=fedapay_id
         )
     except PaymentTransaction.DoesNotExist:
@@ -218,6 +251,10 @@ def payment_callback(request):
 
             if payment.intervention_id:
                 Intervention.objects.filter(pk=payment.intervention_id).update(status='paid')
+
+            if payment.payment_for == 'premium_subscription' and payment.mechanic_id:
+                payment.mechanic.user.role = 'mechanic_premium'
+                payment.mechanic.user.save(update_fields=['role'])
 
         log_security_event(
             request, None, 'PAYMENT_CALLBACK_OK',
@@ -292,12 +329,18 @@ def create_subscription_payment(request):
     except Exception:
         return Response({'error': 'Profil mécanicien introuvable.'}, status=404)
 
-    if PaymentTransaction.objects.filter(
+    pending_subscription = PaymentTransaction.objects.filter(
         mechanic=profile,
         payment_for='premium_subscription',
         status__in=['pending', 'authorized'],
-    ).exists():
-        return Response({'error': "Une demande d'abonnement est déjà en cours."}, status=400)
+    ).first()
+    if pending_subscription:
+        stale_before = timezone.now() - timedelta(minutes=STALE_PAYMENT_MINUTES)
+        if pending_subscription.created_at < stale_before:
+            pending_subscription.status = 'cancelled'
+            pending_subscription.save(update_fields=['status'])
+        else:
+            return Response({'error': "Une demande d'abonnement est déjà en cours."}, status=400)
 
     payer_name = (request.data.get('payer_name') or user.full_name).strip()
     payer_phone = (request.data.get('payer_phone') or user.phone or '').strip()
@@ -318,17 +361,39 @@ def create_subscription_payment(request):
 
     serializer = PaymentTransactionSerializer(data=data)
     serializer.is_valid(raise_exception=True)
-    payment = serializer.save(
-        status='authorized',
-        provider_reference=f"SUB-{timezone.now().strftime('%Y%m%d%H%M%S')}",
-    )
+    payment = serializer.save(status='authorized', provider_reference='')
+
+    callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/callback/"
+    try:
+        fedapay_result = create_transaction(
+            amount=settings.PREMIUM_SUBSCRIPTION_AMOUNT,
+            description="Abonnement Premium — Dépannage Express",
+            customer_name=payer_name,
+            customer_phone=payer_phone,
+            callback_url=callback_url,
+            return_params={'subscription_return': '1', 'payment_id': str(payment.id)},
+        )
+    except Exception as exc:
+        print('FedaPay create_transaction a échoué (create_subscription_payment):', repr(exc))
+        payment.status = 'failed'
+        payment.save(update_fields=['status'])
+        return Response(
+            {'error': "Impossible de contacter FedaPay pour le moment. Réessayez dans quelques instants."},
+            status=502,
+        )
+
+    payment.provider_reference = fedapay_result['transaction_id']
+    payment.save(update_fields=['provider_reference'])
 
     log_security_event(
         request, user, 'SUBSCRIPTION_PAYMENT_CREATED',
-        f'Paiement abonnement premium initié par {user.email}',
+        f'Paiement FedaPay abonnement premium initié par {user.email} transaction={fedapay_result["transaction_id"]}',
     )
 
-    return Response(PaymentTransactionSerializer(payment).data, status=201)
+    return Response({
+        'payment_id': str(payment.id),
+        'payment_url': fedapay_result['payment_url'],
+    }, status=201)
 
 
 @api_view(['POST'])

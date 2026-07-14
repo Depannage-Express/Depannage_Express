@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
-import { CheckCircle, AlertTriangle, MapPin, Phone, Wrench, FileText, Search, Lightbulb, Navigation } from 'lucide-react';
-import { confirmPayment, fetchInterventionForBreakdown } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle, AlertTriangle, MapPin, Phone, Wrench, FileText, Search, Lightbulb, Navigation, Loader2 } from 'lucide-react';
+import { fetchInterventionForBreakdown } from '../lib/api';
 import GeoLabel from './geo_label';
 import SafeImage from './SafeImage';
+
+const PAID_STATUSES = ['paid', 'reviewed'];
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 40000;
 
 const BREAKDOWN_LABELS = {
   moteur:     'Panne moteur',
@@ -13,21 +17,40 @@ const BREAKDOWN_LABELS = {
   general:    'Dépannage général',
 };
 
-const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverLon, driverToken }) => {
+const ConfirmerPaiement = ({ onabout, breakdownId, driverLat, driverLon }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [effectiveToken] = useState(
-    () => driverToken || sessionStorage.getItem('driver_token') || null
-  );
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const pollRef = useRef(null);
 
   useEffect(() => {
-    if (!paymentId || !breakdownId) return;
-    confirmPayment(paymentId, breakdownId, effectiveToken)
-      .catch((err) => setError(err?.message || 'Erreur lors de la confirmation du paiement.'))
-      .finally(() => {
-        fetchInterventionForBreakdown(breakdownId).then(setData).catch(() => {});
-      });
-  }, [paymentId, breakdownId, effectiveToken]);
+    if (!breakdownId) return;
+
+    const startedAt = Date.now();
+
+    const poll = () => {
+      fetchInterventionForBreakdown(breakdownId)
+        .then((intervention) => {
+          setError(null);
+          setData(intervention);
+          if (PAID_STATUSES.includes(intervention.status)) {
+            setIsConfirmed(true);
+            clearInterval(pollRef.current);
+            return;
+          }
+          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+            setHasTimedOut(true);
+            clearInterval(pollRef.current);
+          }
+        })
+        .catch((err) => setError(err?.message || 'Impossible de vérifier le statut du paiement.'));
+    };
+
+    poll();
+    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [breakdownId]);
 
   return (
     <div style={{
@@ -56,9 +79,13 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
           boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
         }}>
 
-          {/* Header vert succès */}
+          {/* Header : en attente / succès / délai dépassé */}
           <div style={{
-            background: 'linear-gradient(135deg, #2e7d32, #43a047)',
+            background: isConfirmed
+              ? 'linear-gradient(135deg, #2e7d32, #43a047)'
+              : hasTimedOut
+                ? 'linear-gradient(135deg, #e65100, #ef6c00)'
+                : 'linear-gradient(135deg, #1565c0, #1976d2)',
             padding: '32px 28px',
             textAlign: 'center',
             position: 'relative',
@@ -74,7 +101,13 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               margin: '0 auto 16px',
               animation: 'popIn 0.5s ease-out',
             }}>
-              <CheckCircle size={40} color="#fff" />
+              {isConfirmed ? (
+                <CheckCircle size={40} color="#fff" />
+              ) : hasTimedOut ? (
+                <AlertTriangle size={40} color="#fff" />
+              ) : (
+                <Loader2 size={40} color="#fff" className="animate-spin" />
+              )}
             </div>
             <h1 style={{
               color: '#fff',
@@ -82,14 +115,22 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               fontSize: '24px',
               fontWeight: '800',
             }}>
-              Paiement réussi !
+              {isConfirmed
+                ? 'Paiement réussi !'
+                : hasTimedOut
+                  ? 'Confirmation en attente'
+                  : 'Confirmation du paiement…'}
             </h1>
             <p style={{
               color: 'rgba(255,255,255,0.85)',
               margin: 0,
               fontSize: '15px',
             }}>
-              Votre mécanicien est en route
+              {isConfirmed
+                ? 'Votre mécanicien est en route'
+                : hasTimedOut
+                  ? 'FedaPay met plus de temps que prévu à confirmer. Le suivi se mettra à jour automatiquement.'
+                  : 'Nous attendons la confirmation de FedaPay, un instant…'}
             </p>
           </div>
 
@@ -314,8 +355,9 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               </div>
             )}
 
-            {/* Bouton continuer */}
+            {/* Bouton continuer — disponible seulement une fois le paiement réellement confirmé */}
             <button
+              disabled={!isConfirmed}
               onClick={() => {
                 sessionStorage.removeItem('driver_token');
                 sessionStorage.removeItem('breakdown_id');
@@ -324,28 +366,28 @@ const ConfirmerPaiement = ({ onabout, paymentId, breakdownId, driverLat, driverL
               style={{
                 width: '100%',
                 padding: '16px',
-                background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+                background: isConfirmed ? 'linear-gradient(135deg, #1a1a2e, #0f3460)' : '#b0b3bd',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '14px',
                 fontSize: '16px',
                 fontWeight: '700',
-                cursor: 'pointer',
+                cursor: isConfirmed ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: '0 6px 20px rgba(15,52,96,0.4)',
+                boxShadow: isConfirmed ? '0 6px 20px rgba(15,52,96,0.4)' : 'none',
                 transition: 'transform 0.1s',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
+                if (isConfirmed) e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <Search size={18} /> Continuer le suivi
+              <Search size={18} /> {isConfirmed ? 'Continuer le suivi' : 'En attente de confirmation…'}
             </button>
 
           </div>

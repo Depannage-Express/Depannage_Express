@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Crown, CheckCircle, Star, Zap, Phone, CreditCard, Loader } from 'lucide-react';
-import { createSubscriptionPayment, confirmSubscriptionPayment } from '../lib/api';
+import { createSubscriptionPayment, fetchCurrentUser } from '../lib/api';
 
 const PLAN_PRICE = '5 000 FCFA';
 const PAYMENT_METHODS = ['MTN Mobile Money', 'Moov Money'];
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 40000;
 
 const PREMIUM_BENEFITS = [
   'Apparaissez en tête des résultats de recherche',
@@ -16,14 +18,41 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState(
-    currentUser?.phone ? currentUser.phone.replace('+229', '') : '01'
-  );
+  const [payerPhone, setPayerPhone] = useState('66000001');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
-  const [step, setStep] = useState('form'); // 'form' | 'confirm' | 'success'
-  const [pendingPaymentId, setPendingPaymentId] = useState(null);
+  // 'form' | 'waiting' | 'success' | 'timeout' — 'waiting' dès le retour de FedaPay (?subscription_return=1)
+  const [step, setStep] = useState(() =>
+    new URLSearchParams(window.location.search).get('subscription_return') === '1' ? 'waiting' : 'form'
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const pollRef = useRef(null);
+
+  // Retour de FedaPay : sonde le statut jusqu'à confirmation du webhook
+  useEffect(() => {
+    if (step !== 'waiting') return;
+    window.history.replaceState({}, '', window.location.pathname);
+
+    const startedAt = Date.now();
+    const poll = () => {
+      fetchCurrentUser()
+        .then((user) => {
+          if (user.role === 'mechanic_premium') {
+            setStep('success');
+            clearInterval(pollRef.current);
+            return;
+          }
+          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+            setStep('timeout');
+            clearInterval(pollRef.current);
+          }
+        })
+        .catch(() => {});
+    };
+    poll();
+    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [step]);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -35,24 +64,13 @@ const Abonnement = ({ onBack, currentUser }) => {
         payer_phone: '+229' + payerPhone,
         payment_method: paymentMethod,
       });
-      setPendingPaymentId(payment.id);
-      setStep('confirm');
+      if (!payment.payment_url) {
+        throw new Error("FedaPay n'a pas renvoyé de lien de paiement. Réessayez.");
+      }
+      localStorage.setItem('meca_dashboard_view', 'abonnement');
+      window.location.href = payment.payment_url;
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirm = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await confirmSubscriptionPayment(pendingPaymentId);
-      setStep('success');
-    } catch (err) {
-      setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -184,37 +202,34 @@ const Abonnement = ({ onBack, currentUser }) => {
                 </>
               )}
 
-              {step === 'confirm' && (
-                <div className="flex flex-col items-center gap-6 py-4">
-                  <Crown size={56} className="text-yellow-500" />
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-[#0D2B0D] mb-2">Confirmer le paiement</p>
+              {step === 'waiting' && (
+                <div className="flex flex-col items-center gap-6 py-8 text-center">
+                  <Loader size={56} className="text-[#608C27] animate-spin" />
+                  <div>
+                    <p className="text-xl font-bold text-[#0D2B0D] mb-2">Confirmation du paiement…</p>
                     <p className="text-gray-600 text-sm">
-                      Validez votre paiement de <strong>{PLAN_PRICE}</strong> via{' '}
-                      <strong>{paymentMethod}</strong> au numéro <strong>+229{payerPhone}</strong>.
+                      Nous attendons la confirmation de FedaPay, un instant.
                     </p>
                   </div>
+                </div>
+              )}
 
-                  {error && (
-                    <p className="text-red-600 font-medium text-sm text-center">{error}</p>
-                  )}
-
-                  <div className="flex flex-col gap-3 w-full">
-                    <button
-                      onClick={handleConfirm}
-                      disabled={loading}
-                      className="w-full bg-[#608C27] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#0D2B0D] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                      {loading ? <Loader size={20} className="animate-spin" /> : <CheckCircle size={20} />}
-                      {loading ? 'Activation...' : 'Confirmer et activer'}
-                    </button>
-                    <button
-                      onClick={() => { setStep('form'); setError(''); }}
-                      className="w-full border-2 border-gray-300 text-gray-600 py-3 rounded-2xl font-bold hover:border-[#0D2B0D] transition-all"
-                    >
-                      Annuler
-                    </button>
+              {step === 'timeout' && (
+                <div className="flex flex-col items-center gap-6 py-8 text-center">
+                  <Crown size={56} className="text-orange-500" />
+                  <div>
+                    <p className="text-xl font-bold text-[#0D2B0D] mb-2">Confirmation en attente</p>
+                    <p className="text-gray-600 text-sm">
+                      FedaPay met plus de temps que prévu à confirmer. Rechargez la page dans
+                      quelques instants pour vérifier si votre abonnement a été activé.
+                    </p>
                   </div>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-[#0D2B0D] text-white px-8 py-3 rounded-2xl font-bold hover:bg-[#608C27] transition-all"
+                  >
+                    Actualiser
+                  </button>
                 </div>
               )}
 
