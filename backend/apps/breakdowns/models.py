@@ -68,6 +68,9 @@ class BreakdownRequest(TimestampedModel):
     latitude = models.DecimalField(max_digits=10, decimal_places=7)
     longitude = models.DecimalField(max_digits=10, decimal_places=7)
     address_description = models.TextField(blank=True)
+    # Calculé à la création selon la densité de mécaniciens aux alentours —
+    # détermine le taux de commission de la demande (cf. commission_rate).
+    is_agglomeration = models.BooleanField(default=False)
 
     # Assignment
     assigned_mechanic = models.ForeignKey(
@@ -105,6 +108,14 @@ class BreakdownRequest(TimestampedModel):
 
     def __str__(self):
         return f"Demande #{self.id} - {self.driver_name} ({self.status})"
+
+    @property
+    def commission_rate(self):
+        """Taux de commission plateforme selon la zone de la demande."""
+        from django.conf import settings
+        if self.is_agglomeration:
+            return settings.PLATFORM_COMMISSION_RATE_AGGLOMERATION
+        return settings.PLATFORM_COMMISSION_RATE_HORS_AGGLOMERATION
 
 
 class Message(TimestampedModel):

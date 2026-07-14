@@ -235,6 +235,37 @@ def find_all_available_for_broadcast(specialty_id=None, exclude_ids=None):
     return list(qs)
 
 
+def is_agglomeration_zone(latitude: float, longitude: float) -> bool:
+    """Une demande est considérée en agglomération si suffisamment de mécaniciens
+    sont enregistrés aux alentours (forte densité = zone urbaine desservie).
+    Sert à déterminer le taux de commission de la demande à sa création."""
+    from apps.mechanics.models import MechanicProfile
+
+    radius_km = getattr(settings, 'AGGLOMERATION_DENSITY_RADIUS_KM', 15)
+    min_count = getattr(settings, 'AGGLOMERATION_MIN_MECHANICS', 3)
+
+    qs = MechanicProfile.objects.filter(
+        status='approved',
+        latitude__isnull=False,
+        longitude__isnull=False,
+    )
+    lat_delta = radius_km / 111.0
+    lon_delta = radius_km / (111.0 * math.cos(math.radians(latitude)))
+    qs = qs.filter(
+        latitude__range=(latitude - lat_delta, latitude + lat_delta),
+        longitude__range=(longitude - lon_delta, longitude + lon_delta),
+    )
+
+    count = 0
+    for profile in qs:
+        dist = haversine_distance(latitude, longitude, float(profile.latitude), float(profile.longitude))
+        if dist <= radius_km:
+            count += 1
+            if count >= min_count:
+                return True
+    return False
+
+
 def find_mechanics_nearby(
     latitude: float,
     longitude: float,

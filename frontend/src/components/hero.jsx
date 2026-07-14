@@ -166,7 +166,7 @@ const Hero = ({ onStartClick, onVoir, onRecoverClick }) => {
   return (
     <>
       {/* HERO */}
-      <section className="bg-[#0D2B0D] mt-5">
+      <section className="bg-[#0D2B0D]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center px-4 md:px-16 py-8 md:py-12 gap-8 md:gap-10">
 
           {/* TEXTE */}

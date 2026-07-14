@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.core.permissions import IsAdmin, IsApprovedMechanic, IsValidDriverToken
-from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics, find_all_available_for_broadcast, haversine_distance
+from apps.geolocation.utils import find_nearest_mechanic, find_top_mechanics, find_all_available_for_broadcast, haversine_distance, is_agglomeration_zone
 from apps.mechanics.models import MechanicProfile
 from apps.mechanics.serializers import MechanicPublicSerializer
 from apps.notifications.utils import send_notification
@@ -215,7 +215,10 @@ def create_breakdown_request(request):
     # Démarrer le chrono de phase dès la création
     instance.phase_started_at = timezone.now()
     instance.search_phase = 1
-    instance.save(update_fields=['phase_started_at', 'search_phase'])
+    instance.is_agglomeration = is_agglomeration_zone(
+        float(instance.latitude), float(instance.longitude)
+    )
+    instance.save(update_fields=['phase_started_at', 'search_phase', 'is_agglomeration'])
 
     # Attribution automatique du mécanicien le plus proche
     mechanic, distance = find_nearest_mechanic(

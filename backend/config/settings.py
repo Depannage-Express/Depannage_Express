@@ -314,6 +314,14 @@ BREAKDOWN_PRICING = {
 }
 
 SEARCH_RADII_KM = {1: 10, 2: 20, 3: 50}
-PLATFORM_COMMISSION_RATE = Decimal('0.05')
+
+# Commission plateforme : plus élevée hors agglomération (service rendu plus rare,
+# moins de mécaniciens disponibles) qu'en agglomération. La zone est déterminée à la
+# création de la demande selon la densité de mécaniciens enregistrés aux alentours
+# de la position GPS du conducteur (cf. apps.geolocation.utils.is_agglomeration_zone).
+AGGLOMERATION_DENSITY_RADIUS_KM = 15
+AGGLOMERATION_MIN_MECHANICS = 3
+PLATFORM_COMMISSION_RATE_AGGLOMERATION = Decimal('0.15')
+PLATFORM_COMMISSION_RATE_HORS_AGGLOMERATION = Decimal('0.25')
 WITHDRAWAL_FEE_RATE = Decimal('0.0075')
 PHASE_TIMEOUT_SECS = int(os.getenv('PHASE_TIMEOUT_SECS', '120'))

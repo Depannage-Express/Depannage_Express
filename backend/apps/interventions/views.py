@@ -145,10 +145,9 @@ def driver_confirm_intervention(request, pk):
     if response.status_code == 200 and payment.mechanic_id and payment.payment_for == 'intervention':
         from apps.mechanics.models import MechanicProfile
         from decimal import Decimal, ROUND_DOWN
-        from django.conf import settings
 
         if payment.net_amount == Decimal('0'):
-            commission = (payment.amount * settings.PLATFORM_COMMISSION_RATE).quantize(
+            commission = (payment.amount * payment.breakdown_request.commission_rate).quantize(
                 Decimal('0.01'), rounding=ROUND_DOWN
             )
             net_amount = payment.amount - commission

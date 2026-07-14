@@ -92,7 +92,7 @@ def create_payment(request):
         if is_premium:
             commission = Decimal('0')
         else:
-            commission = (Decimal(str(amount)) * settings.PLATFORM_COMMISSION_RATE).quantize(
+            commission = (Decimal(str(amount)) * breakdown.commission_rate).quantize(
                 Decimal('0.01'), rounding=ROUND_DOWN
             )
         payment_data['commission_amount'] = str(commission)
@@ -265,7 +265,8 @@ def admin_payment_stats(request):
         count_failed=Count('id', filter=Q(status='failed')),
         count_total=Count('id'),
     )
-    stats['platform_commission_rate'] = float(settings.PLATFORM_COMMISSION_RATE)
+    stats['platform_commission_rate_agglomeration'] = float(settings.PLATFORM_COMMISSION_RATE_AGGLOMERATION)
+    stats['platform_commission_rate_hors_agglomeration'] = float(settings.PLATFORM_COMMISSION_RATE_HORS_AGGLOMERATION)
     stats['withdrawal_fee_rate'] = float(settings.WITHDRAWAL_FEE_RATE)
     stats['pending_withdrawals'] = WithdrawalRequest.objects.filter(status='pending').count()
     stats['pending_withdrawal_amount'] = float(

@@ -7,7 +7,6 @@ import SupervisionInterventions from './supervisions_interv';
 import GestionAvis from './gestion_avis';
 import AdminMessages from './admin_messages';
 import RetraitsAdmin from './retraits_admin';
-import Footer from './footer';
 import {
   LayoutDashboard, Users, Activity, UserCircle, CreditCard,
   Bell, Star, MessageSquareText, ArrowDownCircle,
@@ -125,26 +124,26 @@ const DashboardAdmin = ({ onLogout }) => {
 
         {/* ── SIDEBAR ── */}
         <aside className={`
-          w-[220px] bg-[#0D2B0D] flex flex-col flex-shrink-0 overflow-y-auto
+          w-[260px] bg-[#0D2B0D] flex flex-col flex-shrink-0 overflow-y-auto
           fixed inset-y-0 left-0 z-30 lg:relative lg:inset-auto lg:z-auto
           transition-transform duration-300
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
         {/* Logo */}
-        <div className="px-5 py-4 border-b border-white/10">
+        <div className="px-6 py-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#608C27] rounded-lg flex items-center justify-center shrink-0">
-              <Wrench size={15} className="text-white" />
+            <div className="w-10 h-10 bg-[#608C27] rounded-lg flex items-center justify-center shrink-0">
+              <Wrench size={18} className="text-white" />
             </div>
             <div className="leading-none">
-              <p className="text-white font-black text-sm">Dépannage</p>
-              <p className="text-[#608C27] text-[11px] font-semibold">Express Admin</p>
+              <p className="text-white font-black text-base">Dépannage</p>
+              <p className="text-[#608C27] text-xs font-semibold mt-0.5">Express Admin</p>
             </div>
           </div>
         </div>
 
         {/* Nav links — scrollable indépendamment */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map(({ id, label, Icon, badge }) => {
             const isActive = view === id;
             return (
@@ -152,16 +151,16 @@ const DashboardAdmin = ({ onLogout }) => {
                 key={id}
                 onClick={() => setViewSafe(id)}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all text-[13px] font-medium
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all text-sm font-medium
                   ${isActive
                     ? 'bg-[#608C27] text-white'
                     : 'text-white/65 hover:bg-white/10 hover:text-white'}
                 `}
               >
-                <Icon size={15} className="shrink-0" />
+                <Icon size={18} className="shrink-0" />
                 <span className="flex-1 truncate">{label}</span>
                 {badge > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center leading-none">
                     {badge}
                   </span>
                 )}
@@ -171,55 +170,55 @@ const DashboardAdmin = ({ onLogout }) => {
         </nav>
 
         {/* Identité admin — épinglée en bas de la sidebar, hors du scroll */}
-        <div className="shrink-0 px-4 py-3 border-t border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-[#608C27]/30 rounded-full flex items-center justify-center shrink-0">
-              <UserCircle size={15} className="text-[#608C27]" />
+        <div className="shrink-0 px-5 py-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-[#608C27]/30 rounded-full flex items-center justify-center shrink-0">
+              <UserCircle size={18} className="text-[#608C27]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-semibold truncate">Administrateur</p>
-              <p className="text-white/40 text-[10px]">Super admin</p>
+              <p className="text-white text-sm font-semibold truncate">Administrateur</p>
+              <p className="text-white/40 text-xs">Super admin</p>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* ── MAIN AREA: Header + Content + Footer ── */}
+      {/* ── MAIN AREA: Header + Content ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* ── HEADER ── */}
-        <header className="bg-white border-b border-gray-200 px-5 py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-500 hover:text-gray-700 p-1"
           >
-            <Menu size={20} />
+            <Menu size={22} />
           </button>
 
-          <h1 className="text-[#1a1a2e] font-bold text-[15px] flex-1">
+          <h1 className="text-[#1a1a2e] font-bold text-xl flex-1">
             {pageTitles[view] ?? 'Tableau de bord'}
           </h1>
 
-          <div className="hidden md:flex flex-col items-end leading-none gap-0.5">
-            <span className="text-[#1a1a2e] text-[13px] font-semibold tabular-nums">{fmtTime(now)}</span>
-            <span className="text-gray-400 text-[10px] capitalize">{fmtDate(now)}</span>
+          <div className="hidden md:flex flex-col items-end leading-none gap-1">
+            <span className="text-[#1a1a2e] text-base font-semibold tabular-nums">{fmtTime(now)}</span>
+            <span className="text-gray-400 text-xs capitalize">{fmtDate(now)}</span>
           </div>
 
           {onLogout && (
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all"
+              className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-100 transition-all"
             >
-              <LogOut size={14} />
+              <LogOut size={16} />
               <span className="hidden sm:inline">Déconnexion</span>
             </button>
           )}
         </header>
 
         {/* ── PAGE CONTENT ── */}
-        <main className={`flex-1 min-h-0 min-w-0 ${view === 'messages' ? 'overflow-hidden' : 'overflow-y-auto p-5'}`}>
+        <main className={`flex-1 min-h-0 min-w-0 ${view === 'messages' ? 'overflow-hidden' : 'overflow-y-auto p-6 lg:p-8'}`}>
           {view === 'menu' ? (
-            <div className="space-y-6">
+            <div className="space-y-8">
 
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
@@ -230,7 +229,7 @@ const DashboardAdmin = ({ onLogout }) => {
               {isLoading ? (
                 <div className="space-y-6">
                   {[4, 4, 3].map((cols, si) => (
-                    <div key={si} className={`grid grid-cols-2 lg:grid-cols-${cols} gap-4`}>
+                    <div key={si} className={`grid grid-cols-2 lg:grid-cols-${cols} gap-5`}>
                       {Array.from({ length: cols }).map((_, i) => (
                         <div key={i} className="bg-white rounded-xl h-[88px] animate-pulse" />
                       ))}
@@ -242,7 +241,7 @@ const DashboardAdmin = ({ onLogout }) => {
                   {/* ── SECTION 1 : Finances & Alertes ── */}
                   <section>
                     <SectionLabel>Finances &amp; Alertes prioritaires</SectionLabel>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                       {/* Revenue — occupe 2 colonnes desktop */}
                       <div className="col-span-2">
                         <KpiCard card={{
@@ -276,7 +275,7 @@ const DashboardAdmin = ({ onLogout }) => {
                   {/* ── SECTION 2 : Communauté ── */}
                   <section>
                     <SectionLabel>Communauté</SectionLabel>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                       <KpiCard card={{
                         label: 'Conducteurs inscrits',
                         value: stats?.users?.total ?? '—',
@@ -313,7 +312,7 @@ const DashboardAdmin = ({ onLogout }) => {
                   {/* ── SECTION 3 : Activité ── */}
                   <section>
                     <SectionLabel>Activité</SectionLabel>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                       <KpiCard card={{
                         label: 'Demandes totales',
                         value: stats?.breakdowns?.total ?? '—',
@@ -352,14 +351,12 @@ const DashboardAdmin = ({ onLogout }) => {
 
     </div>
 
-    <Footer />
-
   </div>
   );
 };
 
 const SectionLabel = ({ children }) => (
-  <p className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] mb-3">{children}</p>
+  <p className="text-xs font-bold uppercase tracking-widest text-[#6b7280] mb-4">{children}</p>
 );
 
 const KpiCard = ({ card }) => {
@@ -367,15 +364,15 @@ const KpiCard = ({ card }) => {
 
   if (hero) {
     return (
-      <div className="bg-[#0D2B0D] rounded-xl p-5 shadow-sm h-full flex items-center gap-4 border border-[#608C27]/30">
-        <div className="w-12 h-12 bg-[#608C27]/20 rounded-full flex items-center justify-center shrink-0">
-          <Icon size={22} className="text-[#608C27]" />
+      <div className="bg-[#0D2B0D] rounded-xl p-6 shadow-sm h-full flex items-center gap-5 border border-[#608C27]/30">
+        <div className="w-14 h-14 bg-[#608C27]/20 rounded-full flex items-center justify-center shrink-0">
+          <Icon size={26} className="text-[#608C27]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white/60 text-[11px] font-semibold uppercase tracking-wide leading-tight">
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-wide leading-tight">
             {label}
           </p>
-          <p className="text-[#608C27] text-[28px] font-black mt-0.5 leading-none truncate">
+          <p className="text-[#608C27] text-[34px] font-black mt-1 leading-none truncate">
             {value}
           </p>
         </div>
@@ -384,16 +381,16 @@ const KpiCard = ({ card }) => {
   }
 
   return (
-    <div className={`bg-white rounded-xl p-5 shadow-sm border transition-shadow hover:shadow-md ${alert ? 'border-red-200' : 'border-gray-100'}`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center shrink-0`}>
-          <Icon size={18} className={color} />
+    <div className={`bg-white rounded-xl p-6 shadow-sm border transition-shadow hover:shadow-md ${alert ? 'border-red-200' : 'border-gray-100'}`}>
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center shrink-0`}>
+          <Icon size={20} className={color} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[#6b7280] text-[11px] font-semibold uppercase tracking-wide leading-tight">
+          <p className="text-[#6b7280] text-xs font-semibold uppercase tracking-wide leading-tight">
             {label}
           </p>
-          <p className={`text-[26px] font-black mt-0.5 leading-none ${alert ? 'text-red-600' : 'text-[#1a1a2e]'}`}>
+          <p className={`text-[30px] font-black mt-1 leading-none ${alert ? 'text-red-600' : 'text-[#1a1a2e]'}`}>
             {value}
           </p>
         </div>

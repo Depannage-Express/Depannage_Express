@@ -33,27 +33,42 @@ const BREAKDOWN_TYPES = [
   { icon: <HelpCircle size={16} />,  label: 'Autre panne' },
 ];
 
-const Demande = ({ onConfirm }) => {
-    const [locationEnabled, setLocationEnabled] = useState(false);
-    const [position, setPosition] = useState(null);
-    const [driverName, setDriverName] = useState('');
-    const [phone, setPhone] = useState('01');
-    const [isReturningDriver, setIsReturningDriver] = useState(false);
+const STEPS = ['Identité', 'Localisation', 'Panne', 'Photos'];
+const DRAFT_KEY = 'demande_depannage_draft';
 
-    useEffect(() => {
+const loadDraft = () => {
+    try {
+        const draftRaw = sessionStorage.getItem(DRAFT_KEY);
+        return draftRaw ? JSON.parse(draftRaw) : null;
+    } catch {
+        sessionStorage.removeItem(DRAFT_KEY);
+        return null;
+    }
+};
+
+const Demande = ({ onConfirm }) => {
+    const initialDriver = (() => {
+        const draft = loadDraft();
         const savedName = localStorage.getItem('driver_name');
         const savedPhone = localStorage.getItem('driver_phone');
-        if (savedName && savedPhone) {
-            setDriverName(savedName);
-            setPhone(savedPhone);
-            setIsReturningDriver(true);
-        }
-    }, []);
-    const [vehicleType, setVehicleType] = useState('');
-    const [vehicleBrand, setVehicleBrand] = useState('');
-    const [breakdownTypes, setBreakdownTypes] = useState([]);
+        return {
+            name: draft?.driverName || savedName || '',
+            phone: draft?.phone || savedPhone || '01',
+            returning: !!(savedName && savedPhone),
+        };
+    })();
+
+    const [currentStep, setCurrentStep] = useState(() => loadDraft()?.currentStep ?? 0);
+    const [locationEnabled, setLocationEnabled] = useState(() => !!loadDraft()?.locationEnabled);
+    const [position, setPosition] = useState(() => loadDraft()?.position ?? null);
+    const [driverName, setDriverName] = useState(initialDriver.name);
+    const [phone, setPhone] = useState(initialDriver.phone);
+    const [isReturningDriver, setIsReturningDriver] = useState(initialDriver.returning);
+    const [vehicleType, setVehicleType] = useState(() => loadDraft()?.vehicleType ?? '');
+    const [vehicleBrand, setVehicleBrand] = useState(() => loadDraft()?.vehicleBrand ?? '');
+    const [breakdownTypes, setBreakdownTypes] = useState(() => loadDraft()?.breakdownTypes ?? []);
     const [typeQuery, setTypeQuery] = useState('');
-    const [breakdownDescription, setBreakdownDescription] = useState('');
+    const [breakdownDescription, setBreakdownDescription] = useState(() => loadDraft()?.breakdownDescription ?? '');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,6 +78,21 @@ const Demande = ({ onConfirm }) => {
     const [vehicleFile, setVehicleFile] = useState(null);
     const [selfieFile, setSelfieFile] = useState(null);
     const [idCardFile, setIdCardFile] = useState(null);
+
+    useEffect(() => {
+        const draft = {
+            currentStep,
+            driverName,
+            phone,
+            vehicleType,
+            vehicleBrand,
+            breakdownTypes,
+            breakdownDescription,
+            locationEnabled,
+            position: position ? { latitude: position.latitude, longitude: position.longitude } : null,
+        };
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }, [currentStep, driverName, phone, vehicleType, vehicleBrand, breakdownTypes, breakdownDescription, locationEnabled, position]);
 
     const requestLocation = (onSuccess) => {
         setError('');
@@ -80,7 +110,8 @@ const Demande = ({ onConfirm }) => {
                     onSuccess();
                 }
             },
-            () => setError('Activez la géolocalisation pour continuer.')
+            () => setError('Activez la géolocalisation pour continuer.'),
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     };
 
@@ -129,6 +160,39 @@ const Demande = ({ onConfirm }) => {
         e.target.value = '';
     };
 
+    const validateStep = (step) => {
+        if (step === 0) {
+            if (!driverName.trim()) return 'Renseignez votre nom complet.';
+            if (phone.length < 8) return 'Renseignez un numéro de téléphone valide.';
+            if (!vehicleType) return 'Choisissez le type de véhicule.';
+            return '';
+        }
+        if (step === 1) {
+            if (!position) return "Activez la géolocalisation pour continuer.";
+            return '';
+        }
+        if (step === 2) {
+            if (breakdownTypes.length === 0) return 'Choisissez au moins un type de panne.';
+            return '';
+        }
+        return '';
+    };
+
+    const goNext = () => {
+        const stepError = validateStep(currentStep);
+        if (stepError) {
+            setError(stepError);
+            return;
+        }
+        setError('');
+        setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
+    };
+
+    const goBack = () => {
+        setError('');
+        setCurrentStep((step) => Math.max(step - 1, 0));
+    };
+
     const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -171,6 +235,7 @@ const Demande = ({ onConfirm }) => {
         const breakdown = await createBreakdownRequest(formData);
         localStorage.setItem('driver_name', driverName);
         localStorage.setItem('driver_phone', phone);
+        sessionStorage.removeItem(DRAFT_KEY);
         onConfirm(breakdown);
     } catch (submitError) {
         setError(submitError.message);
@@ -218,8 +283,27 @@ const Demande = ({ onConfirm }) => {
                     </h2>
                 </div>
 
+                {/* Barre de progression */}
+                <div className="mb-5">
+                    <div className="flex items-center mb-2">
+                        {STEPS.map((label, idx) => (
+                            <div key={label} className="flex-1 flex items-center last:flex-none">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${idx <= currentStep ? 'bg-[#608C27] text-white' : 'bg-white/10 text-white/40'}`}>
+                                    {idx + 1}
+                                </div>
+                                {idx < STEPS.length - 1 && (
+                                    <div className={`flex-1 h-0.5 mx-1 transition-colors ${idx < currentStep ? 'bg-[#608C27]' : 'bg-white/10'}`} />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-center text-white/50 text-[11px] uppercase tracking-widest font-bold">
+                        Étape {currentStep + 1}/{STEPS.length} — {STEPS[currentStep]}
+                    </p>
+                </div>
+
                 {/* Bandeau conducteur connu */}
-                {isReturningDriver && (
+                {currentStep === 0 && isReturningDriver && (
                     <div className="mb-5 bg-[#608C27]/20 border border-[#608C27]/40 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                         <div>
                             <p className="text-[#608C27] font-bold text-sm">Bon retour, {driverName} !</p>
@@ -241,6 +325,8 @@ const Demande = ({ onConfirm }) => {
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
 
+                    {currentStep === 0 && (
+                    <>
                     {/* Nom + Téléphone côte à côte */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -304,7 +390,10 @@ const Demande = ({ onConfirm }) => {
                             />
                         </div>
                     </div>
+                    </>
+                    )}
 
+                    {currentStep === 1 && (
                     <div className="rounded-3xl border border-[#608C27] bg-white/5 p-4 text-sm text-white/90 space-y-3">
                         <div className="flex items-center justify-between gap-3">
                             <div>
@@ -327,10 +416,20 @@ const Demande = ({ onConfirm }) => {
                         {position && (
                             <p className="text-xs text-white/60">
                                 Position capturée : {position.latitude.toFixed(5)}, {position.longitude.toFixed(5)}
+                                {position.accuracy ? ` (précision ~${Math.round(position.accuracy)} m)` : ''}
+                            </p>
+                        )}
+                        {position?.accuracy > 2000 && (
+                            <p className="text-xs text-amber-300 font-semibold">
+                                ⚠ Position peu précise (GPS non disponible, localisation approximative par réseau).
+                                Activez le GPS de votre téléphone et sortez à l'extérieur, puis appuyez sur « Mettre à jour ma position ».
                             </p>
                         )}
                     </div>
+                    )}
 
+                    {currentStep === 2 && (
+                    <>
                     {/* Type de panne */}
                     <div>
                         <label className={labelClass}>
@@ -407,7 +506,11 @@ const Demande = ({ onConfirm }) => {
                             />
                         </div>
                     </div>
+                    </>
+                    )}
 
+                    {currentStep === 3 && (
+                    <>
                     {/* Section Photos */}
                     <div className="space-y-3">
                         <p className={labelClass}>Photo de la panne <span className="text-red-400">*</span></p>
@@ -464,24 +567,54 @@ const Demande = ({ onConfirm }) => {
                             </>
                         )}
                     </div>
+                    </>
+                    )}
 
                     {/* Zone notification */}
                     <div className={`w-full rounded-xl px-4 py-3 text-sm font-medium text-center ${error ? 'bg-gray-400 text-[#0D2B0D]' : locationEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-400 text-[#0D2B0D] italic'}`}>
-                        {error || (locationEnabled
-                            ? '✓ Position partagée.'
-                            : isReturningDriver
-                                ? 'Partagez votre position pour trouver un mécanicien proche.'
-                                : 'La géolocalisation sera demandée pour sécuriser la demande.'
+                        {error || (
+                            currentStep === 0
+                                ? 'Renseignez vos informations et le véhicule concerné.'
+                                : currentStep === 1
+                                    ? (locationEnabled
+                                        ? '✓ Position partagée.'
+                                        : isReturningDriver
+                                            ? 'Partagez votre position pour trouver un mécanicien proche.'
+                                            : 'La géolocalisation sera demandée pour sécuriser la demande.')
+                                    : currentStep === 2
+                                        ? 'Choisissez un ou plusieurs types de panne.'
+                                        : "Ajoutez les photos requises avant l'envoi."
                         )}
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full bg-[#608C27] text-white font-bold py-4 rounded-2xl hover:bg-white hover:text-[#0D2B0D] transition-all shadow-lg tracking-wide text-sm disabled:opacity-60 mt-2"
-                    >
-                        {isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande'}
-                    </button>
+                    <div className="flex gap-3 mt-2">
+                        {currentStep > 0 && (
+                            <button
+                                type="button"
+                                onClick={goBack}
+                                className="flex-1 bg-white/10 text-white font-bold py-4 rounded-2xl hover:bg-white/20 transition-all tracking-wide text-sm"
+                            >
+                                Précédent
+                            </button>
+                        )}
+                        {currentStep < STEPS.length - 1 ? (
+                            <button
+                                type="button"
+                                onClick={goNext}
+                                className="flex-1 bg-[#608C27] text-white font-bold py-4 rounded-2xl hover:bg-white hover:text-[#0D2B0D] transition-all shadow-lg tracking-wide text-sm"
+                            >
+                                Suivant
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="flex-1 bg-[#608C27] text-white font-bold py-4 rounded-2xl hover:bg-white hover:text-[#0D2B0D] transition-all shadow-lg tracking-wide text-sm disabled:opacity-60"
+                            >
+                                {isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande'}
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
         </div>

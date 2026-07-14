@@ -93,10 +93,25 @@ const SCREEN_TO_NAV_MAP = {
   [SCREENS.HISTORY_OTP]: 'historique',
 };
 
+// Pages de contenu statique — seules celles-ci sont reflétées dans l'URL,
+// pour que le rechargement de la page reste sur le bon onglet.
+const SCREEN_TO_PATH = {
+  [SCREENS.HOME]: '/',
+  [SCREENS.ABOUT]: '/a-propos',
+  [SCREENS.MECHANIC_INFO]: '/nos-techniciens',
+  [SCREENS.HISTORY_OTP]: '/historique',
+  [SCREENS.LOGIN]: '/connexion',
+  [SCREENS.REGISTER]: '/inscription',
+  [SCREENS.ADMIN_LOGIN]: '/administrateur',
+};
+const PATH_TO_SCREEN = Object.fromEntries(
+  Object.entries(SCREEN_TO_PATH).map(([s, p]) => [p, s])
+);
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isBootstrappingUser, setIsBootstrappingUser] = useState(true);
-  const [screen, setScreen] = useState(SCREENS.HOME);
+  const [screen, setScreen] = useState(() => PATH_TO_SCREEN[window.location.pathname] ?? SCREENS.HOME);
   const [currentBreakdown, setCurrentBreakdown] = useState(null);
   const [currentPayment, setCurrentPayment] = useState(null);
   const [currentIntervention, setCurrentIntervention] = useState(null);
@@ -114,6 +129,25 @@ function App() {
     localStorage.removeItem('breakdown_id');
     localStorage.removeItem('driver_token');
   };
+
+  // Navigue vers un écran et, si celui-ci a une URL associée, la reflète
+  // dans l'historique du navigateur pour que le rechargement la préserve.
+  const navigate = (nextScreen) => {
+    setScreen(nextScreen);
+    const path = SCREEN_TO_PATH[nextScreen];
+    if (path && window.location.pathname !== path) {
+      window.history.pushState({ screen: nextScreen }, '', path);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const restored = PATH_TO_SCREEN[window.location.pathname];
+      if (restored) setScreen(restored);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     pingBackend();
@@ -187,7 +221,7 @@ function App() {
       } catch {
         clearAuthTokens();
         setCurrentUser(null);
-        setScreen(SCREENS.HOME);
+        navigate(SCREENS.HOME);
       } finally {
         setIsBootstrappingUser(false);
       }
@@ -215,23 +249,23 @@ function App() {
       localStorage.removeItem('meca_dashboard_view');
       setCurrentUser(null);
       setSearchQuery('');
-      setScreen(SCREENS.HOME);
+      navigate(SCREENS.HOME);
     }
   };
 
   const goHome = () => {
     resetBreakdownFlow();
-    setScreen(SCREENS.HOME);
+    navigate(SCREENS.HOME);
   };
 
-  const openLogin = () => setScreen(SCREENS.LOGIN);
-  const openRegister = () => setScreen(SCREENS.REGISTER);
-  const openAdminLogin = () => setScreen(SCREENS.ADMIN_LOGIN);
+  const openLogin = () => navigate(SCREENS.LOGIN);
+  const openRegister = () => navigate(SCREENS.REGISTER);
+  const openAdminLogin = () => navigate(SCREENS.ADMIN_LOGIN);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      setScreen(SCREENS.MECHANIC_INFO);
+      navigate(SCREENS.MECHANIC_INFO);
     }
   };
 
@@ -247,16 +281,16 @@ function App() {
         break;
       case 'a-propos':
         setSearchQuery('');
-        setScreen(SCREENS.ABOUT);
+        navigate(SCREENS.ABOUT);
         break;
       case 'nos-techniciens':
-        setScreen(SCREENS.MECHANIC_INFO);
+        navigate(SCREENS.MECHANIC_INFO);
         break;
       case 'administrateur':
         openAdminLogin();
         break;
       case 'historique':
-        setScreen(SCREENS.HISTORY_OTP);
+        navigate(SCREENS.HISTORY_OTP);
         break;
       default:
         break;
@@ -467,7 +501,7 @@ function App() {
               setCurrentBreakdown(breakdown);
               setScreen(SCREENS.BREAKDOWN_TRACKING);
             }}
-            onBack={() => setScreen(SCREENS.HOME)}
+            onBack={() => navigate(SCREENS.HOME)}
           />
         );
       case SCREENS.HOME:
@@ -475,7 +509,7 @@ function App() {
         return (
           <Hero
             onStartClick={() => setScreen(SCREENS.BREAKDOWN_FORM)}
-            onVoir={() => setScreen(SCREENS.MECHANIC_INFO)}
+            onVoir={() => navigate(SCREENS.MECHANIC_INFO)}
             onRecoverClick={() => setScreen(SCREENS.RECOVER_BREAKDOWN)}
           />
         );
@@ -497,7 +531,7 @@ function App() {
           searchQuery={searchQuery}
         />
       )}
-      <main className="flex-1">
+      <main className={`flex-1 ${!isAdminDashboard ? 'pt-16 md:pt-20' : ''}`}>
         {isBootstrappingUser ? (
           <div className="flex items-center justify-center text-white font-bold">
             Connexion au serveur...

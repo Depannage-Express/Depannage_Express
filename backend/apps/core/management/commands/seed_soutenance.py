@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.breakdowns.models import BreakdownRequest, Message
+from apps.geolocation.utils import is_agglomeration_zone
 from apps.incidents.models import Incident
 from apps.interventions.models import Intervention
 from apps.mechanics.models import MechanicAdminMessage, MechanicProfile, MechanicReview, Specialty
@@ -707,6 +708,7 @@ class Command(BaseCommand):
                     'latitude':              lat,
                     'longitude':             lng,
                     'address_description':   address,
+                    'is_agglomeration':      is_agglomeration_zone(float(lat), float(lng)),
                     'status':                bd_status,
                     'assigned_mechanic':     meca,
                     'assigned_at':           created_date + timedelta(minutes=30) if meca else None,
@@ -826,13 +828,12 @@ class Command(BaseCommand):
         return interventions, extra_refused
 
     # ── PAIEMENTS ────────────────────────────────────────────────────────────
-    def _calc_commission(self, amount, mechanic):
-        """Retourne (commission, net_amount) selon le rôle du mécanicien."""
-        from django.conf import settings
+    def _calc_commission(self, amount, mechanic, breakdown):
+        """Retourne (commission, net_amount) selon le rôle du mécanicien et la zone de la demande."""
         if mechanic.user.role == 'mechanic_premium':
             commission = Decimal('0')
         else:
-            commission = (Decimal(str(amount)) * settings.PLATFORM_COMMISSION_RATE).quantize(
+            commission = (Decimal(str(amount)) * breakdown.commission_rate).quantize(
                 Decimal('0.01'), rounding=ROUND_DOWN
             )
         return commission, Decimal(str(amount)) - commission
@@ -862,7 +863,7 @@ class Command(BaseCommand):
             pay_status, pay_for = intv_payment_map.get(intv.status, ('pending', 'intervention'))
             ref = f'FEDA_SOUT_{pay_idx:04d}'
             paid_at = intv.paid_at if pay_status == 'paid' else None
-            commission, net = self._calc_commission(cost, intv.mechanic)
+            commission, net = self._calc_commission(cost, intv.mechanic, bd)
 
             payment, created = PaymentTransaction.objects.get_or_create(
                 provider_reference=ref,
@@ -898,7 +899,7 @@ class Command(BaseCommand):
             bd = breakdowns[bd_idx]
             ref = f'FEDA_SOUT_{pay_idx:04d}'
             cost = COSTS[BREAKDOWNS_DATA[bd_idx][1]]
-            commission, net = self._calc_commission(cost, intv.mechanic)
+            commission, net = self._calc_commission(cost, intv.mechanic, bd)
             payment, created = PaymentTransaction.objects.get_or_create(
                 provider_reference=ref,
                 defaults={
@@ -927,15 +928,14 @@ class Command(BaseCommand):
                 fixed += 1
 
         # Corriger tous les paiements orphelins (commission=0, net=0, non-premium)
-        from django.conf import settings
         for p in PaymentTransaction.objects.filter(
             payment_for='intervention',
             commission_amount=Decimal('0'),
             net_amount=Decimal('0'),
             mechanic__isnull=False,
-        ).select_related('mechanic__user'):
+        ).select_related('mechanic__user', 'breakdown_request'):
             if p.mechanic.user.role != 'mechanic_premium':
-                commission = (p.amount * settings.PLATFORM_COMMISSION_RATE).quantize(
+                commission = (p.amount * p.breakdown_request.commission_rate).quantize(
                     Decimal('0.01'), rounding=ROUND_DOWN
                 )
                 p.commission_amount = commission

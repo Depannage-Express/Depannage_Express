@@ -120,7 +120,9 @@ const GestionPaiements = ({ onBack }) => {
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
             <p className="text-[10px] font-black uppercase text-gray-700 tracking-wide">Taux commission</p>
             <p className="text-lg font-black text-gray-800 mt-1">
-              {stats?.platform_commission_rate ? `${(stats.platform_commission_rate * 100).toFixed(0)}%` : '—'}
+              {stats?.platform_commission_rate_agglomeration && stats?.platform_commission_rate_hors_agglomeration
+                ? `${(stats.platform_commission_rate_agglomeration * 100).toFixed(0)}% / ${(stats.platform_commission_rate_hors_agglomeration * 100).toFixed(0)}%`
+                : '—'}
             </p>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
