@@ -335,7 +335,7 @@ const Demande = ({ onConfirm }) => {
                                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                 <input
                                     type="text"
-                                    placeholder="Jean Dupont"
+                                    placeholder="Kocou Agossou"
                                     value={driverName}
                                     onChange={(event) => setDriverName(event.target.value)}
                                     className="w-full bg-gray-200 rounded-xl pl-8 pr-3 py-3 outline-none text-gray-800 placeholder-gray-500 font-semibold text-sm focus:ring-2 focus:ring-[#608C27] transition-all"

@@ -50,7 +50,7 @@ def create_transaction(
         f'{base}/transactions',
         json=payload,
         headers=headers,
-        timeout=10,
+        timeout=20,
     )
 
     print('FedaPay create response:', resp.text)
@@ -70,7 +70,7 @@ def create_transaction(
         token_resp = requests.post(
             f'{base}/transactions/{transaction_id}/token',
             headers=headers,
-            timeout=10,
+            timeout=20,
         )
         print('FedaPay token response:', token_resp.text)
         token_resp.raise_for_status()
