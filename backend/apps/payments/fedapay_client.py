@@ -95,7 +95,7 @@ def verify_webhook_signature(raw_body: bytes, signature_header: str) -> bool:
         import fedapay  # noqa: F401 — kept for future SDK use
     except ImportError:
         pass
-    secret = settings.FEDAPAY_SECRET_KEY.encode('utf-8')
+    secret = settings.FEDAPAY_WEBHOOK_SECRET.encode('utf-8')
     expected_hex = hmac_lib.new(secret, raw_body, hashlib.sha256).hexdigest()
     expected = f"sha256={expected_hex}"
     return hmac_lib.compare_digest(expected, signature_header)
