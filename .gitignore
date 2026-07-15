@@ -19,3 +19,9 @@ dist/
 .env.production
 frontend/.env
 backend/.env
+
+# Dossier mémoire/audit (pas du code applicatif)
+02_Depannage_Express/
+
+# Doc de comptes de démo — régénérée à chaque seed_soutenance
+COMPTE.md
