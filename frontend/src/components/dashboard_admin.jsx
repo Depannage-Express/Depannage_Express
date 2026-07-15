@@ -17,8 +17,28 @@ import { fetchAdminStats, fetchAdminIncidentStats } from '../lib/api';
 
 const POLL_INTERVAL_MS = 4_000;
 
+// Sous-pages admin reflétées dans l'URL, pour que le rechargement et le
+// bouton retour du navigateur ramènent sur la bonne section.
+// Namespace distinct de '/administrateur' (page de connexion, gérée par App.jsx)
+// pour éviter toute collision de route avec le tableau de bord une fois connecté.
+const VIEW_TO_PATH = {
+  menu:         '/administrateur/tableau-de-bord',
+  utilisateurs: '/administrateur/utilisateurs',
+  interve:      '/administrateur/interventions',
+  abonnements:  '/administrateur/abonnements',
+  paieadmin:    '/administrateur/paiements',
+  signal:       '/administrateur/signalements',
+  avis:         '/administrateur/avis',
+  messages:     '/administrateur/messages',
+  retraits:     '/administrateur/retraits',
+};
+const PATH_TO_VIEW = Object.fromEntries(
+  Object.entries(VIEW_TO_PATH).map(([v, p]) => [p, v])
+);
+const viewFromPath = () => PATH_TO_VIEW[window.location.pathname] || 'menu';
+
 const DashboardAdmin = ({ onLogout }) => {
-  const [view, setView] = useState('menu');
+  const [view, setView] = useState(viewFromPath);
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,17 +46,41 @@ const DashboardAdmin = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const intervalRef = useRef(null);
   const clockRef = useRef(null);
-  const viewRef = useRef('menu');
+  const viewRef = useRef(view);
 
   useEffect(() => {
     clockRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(clockRef.current);
   }, []);
 
+  // Au montage (typiquement juste après la connexion), remplace l'entrée
+  // d'historique de la page de connexion par celle de la vue courante —
+  // sinon "retour" ramène sur l'écran de connexion malgré la session active.
+  useEffect(() => {
+    const path = VIEW_TO_PATH[viewRef.current] || VIEW_TO_PATH.menu;
+    if (window.location.pathname !== path) {
+      window.history.replaceState({ adminView: viewRef.current }, '', path);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const restored = viewFromPath();
+      viewRef.current = restored;
+      setView(restored);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const setViewSafe = (v) => {
     viewRef.current = v;
     setView(v);
     setSidebarOpen(false);
+    const path = VIEW_TO_PATH[v] || VIEW_TO_PATH.menu;
+    if (window.location.pathname !== path) {
+      window.history.pushState({ adminView: v }, '', path);
+    }
   };
 
   const loadDashboard = async ({ silent = false } = {}) => {
