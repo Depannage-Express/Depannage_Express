@@ -319,6 +319,149 @@ MECHANICS_DATA = [
         'specialties': ['Antivol / Démarrage électronique', 'Problème de démarrage'],
         'bio': 'Diagnostic antidémarrage et systèmes de démarrage électronique.',
     },
+    # 20 — Borgou, standard
+    {
+        'email': 'raphael.orou@depannage.bj',
+        'first_name': 'Raphaël', 'last_name': 'Orou',
+        'phone': '+22997100021',
+        'lat': Decimal('9.3450'), 'lng': Decimal('2.6150'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Titirou',
+        'status': 'approved', 'is_premium': False, 'years_experience': 9,
+        'specialties': ['Freins', 'Suspension / Amortisseurs'],
+        'bio': 'Spécialiste freinage et suspension, zone Parakou.',
+    },
+    # 21 — Borgou, standard
+    {
+        'email': 'chantal.gansou@depannage.bj',
+        'first_name': 'Chantal', 'last_name': 'Gansou',
+        'phone': '+22997100022',
+        'lat': Decimal('9.3300'), 'lng': Decimal('2.6350'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Zongo',
+        'status': 'approved', 'is_premium': False, 'years_experience': 5,
+        'specialties': ['Vidange / Entretien courant', 'Crevaison / Pneus'],
+        'bio': 'Entretien courant et crevaisons, intervention rapide à Parakou.',
+    },
+    # 22 — Borgou, standard
+    {
+        'email': 'sidi.baba@depannage.bj',
+        'first_name': 'Sidi', 'last_name': 'Baba',
+        'phone': '+22997100023',
+        'lat': Decimal('10.2280'), 'lng': Decimal('2.6659'),
+        'city': 'Bembéréké', 'dept': 'Borgou', 'neighborhood': 'Bembéréké Centre',
+        'status': 'approved', 'is_premium': False, 'years_experience': 6,
+        'specialties': ['Dépannage général', 'Panne moteur'],
+        'bio': 'Mécanicien polyvalent, région nord du Borgou.',
+    },
+    # 23 — Borgou, standard
+    {
+        'email': 'yarou.gomina@depannage.bj',
+        'first_name': 'Yarou', 'last_name': 'Gomina',
+        'phone': '+22997100024',
+        'lat': Decimal('9.9401'), 'lng': Decimal('3.2107'),
+        'city': 'Nikki', 'dept': 'Borgou', 'neighborhood': 'Nikki Centre',
+        'status': 'approved', 'is_premium': False, 'years_experience': 11,
+        'specialties': ['Panne électrique', 'Diagnostic électronique'],
+        'bio': 'Expert diagnostic électronique, secteur Nikki.',
+    },
+    # 24 — Borgou, standard
+    {
+        'email': 'boukari.wabi@depannage.bj',
+        'first_name': 'Boukari', 'last_name': 'Wabi',
+        'phone': '+22997100025',
+        'lat': Decimal('8.8865'), 'lng': Decimal('2.5975'),
+        'city': 'Tchaourou', 'dept': 'Borgou', 'neighborhood': 'Tchaourou Centre',
+        'status': 'approved', 'is_premium': False, 'years_experience': 3,
+        'specialties': ['Remorquage', 'Crevaison / Pneus'],
+        'bio': 'Service de remorquage et crevaisons, secteur Tchaourou.',
+    },
+    # 25 — Borgou (Parakou), standard
+    {
+        'email': 'aristide.baparape@depannage.bj',
+        'first_name': 'Aristide', 'last_name': 'Baparapé',
+        'phone': '+22997100026',
+        'lat': Decimal('9.3410'), 'lng': Decimal('2.6220'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Banikanni',
+        'status': 'approved', 'is_premium': False, 'years_experience': 4,
+        'specialties': ['Panne moteur', 'Vidange / Entretien courant'],
+        'bio': 'Entretien courant et petites réparations, secteur Banikanni.',
+    },
+    # 26 — Borgou (Parakou), standard
+    {
+        'email': 'rafiatou.seidou@depannage.bj',
+        'first_name': 'Rafiatou', 'last_name': 'Séïdou',
+        'phone': '+22997100027',
+        'lat': Decimal('9.3320'), 'lng': Decimal('2.6280'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Guèma',
+        'status': 'approved', 'is_premium': False, 'years_experience': 6,
+        'specialties': ['Crevaison / Pneus', 'Freins'],
+        'bio': 'Intervention rapide crevaisons et freinage, secteur Guèma.',
+    },
+    # 27 — Borgou (Parakou), standard
+    {
+        'email': 'georges.imorou@depannage.bj',
+        'first_name': 'Georges', 'last_name': 'Imorou',
+        'phone': '+22997100028',
+        'lat': Decimal('9.3480'), 'lng': Decimal('2.6300'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Ganou',
+        'status': 'approved', 'is_premium': False, 'years_experience': 7,
+        'specialties': ['Dépannage général', 'Problème de démarrage'],
+        'bio': 'Dépannage général, disponible 7j/7, secteur Ganou.',
+    },
+    # 28 — Borgou (Parakou), standard
+    {
+        'email': 'salamatou.orou@depannage.bj',
+        'first_name': 'Salamatou', 'last_name': 'Orou Guiwa',
+        'phone': '+22997100029',
+        'lat': Decimal('9.3390'), 'lng': Decimal('2.6180'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Nima',
+        'status': 'approved', 'is_premium': False, 'years_experience': 5,
+        'specialties': ['Panne électrique', 'Éclairage / Phares'],
+        'bio': 'Électricité auto et éclairage, secteur Nima.',
+    },
+    # 29 — Borgou (Parakou), standard
+    {
+        'email': 'francis.dah@depannage.bj',
+        'first_name': 'Francis', 'last_name': 'Dah',
+        'phone': '+22997100030',
+        'lat': Decimal('9.3520'), 'lng': Decimal('2.6250'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Wô-Guéra',
+        'status': 'approved', 'is_premium': False, 'years_experience': 8,
+        'specialties': ['Transmission / Boîte de vitesses', 'Suspension / Amortisseurs'],
+        'bio': 'Transmission et suspension, secteur Wô-Guéra.',
+    },
+    # 30 — Borgou (Parakou), standard
+    {
+        'email': 'inoussa.karimou@depannage.bj',
+        'first_name': 'Inoussa', 'last_name': 'Karimou',
+        'phone': '+22997100031',
+        'lat': Decimal('9.3280'), 'lng': Decimal('2.6400'),
+        'city': 'Parakou', 'dept': 'Borgou', 'neighborhood': 'Camp Adagbè',
+        'status': 'approved', 'is_premium': False, 'years_experience': 3,
+        'specialties': ['Climatisation', 'Vidange / Entretien courant'],
+        'bio': 'Climatisation et entretien, secteur Camp Adagbè.',
+    },
+    # 31 — Borgou (alentours - N'Dali), standard
+    {
+        'email': 'zakari.orou@depannage.bj',
+        'first_name': 'Zakari', 'last_name': 'Orou Sè',
+        'phone': '+22997100032',
+        'lat': Decimal('9.8500'), 'lng': Decimal('2.6980'),
+        'city': "N'Dali", 'dept': 'Borgou', 'neighborhood': "N'Dali Centre",
+        'status': 'approved', 'is_premium': False, 'years_experience': 5,
+        'specialties': ['Dépannage général', 'Remorquage'],
+        'bio': 'Dépannage et remorquage, secteur N\'Dali.',
+    },
+    # 32 — Borgou (alentours - Sinendé), standard
+    {
+        'email': 'mama.gnonlonfoun@depannage.bj',
+        'first_name': 'Mama', 'last_name': 'Gnonlonfoun',
+        'phone': '+22997100033',
+        'lat': Decimal('10.2989'), 'lng': Decimal('2.3639'),
+        'city': 'Sinendé', 'dept': 'Borgou', 'neighborhood': 'Sinendé Centre',
+        'status': 'approved', 'is_premium': False, 'years_experience': 4,
+        'specialties': ['Panne moteur', 'Injection / Carburateur'],
+        'bio': 'Réglage moteur et injection, secteur Sinendé.',
+    },
 ]
 
 # ── CONDUCTEURS (21) ──────────────────────────────────────────────────────────

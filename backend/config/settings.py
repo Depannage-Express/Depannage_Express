@@ -275,6 +275,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 MAX_MECHANIC_SEARCH_RADIUS_KM = 50
 DEFAULT_SEARCH_RADIUS_KM = 10
 
+# Dernier recours de find_nearest_mechanic quand aucun mécanicien de la spécialité
+# n'est disponible dans MAX_MECHANIC_SEARCH_RADIUS_KM : on élargit jusqu'à ce plafond
+# plutôt que de chercher sur tout le territoire sans limite de distance.
+ABSOLUTE_MAX_MECHANIC_SEARCH_RADIUS_KM = 150
+
 # ─────────────────────────────────────────
 # SMS / OTP
 # ─────────────────────────────────────────

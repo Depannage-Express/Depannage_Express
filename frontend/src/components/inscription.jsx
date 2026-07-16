@@ -97,7 +97,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
                 <label className={labelClass}>Nom</label>
                 <input
                   type="text"
-                  placeholder="Dupont"
+                  placeholder="Zinsou"
                   name="last_name"
                   value={form.last_name}
                   onChange={handleChange}
@@ -108,7 +108,7 @@ const Inscription = ({ onInfo, onSignUpClick, onRegisterSuccess }) => {
                 <label className={labelClass}>Prénom</label>
                 <input
                   type="text"
-                  placeholder="Jean"
+                  placeholder="Kodjo"
                   name="first_name"
                   value={form.first_name}
                   onChange={handleChange}

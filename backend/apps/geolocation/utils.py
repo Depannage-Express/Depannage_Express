@@ -71,27 +71,34 @@ def _same_day_zone_premium_mechanic_ids(latitude, longitude, zone_radius_km):
     )
 
 
-def _any_available_mechanic(specialty_id, exclude_ids):
-    """Fallback sans contrainte de distance : n'importe quel mécanicien approuvé disponible."""
+def _any_available_mechanic(specialty_id, exclude_ids, latitude, longitude, max_km):
+    """Dernier recours : n'importe quel mécanicien approuvé disponible ayant la
+    spécialité demandée, mais toujours plafonné à max_km — au-delà, mieux vaut
+    laisser la demande en attente que d'assigner quelqu'un à des centaines de km."""
     from apps.mechanics.models import MechanicProfile
-    from django.db.models import Case, When, Value, IntegerField
     qs = MechanicProfile.objects.filter(
         status='approved',
         is_available=True,
+        latitude__isnull=False,
+        longitude__isnull=False,
     ).select_related('user')
     if specialty_id:
         qs = qs.filter(specialties__id=specialty_id)
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)
-    # Premium en premier (user__role='mechanic_premium'), puis par date d'inscription
-    qs = qs.annotate(
-        premium_order=Case(
-            When(user__role='mechanic_premium', then=Value(0)),
-            default=Value(1),
-            output_field=IntegerField(),
-        )
-    ).order_by('premium_order', 'user__created_at')
-    return qs.first()
+
+    candidates = []
+    for profile in qs:
+        dist = haversine_distance(latitude, longitude, float(profile.latitude), float(profile.longitude))
+        if dist <= max_km:
+            candidates.append((dist, profile))
+
+    if not candidates:
+        return None, None
+
+    candidates.sort(key=lambda x: (0 if x[1].user.is_premium else 1, x[0]))
+    dist, profile = candidates[0]
+    return profile, round(dist, 2)
 
 
 def find_nearest_mechanic(
@@ -146,15 +153,10 @@ def find_nearest_mechanic(
             distance, mechanic = candidates[0]
             return mechanic, round(distance, 2)
 
-    # 3e essai : sans contrainte de distance (toute la plateforme)
-    mechanic = _any_available_mechanic(specialty_id, exclude_ids)
+    # 5e essai : dernier recours, plafonné à ABSOLUTE_MAX_MECHANIC_SEARCH_RADIUS_KM
+    absolute_max = getattr(settings, 'ABSOLUTE_MAX_MECHANIC_SEARCH_RADIUS_KM', max_radius)
+    mechanic, dist = _any_available_mechanic(specialty_id, exclude_ids, latitude, longitude, absolute_max)
     if mechanic:
-        dist = None
-        if mechanic.latitude and mechanic.longitude:
-            dist = round(haversine_distance(
-                latitude, longitude,
-                float(mechanic.latitude), float(mechanic.longitude)
-            ), 2)
         return mechanic, dist
 
     return None, None
