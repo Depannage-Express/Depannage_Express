@@ -136,7 +136,7 @@ const StatsAndTechs = ({ onContact, onVoir }) => {
               Aucun mécanicien premium disponible pour le moment
             </div>
           ) : (
-            technicians.slice(0, 6).map((tech, index) => (
+            technicians.map((tech, index) => (
               <MechanicCard
                 key={tech.id}
                 tech={tech}
