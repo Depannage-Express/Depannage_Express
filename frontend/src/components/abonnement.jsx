@@ -4,6 +4,11 @@ import { createSubscriptionPayment, fetchCurrentUser, fetchPendingSubscriptionPa
 
 const PLAN_PRICE = '5 000 FCFA';
 const PAYMENT_METHODS = ['MTN Mobile Money', 'Moov Money'];
+// Numéros de test sandbox FedaPay (scénario succès) par opérateur
+const OPERATOR_TEST_NUMBERS = {
+  'MTN Mobile Money': '0166000001',
+  'Moov Money': '0164000001',
+};
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 40000;
 
@@ -18,8 +23,15 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState('0166000001');
+  const [payerPhone, setPayerPhone] = useState(OPERATOR_TEST_NUMBERS[PAYMENT_METHODS[0]]);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+
+  const handlePaymentMethodChange = (method) => {
+    setPaymentMethod(method);
+    if (OPERATOR_TEST_NUMBERS[method]) {
+      setPayerPhone(OPERATOR_TEST_NUMBERS[method]);
+    }
+  };
   // 'form' | 'resume' | 'waiting' | 'success' | 'timeout' — 'waiting' dès le retour de FedaPay (?subscription_return=1)
   const [step, setStep] = useState(() =>
     new URLSearchParams(window.location.search).get('subscription_return') === '1' ? 'waiting' : 'form'
@@ -36,7 +48,9 @@ const Abonnement = ({ onBack, currentUser }) => {
     if (isPremium || step !== 'form') return;
     fetchPendingSubscriptionPayment()
       .then((res) => {
-        if (res.pending && res.payment_url) {
+        if (res.confirmed) {
+          setStep('success');
+        } else if (res.pending && res.payment_url) {
           setResumeUrl(res.payment_url);
           setStep('resume');
         }
@@ -184,7 +198,7 @@ const Abonnement = ({ onBack, currentUser }) => {
                           <button
                             key={m}
                             type="button"
-                            onClick={() => setPaymentMethod(m)}
+                            onClick={() => handlePaymentMethodChange(m)}
                             className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${
                               paymentMethod === m
                                 ? 'bg-[#0D2B0D] text-white border-[#0D2B0D]'

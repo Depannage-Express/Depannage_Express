@@ -10,9 +10,22 @@ const OPERATORS = [
   { value: 'Carte Bancaire', label: 'Carte Bancaire' },
 ];
 
+// Numéros de test sandbox FedaPay (scénario succès) par opérateur
+const OPERATOR_TEST_NUMBERS = {
+  'MTN Mobile Money': '0166000001',
+  'Moov Money': '0164000001',
+};
+
 const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
   const [operator, setOperator] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('0164000001');
+  const [phoneNumber, setPhoneNumber] = useState('01');
+
+  const handleOperatorChange = (value) => {
+    setOperator(value);
+    if (OPERATOR_TEST_NUMBERS[value]) {
+      setPhoneNumber(OPERATOR_TEST_NUMBERS[value]);
+    }
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -166,7 +179,7 @@ const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
             <div style={{ position: 'relative' }}>
               <select
                 value={operator}
-                onChange={(e) => setOperator(e.target.value)}
+                onChange={(e) => handleOperatorChange(e.target.value)}
                 style={{
                   width: '100%',
                   background: '#f8f9fa',

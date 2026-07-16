@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
-from .fedapay_client import create_transaction, fetch_payment_url, verify_webhook_signature
+from .fedapay_client import create_transaction, fetch_payment_url, get_transaction, verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
 from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer, PaymentAdminSerializer
 
@@ -418,6 +418,35 @@ def pending_subscription_payment(request):
     stale_before = timezone.now() - timedelta(minutes=STALE_PAYMENT_MINUTES)
     if payment.created_at < stale_before:
         payment.status = 'cancelled'
+        payment.save(update_fields=['status'])
+        return Response({'pending': False})
+
+    # Le statut local ('authorized') ne reflète que ce que notre webhook a reçu.
+    # On vérifie l'état réel côté FedaPay avant de proposer une reprise : une
+    # transaction déjà déclinée/annulée là-bas ne peut pas être relancée via
+    # /token (ça mène à un blocage sur sandbox-process.fedapay.com).
+    try:
+        remote = get_transaction(payment.provider_reference)
+    except Exception as exc:
+        print('FedaPay get_transaction a échoué (pending_subscription_payment):', repr(exc))
+        return Response({'pending': False})
+
+    remote_status = remote.get('status')
+
+    if remote_status in ('approved', 'transferred'):
+        # Payée côté FedaPay mais le webhook n'est jamais arrivé : on rattrape
+        # immédiatement au lieu de proposer une reprise inutile.
+        with db_transaction.atomic():
+            payment.status = 'paid'
+            payment.paid_at = timezone.now()
+            payment.save(update_fields=['status', 'paid_at'])
+            request.user.role = 'mechanic_premium'
+            request.user.save(update_fields=['role'])
+        return Response({'pending': False, 'confirmed': True})
+
+    if remote_status != 'pending':
+        # Déclinée ou annulée côté FedaPay : plus rien à reprendre.
+        payment.status = 'failed' if remote_status == 'declined' else 'cancelled'
         payment.save(update_fields=['status'])
         return Response({'pending': False})
 

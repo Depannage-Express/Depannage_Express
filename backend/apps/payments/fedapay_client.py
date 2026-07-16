@@ -77,6 +77,22 @@ def create_transaction(
     }
 
 
+def get_transaction(transaction_id):
+    """
+    État réel d'une transaction côté FedaPay — source de vérité à consulter avant
+    de proposer une reprise de checkout (une transaction déjà déclinée/annulée
+    côté FedaPay ne peut pas être « relancée » via /token, ça mène à un blocage
+    sur sandbox-process.fedapay.com) ou pour rattraper un webhook jamais reçu.
+    """
+    env = getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
+    base = 'https://api.fedapay.com/v1' if env == 'live' else 'https://sandbox-api.fedapay.com/v1'
+    headers = {'Authorization': f'Bearer {settings.FEDAPAY_SECRET_KEY}'}
+    resp = requests.get(f'{base}/transactions/{transaction_id}', headers=headers, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    return data.get('v1/transaction') or data.get('transaction') or data
+
+
 def fetch_payment_url(transaction_id, env=None):
     """
     Redemande à FedaPay un lien de checkout valide pour une transaction déjà créée.
