@@ -6,11 +6,12 @@ Au moins 20 entrées par table métier.
 Usage:
     python manage.py seed_soutenance
 """
+from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
-from datetime import timedelta
 import math
 import random
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -30,13 +31,34 @@ ADMIN_PASSWORD = 'Admin@2024!'
 DRIVER_PASSWORD = 'Driver@2024!'
 MECHANIC_PASSWORD = 'Mechanic@2024!'
 
+# Fenêtre de dates des données de démo : 10/06/2026 → 16/07/2026 (36 jours).
+# Ancrée sur une date fixe (pas timezone.now()) pour que les données restent
+# cohérentes quelle que soit l'heure réelle à laquelle le script est lancé —
+# sinon tout se retrouve collé à l'heure d'exécution (souvent la nuit).
+SEED_TODAY = timezone.make_aware(datetime(2026, 7, 16, 12, 0))
+SEED_WINDOW_DAYS = 36
+_OLD_MAX_DAYS_AGO = 58  # échelle d'origine des BREAKDOWNS_DATA, pour reproportionner
 
-def _rdate(jours_max=60):
-    return timezone.now() - timedelta(
-        days=random.randint(0, jours_max),
-        hours=random.randint(0, 23),
-        minutes=random.randint(0, 59),
-    )
+
+def _scale_days_ago(days_ago):
+    """Reproportionne un days_ago pensé sur 0-58 jours vers la fenêtre 0-36 jours."""
+    return round(days_ago * SEED_WINDOW_DAYS / _OLD_MAX_DAYS_AGO)
+
+
+def _daytime_hour():
+    """Heure réaliste : très majoritairement le jour, la nuit reste rare."""
+    if random.random() < 0.88:
+        return random.randint(7, 20)
+    return random.choice([21, 22, 23, 0, 1, 2, 3, 4, 5, 6])
+
+
+def _seeded_datetime(days_ago, hour=None, minute=None):
+    """Date/heure dans la fenêtre SEED_TODAY - SEED_WINDOW_DAYS, indépendante
+    de l'heure réelle d'exécution du script."""
+    days_ago = max(0, min(days_ago, SEED_WINDOW_DAYS))
+    h = hour if hour is not None else _daytime_hour()
+    m = minute if minute is not None else random.randint(0, 59)
+    return (SEED_TODAY - timedelta(days=days_ago)).replace(hour=h, minute=m, second=random.randint(0, 59))
 
 
 def _haversine(lat1, lon1, lat2, lon2):
@@ -51,7 +73,7 @@ def _haversine(lat1, lon1, lat2, lon2):
     return round(R * 2 * math.asin(math.sqrt(a)), 2)
 
 
-# ── SPÉCIALITÉS (15) ──────────────────────────────────────────────────────────
+# ── SPÉCIALITÉS (20) ──────────────────────────────────────────────────────────
 SPECIALTIES_DATA = [
     {'name': 'Panne moteur',                    'description': 'Diagnostic et réparation des pannes moteur',           'icon': 'engine'},
     {'name': 'Crevaison / Pneus',               'description': 'Changement et réparation de pneus crevés',             'icon': 'tire'},
@@ -68,9 +90,14 @@ SPECIALTIES_DATA = [
     {'name': 'Système de refroidissement',      'description': 'Radiateur, thermostat et circuit de refroidissement',  'icon': 'thermometer'},
     {'name': 'Direction assistée',              'description': 'Réparation direction hydraulique et électrique',       'icon': 'steering'},
     {'name': 'Diagnostic électronique',         'description': 'Lecture codes erreurs et diagnostic OBD',              'icon': 'cpu'},
+    {'name': 'Vidange / Entretien courant',     'description': 'Vidange, filtres et entretien périodique',             'icon': 'oil'},
+    {'name': 'Éclairage / Phares',              'description': 'Réparation phares, feux et signalisation',             'icon': 'lightbulb'},
+    {'name': 'Échappement',                     'description': "Réparation et remplacement du système d'échappement",  'icon': 'wind-arrow'},
+    {'name': 'Injection / Carburateur',         'description': "Nettoyage et réglage du système d'injection",          'icon': 'droplet'},
+    {'name': 'Antivol / Démarrage électronique','description': 'Diagnostic antidémarrage et systèmes antivol',         'icon': 'lock'},
 ]
 
-# ── MÉCANICIENS (15) ──────────────────────────────────────────────────────────
+# ── MÉCANICIENS (20) ──────────────────────────────────────────────────────────
 MECHANICS_DATA = [
     # 0 — premium
     {
@@ -123,7 +150,7 @@ MECHANICS_DATA = [
         'phone': '+22997100005',
         'lat': Decimal('7.1671'), 'lng': Decimal('2.0854'),
         'city': 'Lokossa', 'dept': 'Mono', 'neighborhood': 'Lokossa Centre',
-        'status': 'approved', 'is_premium': False, 'years_experience': 10,
+        'status': 'approved', 'is_premium': True, 'years_experience': 10,
         'specialties': ['Transmission / Boîte de vitesses', 'Suspension / Amortisseurs'],
         'bio': 'Expert transmission et boîte de vitesses.',
     },
@@ -178,7 +205,7 @@ MECHANICS_DATA = [
         'phone': '+22997100010',
         'lat': Decimal('6.3700'), 'lng': Decimal('2.3900'),
         'city': 'Cotonou', 'dept': 'Littoral', 'neighborhood': 'Gbégamey',
-        'status': 'approved', 'is_premium': False, 'years_experience': 3,
+        'status': 'approved', 'is_premium': True, 'years_experience': 3,
         'specialties': ['Carrosserie', 'Dépannage général'],
         'bio': 'Spécialiste carrosserie et tôlerie.',
     },
@@ -200,7 +227,7 @@ MECHANICS_DATA = [
         'phone': '+22997100012',
         'lat': Decimal('6.4700'), 'lng': Decimal('2.6100'),
         'city': 'Abomey-Calavi', 'dept': 'Atlantique', 'neighborhood': 'Akassato',
-        'status': 'approved', 'is_premium': False, 'years_experience': 6,
+        'status': 'approved', 'is_premium': True, 'years_experience': 6,
         'specialties': ['Panne électrique', 'Problème de démarrage'],
         'bio': 'Électricien auto certifié.',
     },
@@ -237,9 +264,64 @@ MECHANICS_DATA = [
         'specialties': [],
         'bio': 'Profil refusé — documents non conformes.',
     },
+    # 15 — standard
+    {
+        'email': 'emile.houenassou@depannage.bj',
+        'first_name': 'Émile', 'last_name': 'Houénassou',
+        'phone': '+22997100016',
+        'lat': Decimal('6.4966'), 'lng': Decimal('2.6289'),
+        'city': 'Porto-Novo', 'dept': 'Ouémé', 'neighborhood': 'Ouando',
+        'status': 'approved', 'is_premium': False, 'years_experience': 9,
+        'specialties': ['Vidange / Entretien courant', 'Freins'],
+        'bio': 'Entretien courant et vidange, intervention à domicile.',
+    },
+    # 16 — standard
+    {
+        'email': 'bernadette.ainamon@depannage.bj',
+        'first_name': 'Bernadette', 'last_name': 'Aïnamon',
+        'phone': '+22997100017',
+        'lat': Decimal('6.3583'), 'lng': Decimal('2.0855'),
+        'city': 'Ouidah', 'dept': 'Atlantique', 'neighborhood': 'Ouidah Centre',
+        'status': 'approved', 'is_premium': False, 'years_experience': 7,
+        'specialties': ['Éclairage / Phares', 'Panne électrique'],
+        'bio': 'Spécialiste éclairage automobile et circuits électriques.',
+    },
+    # 17 — premium
+    {
+        'email': 'constant.zinsou@depannage.bj',
+        'first_name': 'Constant', 'last_name': 'Zinsou',
+        'phone': '+22997100018',
+        'lat': Decimal('10.3003'), 'lng': Decimal('1.3878'),
+        'city': 'Natitingou', 'dept': 'Atacora', 'neighborhood': 'Natitingou Centre',
+        'status': 'approved', 'is_premium': True, 'years_experience': 13,
+        'specialties': ['Échappement', 'Diagnostic électronique'],
+        'bio': "Expert échappement et diagnostic électronique, région Atacora.",
+    },
+    # 18 — standard
+    {
+        'email': 'solange.keke@depannage.bj',
+        'first_name': 'Solange', 'last_name': 'Kèkè',
+        'phone': '+22997100019',
+        'lat': Decimal('7.9339'), 'lng': Decimal('1.9761'),
+        'city': 'Savalou', 'dept': 'Collines', 'neighborhood': 'Savalou Centre',
+        'status': 'approved', 'is_premium': True, 'years_experience': 6,
+        'specialties': ['Injection / Carburateur', 'Panne moteur'],
+        'bio': "Nettoyage injection et réglage carburateur, toutes marques.",
+    },
+    # 19 — standard
+    {
+        'email': 'damien.houngbedji@depannage.bj',
+        'first_name': 'Damien', 'last_name': 'Houngbédji',
+        'phone': '+22997100020',
+        'lat': Decimal('7.7581'), 'lng': Decimal('2.1834'),
+        'city': 'Dassa-Zoumè', 'dept': 'Collines', 'neighborhood': 'Dassa Centre',
+        'status': 'approved', 'is_premium': True, 'years_experience': 4,
+        'specialties': ['Antivol / Démarrage électronique', 'Problème de démarrage'],
+        'bio': 'Diagnostic antidémarrage et systèmes de démarrage électronique.',
+    },
 ]
 
-# ── CONDUCTEURS (19) ──────────────────────────────────────────────────────────
+# ── CONDUCTEURS (21) ──────────────────────────────────────────────────────────
 # (first_name, last_name, email, phone)
 DRIVERS_DATA = [
     ('Jean-Baptiste', 'Agossa',    'jb.agossa@gmail.com',      '+22961100001'),
@@ -261,6 +343,8 @@ DRIVERS_DATA = [
     ('Narcisse',      'Agoli',      'narcisse.a@gmail.com',      '+22961100017'),
     ('Patience',      'Houndji',    'patience.h@gmail.com',      '+22961100018'),
     ('Léonce',        'Gbaguidi',   'leonce.g@gmail.com',        '+22961100019'),
+    ('Odile',         'Kindji',     'odile.k@gmail.com',         '+22961100020'),
+    ('Isidore',       'Ahouanvoedo','isidore.a@gmail.com',       '+22961100021'),
 ]
 
 # GPS coords indexed by city name
@@ -277,17 +361,25 @@ GPS = {
     'Abomey':        (Decimal('7.1870'), Decimal('1.9916')),
 }
 
-# Montants par type de panne
-COSTS = {
-    'moteur':        Decimal('18000'),
-    'electrique':    Decimal('12000'),
-    'pneu':          Decimal('8000'),
-    'carburant':     Decimal('10000'),
-    'demarrage':     Decimal('10000'),
-    'general':       Decimal('15000'),
-    'climatisation': Decimal('20000'),
-    'freins':        Decimal('14000'),
+# Montants par type de panne — (agglomération, hors agglomération).
+# Une intervention hors agglomération coûte plus cher (déplacement) ; le prix
+# varie aussi selon la gravité de la panne. Toujours dans la fourchette
+# réaliste 30 000 - 300 000 XOF.
+COST_TABLE = {
+    'pneu':          (Decimal('30000'),  Decimal('48000')),
+    'carburant':     (Decimal('33000'),  Decimal('50000')),
+    'demarrage':     (Decimal('32000'),  Decimal('52000')),
+    'general':       (Decimal('45000'),  Decimal('75000')),
+    'freins':        (Decimal('55000'),  Decimal('85000')),
+    'electrique':    (Decimal('65000'),  Decimal('100000')),
+    'climatisation': (Decimal('95000'),  Decimal('140000')),
+    'moteur':        (Decimal('160000'), Decimal('280000')),
 }
+
+
+def _cost_for(bd_type, is_agglomeration):
+    agglo_cost, hors_cost = COST_TABLE[bd_type]
+    return agglo_cost if is_agglomeration else hors_cost
 
 # ── DEMANDES (25) ─────────────────────────────────────────────────────────────
 # (driver_idx, bd_type, prompt_status, meca_idx|None, city, address, vehicle, days_ago)
@@ -420,15 +512,32 @@ MESSAGES_DATA = [
     ]),
 ]
 
-# ── MESSAGES mécanicien → admin (5) ──────────────────────────────────────────
+# ── MESSAGES mécanicien → admin (20) ─────────────────────────────────────────
 # Mécanisme réel : mécanicien écrit à l'admin via mechanics_admin_message.
 # (meca_idx, sender_type, content)
 MECH_ADMIN_MESSAGES_DATA = [
-    (0, 'mechanic', "Bonjour, je voudrais signaler un problème avec mon compte MoMo."),
-    (1, 'mechanic', "Je n'arrive pas à modifier ma disponibilité dans l'application."),
-    (2, 'mechanic', "Pouvez-vous valider mon profil premium s'il vous plaît ?"),
-    (3, 'mechanic', "J'ai un souci avec une intervention marquée non terminée."),
-    (5, 'mechanic', "Question concernant mes retraits : le dernier n'a pas été traité."),
+    (0,  'mechanic', "Bonjour, je voudrais signaler un problème avec mon compte MoMo."),
+    (0,  'admin',    "Bonjour, pouvez-vous nous indiquer le nouveau numéro à enregistrer ?"),
+    (1,  'mechanic', "Je n'arrive pas à modifier ma disponibilité dans l'application."),
+    (1,  'admin',    "Le souci est résolu, merci de réessayer et de nous confirmer."),
+    (2,  'mechanic', "Pouvez-vous valider mon profil premium s'il vous plaît ?"),
+    (3,  'mechanic', "J'ai un souci avec une intervention marquée non terminée."),
+    (3,  'admin',    "Nous vérifions le dossier et revenons vers vous sous 24h."),
+    (5,  'mechanic', "Question concernant mes retraits : le dernier n'a pas été traité."),
+    (5,  'admin',    "Votre retrait a été validé, le virement MoMo est en cours."),
+    (6,  'mechanic', "Un client conteste le prix final de l'intervention, que dois-je faire ?"),
+    (7,  'mechanic', "Je souhaite mettre à jour mes spécialités sur mon profil."),
+    (7,  'admin',    "Vous pouvez le faire depuis 'Mon compte', section spécialités."),
+    (8,  'mechanic', "Ma zone de couverture a changé, je suis maintenant basé à Parakou centre."),
+    (9,  'mechanic', "Un avis reçu me semble injustifié, pouvez-vous le vérifier ?"),
+    (10, 'mechanic', "Je n'ai pas reçu de notification pour la dernière demande assignée."),
+    (10, 'admin',    "Nous avons identifié le bug de notification, correctif en cours."),
+    (11, 'mechanic', "Puis-je suspendre temporairement mon compte pour congé ?"),
+    (11, 'admin',    "Oui, utilisez le bouton 'Indisponible' dans votre profil."),
+    (15, 'mechanic', "Bonjour, mon document de certification n'a pas pu être téléversé."),
+    (16, 'mechanic', "Je confirme la réception du paiement de la dernière intervention."),
+    (18, 'mechanic', "Pouvez-vous m'indiquer pourquoi mon compte est encore en standard ?"),
+    (19, 'mechanic', "J'aimerais des informations sur le passage au statut premium."),
 ]
 
 # ── AVIS (20) ─────────────────────────────────────────────────────────────────
@@ -528,34 +637,84 @@ INCIDENTS_DATA = [
      'Fausse pièce présentée comme neuve lors du remplacement.'),
 ]
 
-# ── DEMANDES PREMIUM (10) ─────────────────────────────────────────────────────
+# ── DEMANDES PREMIUM (20) ─────────────────────────────────────────────────────
 # (meca_idx [non-premium approuvé], requester_name, requester_phone, reason, status)
 PREMIUM_CONTACTS_DATA = [
     (2,  'Kofi Alabi',        '+22996200001', 'J\'ai besoin d\'un spécialiste pneus pour ma flotte de taxis.',    'pending'),
     (3,  'Akossiwa Sossa',    '+22996200002', 'Problème récurrent sur ma Dacia, je cherche un expert.',           'approved'),
-    (4,  'Mensah Kplante',    '+22996200003', 'Besoin de dépannage régulier pour camion de livraison.',           'approved'),
+    (2,  'Mensah Kplante',    '+22996200003', 'Besoin de dépannage régulier pour camion de livraison.',           'approved'),
     (6,  'Dossou Agbavon',    '+22996200004', 'Panne carburant fréquente, besoin de diagnostic complet.',         'pending'),
     (7,  'Houssou Gbesson',   '+22996200005', 'Direction assistée défaillante sur mon véhicule de fonction.',     'approved'),
-    (9,  'Dada Tchibozo',     '+22996200006', 'Carrosserie endommagée après accident mineur, devis urgent.',      'rejected'),
+    (16, 'Dada Tchibozo',     '+22996200006', 'Carrosserie endommagée après accident mineur, devis urgent.',      'rejected'),
     (10, 'Gbessemehlan Aho',  '+22996200007', 'Service de remorquage pour mon garage, contact professionnel.',    'pending'),
-    (11, 'Chabi Oyedele',     '+22996200008', 'Problème électrique récurrent sur Toyota Corolla 2018.',           'approved'),
+    (6, 'Chabi Oyedele',     '+22996200008', 'Problème électrique récurrent sur Toyota Corolla 2018.',           'approved'),
     (2,  'Adjovi Kpossou',    '+22996200009', 'Crevaison fréquente, besoin d\'un spécialiste de confiance.',      'pending'),
     (3,  'Gnansounou Boko',   '+22996200010', 'Frein à main défectueux, intervention urgente souhaitée.',         'rejected'),
+    (15, 'Rachidi Boukari',   '+22996200011', 'Besoin de vidange régulière pour véhicule de société.',            'approved'),
+    (16, 'Espérance Dovonou', '+22996200012', 'Phares défectueux, contrôle technique dans 3 jours.',              'pending'),
+    (7, 'Yacoubou Sanni',    '+22996200013', 'Bruit suspect au niveau du carburateur, diagnostic souhaité.',     'approved'),
+    (10, 'Célestine Hessou',  '+22996200014', 'Voiture qui ne démarre plus, suspicion antivol défectueux.',       'pending'),
+    (6,  'Basile Kougblenou', '+22996200015', 'Recherche mécanicien de confiance pour flotte de motos-taxis.',    'approved'),
+    (7,  'Aurélie Zannou',    '+22996200016', 'Direction qui tire à droite, besoin d\'un avis rapide.',           'rejected'),
+    (15,  'Innocent Dagba',    '+22996200017', 'Carrosserie à réparer suite à un accrochage léger.',               'pending'),
+    (10, 'Marlène Gansou',    '+22996200018', 'Contrat d\'entretien annuel pour véhicule de fonction.',           'approved'),
+    (15, 'Théophile Aholou',  '+22996200019', 'Odeur de brûlé au niveau du moteur, urgence.',                     'pending'),
+    (16, 'Colette Sagbo',     '+22996200020', 'Panne électrique intermittente, plusieurs pannes ce mois-ci.',     'approved'),
 ]
 
-# ── RETRAITS (10) ─────────────────────────────────────────────────────────────
+# ── ABONNEMENTS PREMIUM ───────────────────────────────────────────────────────
+# Le mécanicien paie la plateforme (pas de commission/mécanicien ici) pour
+# passer/rester premium. Certains ont renouvelé plusieurs mois de suite.
+# (meca_idx, montant mensuel, [mois d'ancienneté du paiement, le plus ancien en premier])
+PREMIUM_SUBSCRIPTIONS_DATA = [
+    (0,  Decimal('5350'),  [3, 2, 1]),        # Koffi Mensah — 3 renouvellements
+    (1,  Decimal('12000'), [2, 1]),           # Abdoulaye Idrissou — 2 renouvellements
+    (5,  Decimal('8000'),  [1]),              # Ibrahim Chabi
+    (8,  Decimal('25000'), [5, 4, 3, 2, 1]),  # Moussa Zakari — abonné de longue date
+    (17, Decimal('15000'), [1]),              # Constant Zinsou — nouveau premium
+]
+
+# ── RETRAITS (20) ─────────────────────────────────────────────────────────────
+# Le retrait déduit du solde (amount + frais WITHDRAWAL_FEE_RATE) ; le
+# mécanicien reçoit exactement `amount`. Le montant dépend de ce qu'il a
+# accumulé — modeste pour la plupart, nettement plus élevé pour les
+# mécaniciens premium/vétérans à fort volume.
 # (meca_idx, amount, status)
 WITHDRAWALS_DATA = [
-    (0,  Decimal('20000'), 'approved'),
-    (1,  Decimal('15000'), 'approved'),
-    (2,  Decimal('8000'),  'pending'),
-    (3,  Decimal('10000'), 'approved'),
-    (4,  Decimal('12000'), 'rejected'),
-    (5,  Decimal('15000'), 'approved'),
-    (6,  Decimal('5000'),  'pending'),
-    (7,  Decimal('10000'), 'approved'),
-    (8,  Decimal('20000'), 'approved'),
-    (9,  Decimal('8000'),  'pending'),
+    (2,  Decimal('8000'),   'pending'),
+    (3,  Decimal('10000'),  'approved'),
+    (4,  Decimal('12000'),  'rejected'),
+    (6,  Decimal('5000'),   'pending'),
+    (7,  Decimal('18000'),  'approved'),
+    (9,  Decimal('8000'),   'pending'),
+    (10, Decimal('22000'),  'approved'),
+    (11, Decimal('6000'),   'pending'),
+    (12, Decimal('2000'),   'pending'),
+    (13, Decimal('15000'),  'approved'),
+    (14, Decimal('4000'),   'rejected'),
+    (15, Decimal('14000'),  'approved'),
+    (16, Decimal('7000'),   'pending'),
+    (18, Decimal('11000'),  'approved'),
+    (19, Decimal('6500'),   'pending'),
+    (0,  Decimal('380000'),  'approved'),  # Koffi Mensah
+    (1,  Decimal('260000'),  'approved'),  # Abdoulaye Idrissou
+    (5,  Decimal('190000'),  'approved'),  # Ibrahim Chabi
+    (8,  Decimal('1850000'), 'approved'),  # Moussa Zakari — plus gros volume de la plateforme
+    (17, Decimal('950000'),  'approved'),  # Constant Zinsou
+]
+
+# ── SOLDES MÉCANICIENS ────────────────────────────────────────────────────────
+# Solde restant après les retraits ci-dessus (les rejetés sont remboursés,
+# donc sans effet net). 0 pour les profils pending/rejected (jamais payés).
+# (meca_idx, balance)
+BALANCES_DATA = [
+    (0,  Decimal('145000')), (1,  Decimal('98000')),  (2,  Decimal('22000')),
+    (3,  Decimal('35000')),  (4,  Decimal('18000')),  (5,  Decimal('67000')),
+    (6,  Decimal('12000')),  (7,  Decimal('41000')),  (8,  Decimal('620000')),
+    (9,  Decimal('15000')),  (10, Decimal('28000')),  (11, Decimal('19000')),
+    (12, Decimal('0')),      (13, Decimal('0')),      (14, Decimal('0')),
+    (15, Decimal('31000')),  (16, Decimal('24000')),  (17, Decimal('210000')),
+    (18, Decimal('17000')),  (19, Decimal('9000')),
 ]
 
 
@@ -572,6 +731,7 @@ class Command(BaseCommand):
         breakdowns  = self._create_breakdowns(mechanics, drivers, specialties)
         interventions, extra_refused = self._create_interventions(breakdowns, mechanics)
         self._create_payments(breakdowns, interventions, extra_refused)
+        self._create_premium_subscriptions(mechanics)
         self._create_reviews(mechanics, interventions)
         self._create_messages(breakdowns)
         self._create_mechanic_admin_messages(mechanics)
@@ -579,6 +739,7 @@ class Command(BaseCommand):
         self._create_incidents(interventions)
         self._create_premium_contacts(mechanics, drivers)
         self._create_withdrawals(mechanics, admin)
+        self._create_balances(mechanics)
         self._print_report()
 
     # ── SPÉCIALITÉS ──────────────────────────────────────────────────────────
@@ -606,6 +767,7 @@ class Command(BaseCommand):
         if created:
             admin.set_password(ADMIN_PASSWORD)
             admin.save()
+            User.objects.filter(pk=admin.pk).update(created_at=_seeded_datetime(SEED_WINDOW_DAYS, hour=9))
         self.stdout.write(f"  Admin [{'+ créé' if created else '✓'}] : {ADMIN_EMAIL}")
         return admin
 
@@ -614,6 +776,7 @@ class Command(BaseCommand):
         mechanics = []
         for d in MECHANICS_DATA:
             role = 'mechanic_premium' if d['is_premium'] else 'mechanic_standard'
+            registered_at = _seeded_datetime(random.randint(28, SEED_WINDOW_DAYS))
             user, u_created = User.objects.get_or_create(
                 email=d['email'],
                 defaults={
@@ -624,8 +787,9 @@ class Command(BaseCommand):
             if u_created:
                 user.set_password(MECHANIC_PASSWORD)
                 user.save()
+                User.objects.filter(pk=user.pk).update(created_at=registered_at)
 
-            validated_at = timezone.now() if d['status'] == 'approved' else None
+            validated_at = registered_at + timedelta(days=random.randint(1, 3)) if d['status'] == 'approved' else None
             profile, p_created = MechanicProfile.objects.get_or_create(
                 user=user,
                 defaults={
@@ -649,6 +813,7 @@ class Command(BaseCommand):
             if p_created:
                 specs = [specialties[s] for s in d['specialties'] if s in specialties]
                 profile.specialties.set(specs)
+                MechanicProfile.objects.filter(pk=profile.pk).update(created_at=registered_at)
 
             marker = f"+ créé ({'premium' if d['is_premium'] else 'standard'}, {d['status']})"
             self.stdout.write(f"  Mécanicien [{'+ créé' if u_created else '✓'}] : {user.full_name} — {d['city']}")
@@ -659,6 +824,7 @@ class Command(BaseCommand):
     def _create_drivers(self):
         drivers = []
         for (fn, ln, email, phone) in DRIVERS_DATA:
+            registered_at = _seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
@@ -669,6 +835,7 @@ class Command(BaseCommand):
             if created:
                 user.set_password(DRIVER_PASSWORD)
                 user.save()
+                User.objects.filter(pk=user.pk).update(created_at=registered_at)
             self.stdout.write(f"  Conducteur [{'+ créé' if created else '✓'}] : {fn} {ln}")
             drivers.append(user)
         return drivers
@@ -676,7 +843,6 @@ class Command(BaseCommand):
     # ── DEMANDES ─────────────────────────────────────────────────────────────
     def _create_breakdowns(self, mechanics, drivers, specialties):
         breakdowns = []
-        now = timezone.now()
         for (drv_idx, bd_type, prompt_status, meca_idx, city, address, vehicle, days_ago) in BREAKDOWNS_DATA:
             driver_user = drivers[drv_idx]
             bd_status = _BD_STATUS_MAP[prompt_status]
@@ -693,7 +859,7 @@ class Command(BaseCommand):
             specialty = specialties.get(spec_name)
 
             lat, lng = GPS[city]
-            created_date = now - timedelta(days=days_ago, hours=random.randint(0, 12))
+            created_date = _seeded_datetime(_scale_days_ago(days_ago))
 
             br, created = BreakdownRequest.objects.get_or_create(
                 driver_phone=driver_user.phone,
@@ -722,6 +888,7 @@ class Command(BaseCommand):
             )
             if created:
                 BreakdownRequest.objects.filter(pk=br.pk).update(created_at=created_date)
+                br.created_at = created_date  # .update() ne rafraîchit pas l'objet en mémoire
 
             self.stdout.write(f"  Demande [{'+ créée' if created else '✓'}] : {driver_user.full_name} — {prompt_status} — {vehicle[:30]}")
             breakdowns.append(br)
@@ -729,7 +896,6 @@ class Command(BaseCommand):
 
     # ── INTERVENTIONS ────────────────────────────────────────────────────────
     def _create_interventions(self, breakdowns, mechanics):
-        now = timezone.now()
         interventions = {}  # bd_idx → Intervention (principal)
         total_created = 0
 
@@ -749,7 +915,7 @@ class Command(BaseCommand):
                 continue  # pending ou refused : pas d'intervention
             br = breakdowns[idx]
             meca = mechanics[meca_idx]
-            cost = COSTS[bd_type]
+            cost = _cost_for(bd_type, br.is_agglomeration)
             created_date = br.created_at
 
             if prompt_status == 'assigned' and idx in pending_acceptance_bds:
@@ -776,6 +942,8 @@ class Command(BaseCommand):
                 },
             )
             if created:
+                Intervention.objects.filter(pk=intv.pk).update(created_at=created_date)
+                intv.created_at = created_date
                 total_created += 1
             interventions[idx] = intv
             self.stdout.write(f"  Intervention [{'+ créée' if created else '✓'}] : #{br.id} — {intv_status}")
@@ -794,11 +962,12 @@ class Command(BaseCommand):
                     'accepted_at':    None,
                     'refused_at':     refused_date,
                     'refusal_reason': 'Mécanicien indisponible au moment de la demande.',
-                    'estimated_cost': COSTS[BREAKDOWNS_DATA[bd_idx][1]],
+                    'estimated_cost': _cost_for(BREAKDOWNS_DATA[bd_idx][1], br.is_agglomeration),
                 },
             )
             if created:
                 Intervention.objects.filter(pk=intv.pk).update(created_at=refused_date)
+                intv.created_at = refused_date
                 total_created += 1
             extra_refused.append((bd_idx, intv))
             self.stdout.write(f"  Intervention refused extra [{'+ créée' if created else '✓'}] : bd#{br.id} — {meca.user.full_name}")
@@ -839,7 +1008,6 @@ class Command(BaseCommand):
         return commission, Decimal(str(amount)) - commission
 
     def _create_payments(self, breakdowns, interventions, extra_refused):
-        now = timezone.now()
         count = 0
         fixed = 0
 
@@ -858,8 +1026,8 @@ class Command(BaseCommand):
         # Paiements pour les interventions principales (19)
         for bd_idx, intv in interventions.items():
             bd_type = BREAKDOWNS_DATA[bd_idx][1]
-            cost = COSTS[bd_type]
             bd = breakdowns[bd_idx]
+            cost = _cost_for(bd_type, bd.is_agglomeration)
             pay_status, pay_for = intv_payment_map.get(intv.status, ('pending', 'intervention'))
             ref = f'FEDA_SOUT_{pay_idx:04d}'
             paid_at = intv.paid_at if pay_status == 'paid' else None
@@ -885,6 +1053,7 @@ class Command(BaseCommand):
                 },
             )
             if created:
+                PaymentTransaction.objects.filter(pk=payment.pk).update(created_at=bd.created_at)
                 count += 1
             elif payment.commission_amount == Decimal('0') and payment.net_amount == Decimal('0'):
                 payment.commission_amount = commission
@@ -898,7 +1067,7 @@ class Command(BaseCommand):
             bd_idx, intv = extra_refused[0]
             bd = breakdowns[bd_idx]
             ref = f'FEDA_SOUT_{pay_idx:04d}'
-            cost = COSTS[BREAKDOWNS_DATA[bd_idx][1]]
+            cost = _cost_for(BREAKDOWNS_DATA[bd_idx][1], bd.is_agglomeration)
             commission, net = self._calc_commission(cost, intv.mechanic, bd)
             payment, created = PaymentTransaction.objects.get_or_create(
                 provider_reference=ref,
@@ -920,6 +1089,7 @@ class Command(BaseCommand):
                 },
             )
             if created:
+                PaymentTransaction.objects.filter(pk=payment.pk).update(created_at=bd.created_at)
                 count += 1
             elif payment.commission_amount == Decimal('0') and payment.net_amount == Decimal('0'):
                 payment.commission_amount = commission
@@ -945,6 +1115,36 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'  → {count} paiements créés, {fixed} corrigés (commission).'))
 
+    # ── ABONNEMENTS PREMIUM ──────────────────────────────────────────────────
+    def _create_premium_subscriptions(self, mechanics):
+        count = 0
+        # Renouvellements espacés de ~7 jours pour rester dans la fenêtre de
+        # 36 jours tout en racontant un historique de plusieurs paiements.
+        for (meca_idx, monthly_amount, periods_ago_list) in PREMIUM_SUBSCRIPTIONS_DATA:
+            profile = mechanics[meca_idx]
+            for periods_ago in periods_ago_list:
+                ref = f'FEDA_SOUT_SUB_{meca_idx}_{periods_ago}'
+                paid_at = _seeded_datetime(periods_ago * 7)
+                payment, created = PaymentTransaction.objects.get_or_create(
+                    provider_reference=ref,
+                    defaults={
+                        'payer_name':     profile.user.full_name,
+                        'payer_phone':    profile.user.phone,
+                        'amount':         monthly_amount,
+                        'currency':       'XOF',
+                        'payment_method': 'MTN Mobile Money' if periods_ago % 2 else 'Moov Money',
+                        'payment_for':    'premium_subscription',
+                        'status':         'paid',
+                        'mechanic':       profile,
+                        'paid_at':        paid_at,
+                        'metadata':       {'source': 'seed_soutenance'},
+                    },
+                )
+                if created:
+                    PaymentTransaction.objects.filter(pk=payment.pk).update(created_at=paid_at)
+                    count += 1
+        self.stdout.write(self.style.SUCCESS(f'  → {count} paiements abonnement premium créés.'))
+
     # ── AVIS ─────────────────────────────────────────────────────────────────
     def _create_reviews(self, mechanics, interventions):
         count = 0
@@ -967,6 +1167,7 @@ class Command(BaseCommand):
                         'is_visible':    True,
                     },
                 )
+                review_date = (linked_intv.completed_at or linked_intv.created_at) + timedelta(hours=random.randint(1, 48))
             else:
                 review, created = MechanicReview.objects.get_or_create(
                     mechanic=profile,
@@ -977,7 +1178,9 @@ class Command(BaseCommand):
                         'is_visible': True,
                     },
                 )
+                review_date = _seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
             if created:
+                MechanicReview.objects.filter(pk=review.pk).update(created_at=review_date)
                 count += 1
 
         self.stdout.write(self.style.SUCCESS(f'  → {count} avis créés.'))
@@ -1010,13 +1213,16 @@ class Command(BaseCommand):
         for (meca_idx, sender_type, content) in MECH_ADMIN_MESSAGES_DATA:
             profile = mechanics[meca_idx]
             sender_name = profile.user.full_name if sender_type == 'mechanic' else 'Administration'
-            _, created = MechanicAdminMessage.objects.get_or_create(
+            msg, created = MechanicAdminMessage.objects.get_or_create(
                 mechanic=profile,
                 sender_type=sender_type,
                 content=content,
                 defaults={'sender_name': sender_name},
             )
             if created:
+                MechanicAdminMessage.objects.filter(pk=msg.pk).update(
+                    created_at=_seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
+                )
                 count += 1
         self.stdout.write(self.style.SUCCESS(f'  → {count} messages mécanicien→admin créés.'))
 
@@ -1079,6 +1285,11 @@ class Command(BaseCommand):
                 description=description,
                 status=status,
             )
+            incident_date = (
+                (linked_intv.completed_at or linked_intv.created_at) + timedelta(hours=random.randint(1, 72))
+                if linked_intv else _seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
+            )
+            Incident.objects.filter(pk=incident.pk).update(created_at=incident_date)
             count += 1
 
         self.stdout.write(self.style.SUCCESS(f'  → {count} incidents créés.'))
@@ -1088,6 +1299,8 @@ class Command(BaseCommand):
         count = 0
         for i, (meca_idx, req_name, req_phone, reason, status) in enumerate(PREMIUM_CONTACTS_DATA):
             profile = mechanics[meca_idx]
+            request_date = _seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
+            reviewed_date = request_date + timedelta(hours=random.randint(1, 24)) if status != 'pending' else None
             contact, created = PremiumContactRequest.objects.get_or_create(
                 mechanic=profile,
                 requester_phone=req_phone,
@@ -1097,10 +1310,11 @@ class Command(BaseCommand):
                     'requester_ip':         f'41.202.220.{i+10}',
                     'requester_user_agent': 'SeedSoutenance/1.0',
                     'status':               status,
-                    'reviewed_at':          timezone.now() if status != 'pending' else None,
+                    'reviewed_at':          reviewed_date,
                 },
             )
             if created:
+                PremiumContactRequest.objects.filter(pk=contact.pk).update(created_at=request_date)
                 count += 1
         self.stdout.write(self.style.SUCCESS(f'  → {count} demandes premium créées.'))
 
@@ -1109,8 +1323,10 @@ class Command(BaseCommand):
         count = 0
         for (meca_idx, amount, status) in WITHDRAWALS_DATA:
             profile = mechanics[meca_idx]
-            fee = (amount * Decimal('0.01')).quantize(Decimal('0.01'))
-            net = amount - fee
+            # Même formule que mechanic_withdraw (views.py) : frais = amount *
+            # WITHDRAWAL_FEE_RATE, le mécanicien reçoit `amount` pile, le solde
+            # est débité de amount + frais.
+            fee = (amount * settings.WITHDRAWAL_FEE_RATE).quantize(Decimal('1'), rounding=ROUND_DOWN)
 
             existing = WithdrawalRequest.objects.filter(
                 mechanic=profile,
@@ -1120,19 +1336,31 @@ class Command(BaseCommand):
             if existing:
                 continue
 
+            requested_date = _seeded_datetime(random.randint(0, SEED_WINDOW_DAYS))
+            processed_date = requested_date + timedelta(hours=random.randint(1, 48))
+
             wr = WithdrawalRequest.objects.create(
                 mechanic=profile,
                 amount=amount,
                 fee=fee,
-                net_amount=net,
+                net_amount=amount,
                 momo_number=profile.user.phone,
                 momo_provider='mtn' if profile.user.phone.endswith(('1', '3', '5', '7', '9')) else 'moov',
                 status=status,
                 processed_by=admin if status in ('approved', 'rejected') else None,
-                processed_at=timezone.now() if status in ('approved', 'rejected') else None,
+                processed_at=processed_date if status in ('approved', 'rejected') else None,
             )
+            WithdrawalRequest.objects.filter(pk=wr.pk).update(created_at=requested_date)
             count += 1
         self.stdout.write(self.style.SUCCESS(f'  → {count} retraits créés.'))
+
+    # ── SOLDES MÉCANICIENS ───────────────────────────────────────────────────
+    def _create_balances(self, mechanics):
+        for (meca_idx, balance) in BALANCES_DATA:
+            profile = mechanics[meca_idx]
+            MechanicProfile.objects.filter(pk=profile.pk).update(balance=balance)
+            profile.balance = balance
+        self.stdout.write(self.style.SUCCESS(f'  → {len(BALANCES_DATA)} soldes mécaniciens mis à jour.'))
 
     # ── RAPPORT FINAL ────────────────────────────────────────────────────────
     def _print_report(self):
@@ -1163,8 +1391,8 @@ class Command(BaseCommand):
             ('premium_contact_request',   PremiumContactRequest.objects.count()),
             ('payments_withdrawal',       WithdrawalRequest.objects.count()),
         ]
-        minimums = [15, 35, 15, 25, 22, 20, 20, 30, 5, 20, 20, 10, 10]
-        # NB: 34 breakdowns, 31 interventions, 29 paiements après ajout des 9 entrées de cohérence
+        minimums = [20, 40, 20, 25, 22, 20, 20, 30, 20, 20, 20, 20, 20]
+        # NB: au moins 20 entrées par table métier, noms locaux (Bénin)
         total = 0
         for (table, cnt), minimum in zip(rows, minimums):
             ok = '✅' if cnt >= minimum else '⚠️ '
