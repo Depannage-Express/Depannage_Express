@@ -363,7 +363,7 @@ function App() {
           />
         );
       case SCREENS.MECHANIC_DASHBOARD:
-        return <DashboardMecanicien currentUser={currentUser} />;
+        return <DashboardMecanicien currentUser={currentUser} onUserUpdated={setCurrentUser} />;
       case SCREENS.ADMIN_LOGIN:
         return (
           <Connexion

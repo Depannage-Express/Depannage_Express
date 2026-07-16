@@ -10,7 +10,8 @@ const OPERATOR_TEST_NUMBERS = {
   'Moov Money': '0164000001',
 };
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 40000;
+const POLL_SLOW_MS = 40000;
+const POLL_HARD_STOP_MS = 5 * 60 * 1000;
 
 const PREMIUM_BENEFITS = [
   'Apparaissez en tête des résultats de recherche',
@@ -20,7 +21,7 @@ const PREMIUM_BENEFITS = [
   'Accès aux statistiques détaillées de vos interventions',
 ];
 
-const Abonnement = ({ onBack, currentUser }) => {
+const Abonnement = ({ onBack, currentUser, onUserUpdated }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
   const [payerPhone, setPayerPhone] = useState(OPERATOR_TEST_NUMBERS[PAYMENT_METHODS[0]]);
@@ -49,7 +50,10 @@ const Abonnement = ({ onBack, currentUser }) => {
     fetchPendingSubscriptionPayment()
       .then((res) => {
         if (res.confirmed) {
-          setStep('success');
+          fetchCurrentUser()
+            .then((user) => onUserUpdated?.(user))
+            .catch(() => {})
+            .finally(() => setStep('success'));
         } else if (res.pending && res.payment_url) {
           setResumeUrl(res.payment_url);
           setStep('resume');
@@ -58,9 +62,12 @@ const Abonnement = ({ onBack, currentUser }) => {
       .catch(() => {});
   }, []);
 
-  // Retour de FedaPay : sonde le statut jusqu'à confirmation du webhook
+  // Retour de FedaPay : sonde le statut jusqu'à confirmation du webhook.
+  // Continue silencieusement en arrière-plan (pas besoin que l'utilisateur
+  // actualise) — seul un affichage "ça prend plus de temps" change après 40s,
+  // et un vrai abandon n'intervient qu'après POLL_HARD_STOP_MS.
   useEffect(() => {
-    if (step !== 'waiting') return;
+    if (step !== 'waiting' && step !== 'slow') return;
     window.history.replaceState({}, '', window.location.pathname);
 
     const startedAt = Date.now();
@@ -68,13 +75,17 @@ const Abonnement = ({ onBack, currentUser }) => {
       fetchCurrentUser()
         .then((user) => {
           if (user.role === 'mechanic_premium') {
-            setStep('success');
             clearInterval(pollRef.current);
+            onUserUpdated?.(user);
+            setStep('success');
             return;
           }
-          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+          const elapsed = Date.now() - startedAt;
+          if (elapsed >= POLL_HARD_STOP_MS) {
             setStep('timeout');
             clearInterval(pollRef.current);
+          } else if (elapsed >= POLL_SLOW_MS) {
+            setStep((s) => (s === 'waiting' ? 'slow' : s));
           }
         })
         .catch(() => {});
@@ -82,7 +93,7 @@ const Abonnement = ({ onBack, currentUser }) => {
     poll();
     pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => clearInterval(pollRef.current);
-  }, [step]);
+  }, [step === 'waiting' || step === 'slow']);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -271,14 +282,27 @@ const Abonnement = ({ onBack, currentUser }) => {
                 </div>
               )}
 
+              {step === 'slow' && (
+                <div className="flex flex-col items-center gap-6 py-8 text-center">
+                  <Loader size={56} className="text-[#608C27] animate-spin" />
+                  <div>
+                    <p className="text-xl font-bold text-[#0D2B0D] mb-2">Ça prend un peu plus de temps…</p>
+                    <p className="text-gray-600 text-sm">
+                      FedaPay met plus de temps que prévu à confirmer. Pas besoin d'actualiser,
+                      la page se met à jour automatiquement dès que c'est confirmé.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {step === 'timeout' && (
                 <div className="flex flex-col items-center gap-6 py-8 text-center">
                   <Crown size={56} className="text-orange-500" />
                   <div>
                     <p className="text-xl font-bold text-[#0D2B0D] mb-2">Confirmation en attente</p>
                     <p className="text-gray-600 text-sm">
-                      FedaPay met plus de temps que prévu à confirmer. Rechargez la page dans
-                      quelques instants pour vérifier si votre abonnement a été activé.
+                      FedaPay met vraiment beaucoup de temps à confirmer. Rechargez la page pour
+                      vérifier si votre abonnement a été activé, ou réessayez plus tard.
                     </p>
                   </div>
                   <button
@@ -297,7 +321,6 @@ const Abonnement = ({ onBack, currentUser }) => {
                     <p className="text-2xl font-bold text-[#0D2B0D]">Félicitations !</p>
                     <p className="text-gray-600 mt-2">
                       Vous êtes maintenant <strong>Mécanicien Premium</strong>.
-                      Rechargez la page pour profiter de tous vos avantages.
                     </p>
                   </div>
                   <button

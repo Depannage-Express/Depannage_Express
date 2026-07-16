@@ -12,7 +12,7 @@ import Badge from './Badge';
 const POLL_MS = 4_000;
 const LAST_DISCUTER_KEY = 'meca_last_discuter_ts';
 
-const DashboardMecanicien = ({ currentUser }) => {
+const DashboardMecanicien = ({ currentUser, onUserUpdated }) => {
   const [view, setView] = useState(() => {
     return localStorage.getItem('meca_dashboard_view') || 'menu';
   });
@@ -140,7 +140,7 @@ const DashboardMecanicien = ({ currentUser }) => {
       case 'discuter':
         return <DiscussionMeca onBack={() => handleSetView('menu')} currentUser={currentUser} />;
       case 'abonnement':
-        return <Abonnement onBack={() => handleSetView('menu')} currentUser={currentUser} />;
+        return <Abonnement onBack={() => handleSetView('menu')} currentUser={currentUser} onUserUpdated={onUserUpdated} />;
       default:
         return (
           <div className="p-10 text-center bg-white rounded-xl shadow-xl border-2 border-[#0D2B0D]">
