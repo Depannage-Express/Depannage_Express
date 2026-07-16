@@ -19,7 +19,7 @@ from apps.notifications.utils import send_notification
 from apps.mechanics.models import MomoNumberChangeRequest
 from apps.payments.models import PaymentTransaction, WithdrawalRequest
 from .models import BreakdownRequest, Message
-from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer
+from .serializers import BreakdownRequestCreateSerializer, BreakdownRequestSerializer, BreakdownRequestPublicSerializer, BreakdownRequestAdminSerializer
 
 # PHASE_TIMEOUT_SECS moved to settings
 
@@ -331,7 +331,7 @@ def my_breakdown_requests(request):
 
 class BreakdownAdminListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
-    serializer_class = BreakdownRequestSerializer
+    serializer_class = BreakdownRequestAdminSerializer
 
     def get_queryset(self):
         qs = BreakdownRequest.objects.select_related(
@@ -350,7 +350,7 @@ def breakdown_detail_admin(request, pk):
         req = BreakdownRequest.objects.get(pk=pk)
     except BreakdownRequest.DoesNotExist:
         return Response({'error': 'Demande introuvable.'}, status=404)
-    return Response(BreakdownRequestSerializer(req).data)
+    return Response(BreakdownRequestAdminSerializer(req).data)
 
 
 # ─── Suivi public (lecture seule, pas de données sensibles) ──────────────────

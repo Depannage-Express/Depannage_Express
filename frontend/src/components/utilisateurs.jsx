@@ -63,6 +63,7 @@ const Utilisateurs = ({ onBack }) => {
   const [pendingAction, setPendingAction] = useState('');
   const [query, setQuery] = useState('');
   const [driverQuery, setDriverQuery] = useState('');
+  const [sectionFilter, setSectionFilter] = useState('all');
   const pollRef = useRef(null);
 
   // Modal refus
@@ -572,6 +573,30 @@ const Utilisateurs = ({ onBack }) => {
           </p>
         )}
 
+        {/* Filtre par catégorie */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {[
+            { value: 'all',      label: 'Tous' },
+            { value: 'drivers',  label: `Conducteurs (${drivers.length})` },
+            { value: 'standard', label: `Mécaniciens standard (${groupedUsers.approvedStandards.length})` },
+            { value: 'premium',  label: `Mécaniciens premium (${groupedUsers.approvedPremiums.length})` },
+            { value: 'other',    label: `Refusés / suspendus (${groupedUsers.otherMechanics.length})` },
+            { value: 'admins',   label: `Admins (${groupedUsers.admins.length})` },
+          ].map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setSectionFilter(tab.value)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all ${
+                sectionFilter === tab.value
+                  ? 'bg-[#0D2B0D] text-white border-[#0D2B0D]'
+                  : 'bg-white text-[#0D2B0D] border-gray-300 hover:border-[#608C27]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {isLoading && <div className="mb-6 text-center font-semibold text-slate-700">Chargement des utilisateurs…</div>}
         {error && <div className="mb-6 rounded-2xl bg-red-50 p-4 text-center text-red-700">{error}</div>}
 
@@ -593,9 +618,10 @@ const Utilisateurs = ({ onBack }) => {
         )}
 
         {/* Grille principale */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${sectionFilter === 'all' ? 'xl:grid-cols-5' : 'max-w-2xl'}`}>
 
           {/* CONDUCTEURS */}
+          {(sectionFilter === 'all' || sectionFilter === 'drivers') && (
           <section>
             <div className="bg-[#0D2B0D] text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm flex items-center justify-center gap-2">
               <Car size={14} /> CONDUCTEURS ({drivers.length})
@@ -663,8 +689,10 @@ const Utilisateurs = ({ onBack }) => {
               });
             })()}
           </section>
+          )}
 
           {/* MÉCANICIENS STANDARDS APPROUVÉS */}
+          {(sectionFilter === 'all' || sectionFilter === 'standard') && (
           <section>
             <div className="bg-[#0D2B0D] text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm">
               STANDARDS
@@ -673,8 +701,10 @@ const Utilisateurs = ({ onBack }) => {
               <p className="text-center text-sm text-gray-400 py-4 italic">Aucun approuvé</p>
             ) : groupedUsers.approvedStandards.map(user => <UserCard key={user.id} user={user} />)}
           </section>
+          )}
 
           {/* MÉCANICIENS PREMIUM APPROUVÉS */}
+          {(sectionFilter === 'all' || sectionFilter === 'premium') && (
           <section>
             <div className="bg-yellow-600 text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm flex items-center justify-center gap-1">
               PREMIUM <Star size={14} />
@@ -683,8 +713,10 @@ const Utilisateurs = ({ onBack }) => {
               <p className="text-center text-sm text-gray-400 py-4 italic">Aucun approuvé</p>
             ) : groupedUsers.approvedPremiums.map(user => <UserCard key={user.id} user={user} />)}
           </section>
+          )}
 
           {/* REFUSÉS / SUSPENDUS */}
+          {(sectionFilter === 'all' || sectionFilter === 'other') && (
           <section>
             <div className="bg-gray-500 text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm">
               REFUSÉS / SUSPENDUS
@@ -693,8 +725,10 @@ const Utilisateurs = ({ onBack }) => {
               <p className="text-center text-sm text-gray-400 py-4 italic">Aucun</p>
             ) : groupedUsers.otherMechanics.map(user => <UserCard key={user.id} user={user} />)}
           </section>
+          )}
 
           {/* ADMINISTRATEURS */}
+          {(sectionFilter === 'all' || sectionFilter === 'admins') && (
           <section>
             <div className="bg-[#608C27] text-white text-center py-3 rounded-full font-bold mb-6 shadow-lg text-sm">
               ADMINS
@@ -703,6 +737,7 @@ const Utilisateurs = ({ onBack }) => {
               <p className="text-center text-sm text-gray-400 py-4">Aucun résultat</p>
             ) : groupedUsers.admins.map(user => <UserCard key={user.id} user={user} />)}
           </section>
+          )}
 
         </div>
       </div>

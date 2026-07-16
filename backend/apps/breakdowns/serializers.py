@@ -79,6 +79,19 @@ class BreakdownRequestSerializer(serializers.ModelSerializer):
         return _cloudinary_url(obj.vehicle_photo, width=600, crop='limit')
 
 
+class BreakdownRequestAdminSerializer(BreakdownRequestSerializer):
+    """Réservé aux vues admin (IsAdmin) — expose le téléphone du mécanicien
+    assigné pour permettre à l'administration d'agir en cas de litige.
+    Ne JAMAIS réutiliser côté conducteur/public : le numéro reste caché
+    tant que le mécanicien n'est pas premium (cf. MechanicPublicSerializer)."""
+    assigned_mechanic_phone = serializers.CharField(
+        source='assigned_mechanic.user.phone', read_only=True, default=None
+    )
+
+    class Meta(BreakdownRequestSerializer.Meta):
+        fields = BreakdownRequestSerializer.Meta.fields + ['assigned_mechanic_phone']
+
+
 class BreakdownRequestPublicSerializer(serializers.ModelSerializer):
     """Serializer sans données sensibles du conducteur — destiné aux mécaniciens."""
     assigned_mechanic_detail = MechanicPublicSerializer(

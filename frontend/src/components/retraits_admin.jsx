@@ -25,8 +25,8 @@ const RetraitsAdmin = ({ onBack }) => {
   const [adminNotes, setAdminNotes] = useState({});
   const [feedback, setFeedback] = useState('');
 
-  const load = async (status) => {
-    setLoading(true);
+  const load = async (status, { silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const data = await fetchAdminWithdrawals(status);
@@ -34,7 +34,7 @@ const RetraitsAdmin = ({ onBack }) => {
     } catch (e) {
       setError(e.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -46,7 +46,7 @@ const RetraitsAdmin = ({ onBack }) => {
     if (mainTab !== 'withdrawals') return;
 
     load(activeTab);
-    withdrawalsIntervalRef.current = setInterval(() => load(activeTab), POLL_INTERVAL_MS);
+    withdrawalsIntervalRef.current = setInterval(() => load(activeTab, { silent: true }), POLL_INTERVAL_MS);
     return () => clearInterval(withdrawalsIntervalRef.current);
   }, [activeTab, mainTab]);
 
@@ -56,7 +56,7 @@ const RetraitsAdmin = ({ onBack }) => {
     try {
       await processWithdrawal(id, action, adminNotes[id] || '');
       setFeedback(action === 'approve' ? 'Retrait approuvé.' : 'Retrait refusé — solde restitué.');
-      await load(activeTab);
+      await load(activeTab, { silent: true });
     } catch (e) {
       setFeedback(e.message);
     } finally {
@@ -73,8 +73,8 @@ const RetraitsAdmin = ({ onBack }) => {
   const [momoNotes, setMomoNotes] = useState({});
   const [momoFeedback, setMomoFeedback] = useState('');
 
-  const loadMomo = async (status) => {
-    setMomoLoading(true);
+  const loadMomo = async (status, { silent = false } = {}) => {
+    if (!silent) setMomoLoading(true);
     setMomoError('');
     try {
       const data = await fetchAdminMomoChanges(status);
@@ -82,7 +82,7 @@ const RetraitsAdmin = ({ onBack }) => {
     } catch (e) {
       setMomoError(e.message);
     } finally {
-      setMomoLoading(false);
+      if (!silent) setMomoLoading(false);
     }
   };
 
@@ -90,7 +90,7 @@ const RetraitsAdmin = ({ onBack }) => {
     if (mainTab !== 'momo_changes') return;
 
     loadMomo(momoTab);
-    momoIntervalRef.current = setInterval(() => loadMomo(momoTab), POLL_INTERVAL_MS);
+    momoIntervalRef.current = setInterval(() => loadMomo(momoTab, { silent: true }), POLL_INTERVAL_MS);
     return () => clearInterval(momoIntervalRef.current);
   }, [momoTab, mainTab]);
 
@@ -100,7 +100,7 @@ const RetraitsAdmin = ({ onBack }) => {
     try {
       await processAdminMomoChange(id, action, momoNotes[id] || '');
       setMomoFeedback(action === 'approve' ? 'Changement approuvé — numéro mis à jour.' : 'Demande refusée.');
-      await loadMomo(momoTab);
+      await loadMomo(momoTab, { silent: true });
     } catch (e) {
       setMomoFeedback(e.message);
     } finally {
