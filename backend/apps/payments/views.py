@@ -112,14 +112,12 @@ def create_payment(request):
         serializer.is_valid(raise_exception=True)
         payment = serializer.save(status='authorized', provider_reference='')
 
-    callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/callback/"
     try:
         fedapay_result = create_transaction(
             amount=amount,
             description=f"Dépannage Express — {breakdown.driver_name}",
             customer_name=breakdown.driver_name,
             customer_phone=breakdown.driver_phone,
-            callback_url=callback_url,
             breakdown_id=str(breakdown.id),
         )
     except Exception as exc:
@@ -363,14 +361,12 @@ def create_subscription_payment(request):
     serializer.is_valid(raise_exception=True)
     payment = serializer.save(status='authorized', provider_reference='')
 
-    callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/callback/"
     try:
         fedapay_result = create_transaction(
             amount=settings.PREMIUM_SUBSCRIPTION_AMOUNT,
             description="Abonnement Premium — Dépannage Express",
             customer_name=payer_name,
             customer_phone=payer_phone,
-            callback_url=callback_url,
             return_params={'subscription_return': '1', 'payment_id': str(payment.id)},
         )
     except Exception as exc:

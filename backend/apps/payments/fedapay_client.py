@@ -9,10 +9,17 @@ from django.conf import settings
 def create_transaction(
     amount, description,
     customer_name, customer_phone,
-    callback_url,
     breakdown_id=None,
     return_params=None,
 ):
+    """
+    NB : `callback_url` dans l'API FedaPay n'est PAS un webhook serveur-à-serveur —
+    c'est l'URL vers laquelle FedaPay redirige le navigateur du client (GET, avec
+    `?id=<transaction_id>&status=<statut>` ajoutés) une fois le paiement terminé.
+    `return_url`/`cancel_url` n'existent pas dans leur API et sont ignorés.
+    Le vrai webhook signé (payment_callback, POST + HMAC) doit être enregistré une
+    fois pour toutes dans le dashboard FedaPay (section Webhooks), pas ici.
+    """
     env = getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
     base = 'https://api.fedapay.com/v1' if env == 'live' else 'https://sandbox-api.fedapay.com/v1'
 
@@ -32,9 +39,7 @@ def create_transaction(
         'description': description,
         'amount': int(float(amount)),
         'currency': {'iso': 'XOF'},
-        'callback_url': callback_url,
-        'return_url': f'{frontend_base}?{urlencode(return_params)}',
-        'cancel_url': f'{frontend_base}?payment_cancelled=1',
+        'callback_url': f'{frontend_base}?{urlencode(return_params)}',
         'customer': {
             'firstname': customer_name or 'Conducteur',
             'lastname': '.',
