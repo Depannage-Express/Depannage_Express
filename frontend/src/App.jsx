@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { clearAuthTokens, fetchCurrentUser, getAccessToken, logoutMechanic, pingBackend } from './lib/api';
+import { clearAuthTokens, createPayment, fetchCurrentUser, getAccessToken, logoutMechanic, pingBackend } from './lib/api';
+import { computeBreakdownAmount } from './lib/breakdownPricing';
 import Header from './components/header';
 import Hero from './components/hero';
 import Demande from './components/demande_depannage';
@@ -13,7 +14,6 @@ import Info from './components/info';
 import DashboardMecanicien from './components/dashbard_meca';
 import Facturation from './components/facturation';
 import Remerciement from './components/remerciement';
-import Paiement from './components/paiement';
 import ConfirmerPaiement from './components/confirmer_paiement';
 import Intervention from './components/intervention';
 import Nofinish from './components/nofinish';
@@ -25,16 +25,6 @@ import EnAttenteValidation from './components/en_attente_validation';
 import HistoriqueOTP from './components/historique_otp';
 import RecupererDemande from './components/recuperer_demande';
 import './index.css';
-
-// Estimation affichage uniquement.
-// Le montant réel est calculé et validé côté serveur.
-const BREAKDOWN_PRICING = {
-  demarrage: 10000,
-  batterie: 12000,
-  moteur: 18000,
-  pneu: 8000,
-  general: 15000,
-};
 
 const SCREENS = {
   HOME: 'home',
@@ -52,7 +42,6 @@ const SCREENS = {
   BREAKDOWN_CONFIRMATION: 'breakdown_confirmation',
   BREAKDOWN_TRACKING: 'breakdown_tracking',
   BILLING: 'billing',
-  PAYMENT: 'payment',
   PAYMENT_CONFIRMATION: 'payment_confirmation',
   INTERVENTION: 'intervention',
   NO_FINISH: 'no_finish',
@@ -61,17 +50,6 @@ const SCREENS = {
   HISTORY_OTP: 'history_otp',
   RECOVER_BREAKDOWN: 'recover_breakdown',
 };
-
-function getBreakdownAmount(breakdown) {
-  const breakdownType = (breakdown?.breakdown_type || '').toLowerCase();
-
-  if (breakdownType.includes('demarrage')) return BREAKDOWN_PRICING.demarrage;
-  if (breakdownType.includes('batterie')) return BREAKDOWN_PRICING.batterie;
-  if (breakdownType.includes('moteur')) return BREAKDOWN_PRICING.moteur;
-  if (breakdownType.includes('pneu')) return BREAKDOWN_PRICING.pneu;
-
-  return BREAKDOWN_PRICING.general;
-}
 
 function getScreenForUser(user) {
   if (!user) return SCREENS.HOME;
@@ -314,7 +292,30 @@ function App() {
     setScreen(SCREENS.BREAKDOWN_TRACKING);
   };
 
-  const currentAmount = getBreakdownAmount(currentBreakdown);
+  const currentAmount = computeBreakdownAmount(currentBreakdown?.breakdown_type);
+
+  const handleInitiatePayment = async () => {
+    const payment = await createPayment({
+      amount: currentAmount,
+      payment_method: 'Mobile Money',
+      payment_for: 'intervention',
+      breakdown_request: currentBreakdown?.id || null,
+      driver_token: currentBreakdown?.driver_token || null,
+    });
+
+    if (!payment.payment_url) {
+      throw new Error("FedaPay n'a pas renvoyé de lien de paiement. Réessayez.");
+    }
+
+    sessionStorage.setItem('fedapay_return', JSON.stringify({
+      payment_id: payment.payment_id,
+      breakdown_id: currentBreakdown?.id,
+      driver_token: currentBreakdown?.driver_token,
+    }));
+    sessionStorage.setItem('driver_token', currentBreakdown?.driver_token || '');
+    sessionStorage.setItem('breakdown_id', currentBreakdown?.id || '');
+    window.location.href = payment.payment_url;
+  };
 
   const renderMainScreen = () => {
     switch (screen) {
@@ -425,20 +426,11 @@ function App() {
             driverLon={currentBreakdown?.longitude}
           />
         );
-      case SCREENS.PAYMENT:
-        return (
-          <Paiement
-            payerName={currentBreakdown?.driver_name}
-            amount={currentAmount}
-            breakdownId={currentBreakdown?.id}
-            driverToken={currentBreakdown?.driver_token}
-          />
-        );
       case SCREENS.BILLING:
         return (
           <Facturation
             amount={currentAmount}
-            onPayer={() => setScreen(SCREENS.PAYMENT)}
+            onPayer={handleInitiatePayment}
             onDiscuter={() => setScreen(SCREENS.DISCUSSION_DRIVER)}
           />
         );

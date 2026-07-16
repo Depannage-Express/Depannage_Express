@@ -310,13 +310,36 @@ PREMIUM_SUBSCRIPTION_AMOUNT = os.getenv('PREMIUM_SUBSCRIPTION_AMOUNT', '5000.00'
 # PRICING / SEARCH
 # ─────────────────────────────────────────
 
+# Tarif par panne — clés = libellés exacts affichés dans le formulaire conducteur
+# (frontend/src/components/demande_depannage.jsx, BREAKDOWN_TYPES). Une demande
+# peut cumuler plusieurs pannes ; voir apps.breakdowns.pricing.compute_breakdown_amount
+# pour le calcul du montant total (réduction de 20% à partir de la 2e panne).
 BREAKDOWN_PRICING = {
-    'demarrage': 10000,
-    'batterie':  12000,
-    'moteur':    18000,
-    'pneu':       8000,
-    'general':   15000,
+    'Panne moteur':                18000,
+    'Surchauffe moteur':           18000,
+    'Moteur fumant':               20000,
+    'Boîte de vitesses':           22000,
+    'Embrayage':                   20000,
+    'Accident / Collision':        25000,
+    'Suspension / Amortisseurs':   18000,
+    'Frein défaillant':            16000,
+    'Batterie déchargée':          12000,
+    'Alternateur':                 15000,
+    'Panne électrique':            15000,
+    'Courroie cassée':             15000,
+    'Fuite de liquide':            12000,
+    'Radiateur':                   12000,
+    'Climatisation':               12000,
+    'Problème de démarrage':       10000,
+    'Tableau de bord':             10000,
+    'Panne de carburant':           8000,
+    'Pneu crevé':                   8000,
+    'Éclairage en panne':           8000,
+    'Vitre / Serrure':              8000,
+    'Autre panne':                 15000,
 }
+
+REPEAT_BREAKDOWN_DISCOUNT_RATE = Decimal('0.20')
 
 SEARCH_RADII_KM = {1: 10, 2: 20, 3: 50}
 

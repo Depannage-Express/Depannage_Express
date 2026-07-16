@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.breakdowns.pricing import compute_breakdown_amount
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
@@ -84,19 +85,21 @@ def create_payment(request):
                 return Response({'error': 'Un paiement est déjà en cours pour cette intervention.'}, status=400)
 
         # Montant calculé côté serveur — le champ 'amount' du frontend est ignoré
-        amount = settings.BREAKDOWN_PRICING.get(
-            breakdown.breakdown_type,
-            settings.BREAKDOWN_PRICING['general'],
-        )
+        amount = compute_breakdown_amount(breakdown.breakdown_type)
 
         payment_data = {
             k: v for k, v in request.data.items()
-            if k not in ('driver_token', 'amount', 'breakdown_request')
+            if k not in ('driver_token', 'amount', 'breakdown_request', 'payer_name', 'payer_phone')
         }
         payment_data['breakdown_request'] = str(breakdown.id)
         payment_data['intervention'] = str(intervention.id)
         payment_data['mechanic'] = str(intervention.mechanic_id)
         payment_data['amount'] = str(amount)
+        # Identité du payeur = celle fournie à la création de la demande, pas
+        # celle du frontend (source unique de vérité, cohérent avec le client
+        # FedaPay qui utilise déjà breakdown.driver_name/driver_phone).
+        payment_data['payer_name'] = breakdown.driver_name
+        payment_data['payer_phone'] = breakdown.driver_phone
 
         is_premium = intervention.mechanic.user.role == 'mechanic_premium'
         if is_premium:
