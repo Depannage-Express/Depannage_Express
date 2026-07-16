@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Crown, CheckCircle, Star, Zap, Phone, CreditCard, Loader } from 'lucide-react';
-import { createSubscriptionPayment, fetchCurrentUser } from '../lib/api';
+import { createSubscriptionPayment, fetchCurrentUser, fetchPendingSubscriptionPayment, cancelSubscriptionPayment } from '../lib/api';
 
 const PLAN_PRICE = '5 000 FCFA';
 const PAYMENT_METHODS = ['MTN Mobile Money', 'Moov Money'];
@@ -18,15 +18,31 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState('01');
+  const [payerPhone, setPayerPhone] = useState('0166000001');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
-  // 'form' | 'waiting' | 'success' | 'timeout' — 'waiting' dès le retour de FedaPay (?subscription_return=1)
+  // 'form' | 'resume' | 'waiting' | 'success' | 'timeout' — 'waiting' dès le retour de FedaPay (?subscription_return=1)
   const [step, setStep] = useState(() =>
     new URLSearchParams(window.location.search).get('subscription_return') === '1' ? 'waiting' : 'form'
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resumeUrl, setResumeUrl] = useState(null);
   const pollRef = useRef(null);
+
+  // Retour arrière accidentel depuis FedaPay (ou la page en attend) sans avoir
+  // fini le checkout : un paiement 'authorized' traîne déjà, on propose de le
+  // reprendre plutôt que de laisser resoumettre le formulaire (double transaction).
+  useEffect(() => {
+    if (isPremium || step !== 'form') return;
+    fetchPendingSubscriptionPayment()
+      .then((res) => {
+        if (res.pending && res.payment_url) {
+          setResumeUrl(res.payment_url);
+          setStep('resume');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Retour de FedaPay : sonde le statut jusqu'à confirmation du webhook
   useEffect(() => {
@@ -200,6 +216,33 @@ const Abonnement = ({ onBack, currentUser }) => {
                     </button>
                   </form>
                 </>
+              )}
+
+              {step === 'resume' && (
+                <div className="flex flex-col items-center gap-6 py-8 text-center">
+                  <CreditCard size={56} className="text-[#608C27]" />
+                  <div>
+                    <p className="text-xl font-bold text-[#0D2B0D] mb-2">Paiement en cours</p>
+                    <p className="text-gray-600 text-sm">
+                      Vous avez déjà un paiement d'abonnement initié. Reprenez-le là où vous
+                      vous étiez arrêté pour finaliser votre passage en Premium.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { window.location.href = resumeUrl; }}
+                    className="w-full bg-[#608C27] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#0D2B0D] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Crown size={20} /> Finaliser mon paiement
+                  </button>
+                  <button
+                    onClick={() => {
+                      cancelSubscriptionPayment().finally(() => setStep('form'));
+                    }}
+                    className="text-sm text-gray-500 underline hover:text-gray-700"
+                  >
+                    Annuler et recommencer
+                  </button>
+                </div>
               )}
 
               {step === 'waiting' && (

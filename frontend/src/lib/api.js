@@ -447,6 +447,14 @@ export function createSubscriptionPayment(payload) {
   });
 }
 
+export function fetchPendingSubscriptionPayment() {
+  return apiRequest('/payments/subscription/pending/');
+}
+
+export function cancelSubscriptionPayment() {
+  return apiRequest('/payments/subscription/cancel/', { method: 'POST' });
+}
+
 
 export function fetchAdminReviews({ rating, mechanic } = {}) {
   const params = new URLSearchParams();

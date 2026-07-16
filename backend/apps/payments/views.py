@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from apps.core.permissions import IsAdmin, IsMechanic, IsApprovedMechanic
 from apps.notifications.utils import send_notification
 from apps.security.utils import log_security_event
-from .fedapay_client import create_transaction, verify_webhook_signature
+from .fedapay_client import create_transaction, fetch_payment_url, verify_webhook_signature
 from .models import PaymentTransaction, WithdrawalRequest
 from .serializers import PaymentTransactionSerializer, PaymentStatusSerializer, WithdrawalRequestSerializer, PaymentAdminSerializer
 
@@ -390,6 +390,69 @@ def create_subscription_payment(request):
         'payment_id': str(payment.id),
         'payment_url': fedapay_result['payment_url'],
     }, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsMechanic])
+def pending_subscription_payment(request):
+    """
+    Signale un paiement d'abonnement premium déjà initié (authorized) et renvoie
+    une URL de checkout FedaPay valide pour le reprendre — utilisé quand le
+    mécanicien revient sur la page d'abonnement après un retour arrière
+    accidentel, pour éviter qu'il ne relance une seconde transaction.
+    """
+    try:
+        profile = request.user.mechanic_profile
+    except Exception:
+        return Response({'pending': False})
+
+    payment = PaymentTransaction.objects.filter(
+        mechanic=profile,
+        payment_for='premium_subscription',
+        status__in=['pending', 'authorized'],
+    ).order_by('-created_at').first()
+
+    if not payment:
+        return Response({'pending': False})
+
+    stale_before = timezone.now() - timedelta(minutes=STALE_PAYMENT_MINUTES)
+    if payment.created_at < stale_before:
+        payment.status = 'cancelled'
+        payment.save(update_fields=['status'])
+        return Response({'pending': False})
+
+    try:
+        payment_url = fetch_payment_url(payment.provider_reference)
+    except Exception as exc:
+        print('FedaPay fetch_payment_url a échoué (pending_subscription_payment):', repr(exc))
+        return Response({'pending': False})
+
+    if not payment_url:
+        return Response({'pending': False})
+
+    return Response({
+        'pending': True,
+        'payment_id': str(payment.id),
+        'payment_url': payment_url,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsMechanic])
+def cancel_subscription_payment(request):
+    """Annule un paiement d'abonnement premium resté en cours, à la demande du
+    mécanicien depuis l'écran de reprise (bouton « Annuler et recommencer »)."""
+    try:
+        profile = request.user.mechanic_profile
+    except Exception:
+        return Response({'success': True})
+
+    PaymentTransaction.objects.filter(
+        mechanic=profile,
+        payment_for='premium_subscription',
+        status__in=['pending', 'authorized'],
+    ).update(status='cancelled')
+    return Response({'success': True})
 
 
 @api_view(['POST'])

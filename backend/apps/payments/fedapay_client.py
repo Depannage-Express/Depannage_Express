@@ -68,28 +68,40 @@ def create_transaction(
         data
     )
     transaction_id = transaction['id']
-    payment_url = transaction.get('payment_url')
-
-    if not payment_url:
-        # Repli si l'API ne renvoie pas payment_url directement (ancien comportement observé)
-        token_resp = requests.post(
-            f'{base}/transactions/{transaction_id}/token',
-            headers=headers,
-            timeout=20,
-        )
-        print('FedaPay token response:', token_resp.text)
-        token_resp.raise_for_status()
-        token_data = token_resp.json()
-        payment_url = (
-            token_data.get('v1/transaction', {}).get('payment_url') or
-            token_data.get('url')
-        )
+    payment_url = transaction.get('payment_url') or fetch_payment_url(transaction_id, env=env)
 
     return {
         'transaction_id': str(transaction_id),
         'payment_url': payment_url,
         'status': transaction.get('status', 'pending'),
     }
+
+
+def fetch_payment_url(transaction_id, env=None):
+    """
+    Redemande à FedaPay un lien de checkout valide pour une transaction déjà créée.
+    Sert à la fois de repli si `create_transaction` ne renvoie pas payment_url
+    directement, et à reprendre un paiement laissé en cours (retour arrière
+    accidentel du client avant la fin du checkout).
+    """
+    env = env or getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
+    base = 'https://api.fedapay.com/v1' if env == 'live' else 'https://sandbox-api.fedapay.com/v1'
+    headers = {
+        'Authorization': f'Bearer {settings.FEDAPAY_SECRET_KEY}',
+        'Content-Type': 'application/json',
+    }
+    token_resp = requests.post(
+        f'{base}/transactions/{transaction_id}/token',
+        headers=headers,
+        timeout=20,
+    )
+    print('FedaPay token response:', token_resp.text)
+    token_resp.raise_for_status()
+    token_data = token_resp.json()
+    return (
+        token_data.get('v1/transaction', {}).get('payment_url') or
+        token_data.get('url')
+    )
 
 
 def verify_webhook_signature(raw_body: bytes, signature_header: str) -> bool:

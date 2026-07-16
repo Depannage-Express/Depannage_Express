@@ -12,7 +12,7 @@ const OPERATORS = [
 
 const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
   const [operator, setOperator] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('01');
+  const [phoneNumber, setPhoneNumber] = useState('0164000001');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 

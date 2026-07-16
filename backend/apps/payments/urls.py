@@ -10,6 +10,8 @@ urlpatterns = [
     path('admin/', views.admin_list_payments, name='payment-admin-list'),
     path('admin/stats/', views.admin_payment_stats, name='payment-admin-stats'),
     path('subscription/', views.create_subscription_payment, name='subscription-create'),
+    path('subscription/pending/', views.pending_subscription_payment, name='subscription-pending'),
+    path('subscription/cancel/', views.cancel_subscription_payment, name='subscription-cancel'),
     path('subscription/<uuid:pk>/confirm/', views.confirm_subscription_payment, name='subscription-confirm'),
 
     # Portefeuille mécanicien
