@@ -12,7 +12,7 @@ const OPERATORS = [
 
 const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
   const [operator, setOperator] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('64000001');
+  const [phoneNumber, setPhoneNumber] = useState('01');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -238,7 +238,7 @@ const Paiement = ({ payerName, amount, breakdownId, driverToken }) => {
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 maxLength={10}
                 style={{
                   background: 'transparent',

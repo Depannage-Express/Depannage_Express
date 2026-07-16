@@ -18,7 +18,7 @@ const PREMIUM_BENEFITS = [
 const Abonnement = ({ onBack, currentUser }) => {
   const isPremium = currentUser?.role === 'mechanic_premium';
 
-  const [payerPhone, setPayerPhone] = useState('66000001');
+  const [payerPhone, setPayerPhone] = useState('01');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   // 'form' | 'waiting' | 'success' | 'timeout' — 'waiting' dès le retour de FedaPay (?subscription_return=1)
   const [step, setStep] = useState(() =>
@@ -150,7 +150,7 @@ const Abonnement = ({ onBack, currentUser }) => {
                         <input
                           type="tel"
                           value={payerPhone}
-                          onChange={(e) => setPayerPhone(e.target.value)}
+                          onChange={(e) => setPayerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                           maxLength={10}
                           placeholder="0197654321"
                           required
