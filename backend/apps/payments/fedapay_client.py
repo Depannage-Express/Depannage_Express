@@ -5,6 +5,12 @@ from urllib.parse import urlencode
 import requests
 from django.conf import settings
 
+# Numéro de test sandbox FedaPay (scénario succès garanti) — utilisé à la place
+# du vrai numéro du conducteur tant qu'on n'est pas en environnement live, pour
+# que le champ pré-rempli sur la page de paiement FedaPay soit toujours un
+# numéro qui fonctionne en test, sans avoir à l'effacer/ressaisir à chaque essai.
+SANDBOX_TEST_PHONE = '0166000001'
+
 
 def create_transaction(
     amount, description,
@@ -22,6 +28,9 @@ def create_transaction(
     """
     env = getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
     base = 'https://api.fedapay.com/v1' if env == 'live' else 'https://sandbox-api.fedapay.com/v1'
+
+    if env != 'live':
+        customer_phone = SANDBOX_TEST_PHONE
 
     headers = {
         'Authorization': f'Bearer {settings.FEDAPAY_SECRET_KEY}',
